@@ -144,6 +144,7 @@ html.standalone[data-mode="day"] body::before{content:"";position:fixed;left:0;r
 .clock:empty{display:none}
 .clock .ck .dm{height:17px}
 .clock .ck-ap{margin-left:5px}
+.clock .ck-ap:empty{display:none} /* 24-hour clock: no am/pm, so nothing may take space after the digits */
 .round{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;flex:none}
 .round svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 .spin svg{animation:spin 1s linear infinite}
