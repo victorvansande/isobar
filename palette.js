@@ -75,7 +75,8 @@
       return blend(FAM[SKY[i - 1][1]], FAM[SKY[i][1]], (altDeg - SKY[i - 1][0]) / (SKY[i][0] - SKY[i - 1][0]));
     return { ...FAM[SKY.at(-1)[1]] };
   }
-  function paint(el, p) { for (const k of ROLES) el.style.setProperty("--" + k, p[k]); }
+  // skips the work when the colours are unchanged (scrubbers call this on every frame; a repaint of a blurred card is costly)
+  function paint(el, p) { const key = ROLES.map(k => p[k]).join(); if (el._pal === key) return; el._pal = key; for (const k of ROLES) el.style.setProperty("--" + k, p[k]); }
 
   window.Palette = { FAM, TEMP, ROLES, SIGNAL, mix, tempFam, weatherPal, skyPal, paint };
 })();

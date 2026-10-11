@@ -476,6 +476,8 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .band{position:relative;margin:18px 0 6px;cursor:grab;touch-action:pan-y;border-radius:15px}
 .band.grab{cursor:grabbing}
 .band .tri{transition:left .12s linear}
+/* while dragging, everything follows the finger directly: no easing on the marker or the card colour */
+.band.grab .tri,.hero:has(.grab),.a-sun:has(.grab){transition:none}
 .a-sun{transition:background-color .5s}
 .band svg{width:100%;height:30px;display:block;border-radius:15px}
 .band .tri{top:-12px}
@@ -604,12 +606,15 @@ body.net-off .toast{bottom:calc(140px + env(safe-area-inset-bottom,0px))}
 #c-radar.offline .roff{display:block}
 #c-radar.offline .rbar{opacity:.45;pointer-events:none}
 /* pull to refresh (home-screen app only) */
-.ptr{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 10px);z-index:1001;width:40px;height:40px;margin-left:-20px;border-radius:50%;display:grid;place-items:center;color:#fff;
+.ptr{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 10px);z-index:1001;width:30px;height:30px;margin-left:-15px;border-radius:50%;display:grid;place-items:center;color:#fff;
   opacity:0;transform:translateY(-56px);pointer-events:none}
-.ptr svg{width:18px;height:18px}
-.ptr.ready{box-shadow:inset 0 0 0 1.5px rgba(232,0,73,.9)}
+.ptr svg{width:16px;height:16px;transform:rotate(-90deg);overflow:visible}
+.ptr circle{fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-dasharray:0 100}
+.ptr circle.track{stroke:rgba(255,255,255,.18);stroke-dasharray:none}
 .ptr.snap{transition:transform .3s cubic-bezier(.2,.8,.2,1),opacity .3s}
-.ptr.go svg{animation:spin 1s linear infinite}
+.ptr.go svg{animation:ptrspin .8s linear infinite}
+.ptr.go circle:not(.track){stroke-dasharray:26 100!important}
+@keyframes ptrspin{from{transform:rotate(-90deg)}to{transform:rotate(270deg)}}
 
 @media (max-width:600px){
   .app{padding-left:14px;padding-right:14px}
@@ -760,7 +765,7 @@ body.net-off .toast{bottom:calc(140px + env(safe-area-inset-bottom,0px))}
 
 <div class="toast lens dark" id="toast" hidden></div>
 <button class="netpill lens dark" id="netPill" aria-hidden="true" tabindex="-1"><i></i><b id="netT">No connection</b><span id="netS"></span></button>
-<div class="ptr lens dark" id="ptr" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20.5 12a8.5 8.5 0 1 1-2.5-6.01L20.5 8.5"/><path d="M20.5 3.5v5h-5"/></svg></div>
+<div class="ptr lens dark" id="ptr" aria-hidden="true"><svg viewBox="0 0 24 24"><circle class="track" cx="12" cy="12" r="9"/><circle id="ptrArc" cx="12" cy="12" r="9" pathLength="100"/></svg></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="palette.js"></script>
@@ -1456,6 +1461,9 @@ function renderHero() {
 let heroFrostGrown = false;
 
 /* ---------------- dragging the sun: scrub through today's daylight ---------------- */
+/* Runs `fn` with the latest event at most once per screen refresh. Touch screens report moves faster than the screen
+   redraws, so updating on every event queues work up and the indicator trails the finger. */
+function perFrame(fn) { let last = null, id = 0; return e => { last = e; if (!id) id = requestAnimationFrame(() => { id = 0; fn(last); }); }; }
 const arcPoint = f => { const th = PI * (1 - f); return [150 + 120 * cos(th), 95 - 78 * sin(th)]; };
 /* Hourly values at any instant, interpolated between the two nearest hours. */
 function hourAt(t) {
@@ -1476,12 +1484,12 @@ function scrubSun(f) {
   const drop = $("#arcDrop"); drop.setAttribute("x1", px); drop.setAttribute("x2", px); drop.setAttribute("y1", py);
   const dot = $("#sunDot"); dot.setAttribute("transform", `translate(${px} ${py})`); dot.setAttribute("opacity", "1");
   const h = hourAt(t), [label, kind] = wmo(h.code), v = R(h.temp), box = $("#heroTemp");
-  if (box.dataset.v !== String(v)) { if (box.dataset.v != null) haptic(); box.dataset.v = v; box.innerHTML = dm(String(v), { deg: true }); box.setAttribute("aria-label", `${v} degrees`); }
+  if (box.dataset.v !== String(v)) { box.dataset.v = v; box.innerHTML = dm(String(v), { deg: true }); box.setAttribute("aria-label", `${v} degrees`); }
   $("#heroWhen").textContent = fmtT(t);
   $("#heroSub").textContent = label;
   $("#heroFeels").textContent = `Feels like ${R(h.feels)}°`;
   $("#heroMid").textContent = `Sun ${Math.max(0, Math.round(sunAlt(t, X.lat, X.lon) / rad))}° above the horizon`;
-  paint(card("c-hero"), weatherPal(toC(h.temp), kind, true));
+  paint(card("c-hero"), weatherPal(Math.round(toC(h.temp) * 2) / 2, kind, true));
   $("#heroUpd").hidden = true; $("#heroNow").hidden = false;
   const box2 = $("#arcIn"); box2.setAttribute("aria-valuenow", Math.round(f * 100)); box2.setAttribute("aria-valuetext", `${fmtT(t)}, ${v} degrees, ${label}`);
 }
@@ -1489,7 +1497,7 @@ function bindSunScrub() {
   const box = $("#arcIn");
   const fAt = e => { const r = box.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * 300; return 1 - acos(clamp((x - 150) / 120, -1, 1)) / PI; };
   // track the drag on the window so it keeps working when the pointer leaves the arc
-  const move = e => scrubSun(fAt(e));
+  const move = perFrame(e => scrubSun(fAt(e)));
   const end = e => { if (e.type === "pointerup") scrubSun(fAt(e)); box.classList.remove("grab"); removeEventListener("pointermove", move); removeEventListener("pointerup", end); removeEventListener("pointercancel", end); };
   box.addEventListener("pointerdown", e => {
     if (e.button !== 0) return;
@@ -1717,7 +1725,7 @@ function renderUV() {
     <div class="gauge"><svg viewBox="0 0 200 108" aria-hidden="true">${ticks}
       <path d="M20 100 A80 80 0 0 1 180 100" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="2"/>
       <path d="M20 100 A80 80 0 0 1 ${mx_.toFixed(1)} ${my_.toFixed(1)}" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
-      <line x1="${100 + 74 * cos(th)}" y1="${100 - 74 * sin(th)}" x2="100" y2="100" stroke="#fff" stroke-opacity=".55" stroke-dasharray="1 3"/>${tri}</svg>
+      ${tri}</svg>
       <div class="gauge-v"><span class="num big">${uv < 10 ? uv.toFixed(1) : Math.round(uv)}</span></div></div>
     <div class="foot" style="margin-top:12px"><span>${esc(sub)}</span></div>`;
 }
@@ -1791,8 +1799,6 @@ function updateMoon(off) {
   $("#moonWhen").textContent = day === 0 ? "Moon" : dlab(new Date(base.valueOf() + day * dayMs));
   $("#moonNow").hidden = Math.abs(off) < .5;
   if (X.moonDay !== day) {
-    // a tick per day while scrubbing, a firmer one landing on a full or new moon
-    if (X.moonDay != null) haptic(/^(Full|New)/.test(phaseName(moonIllum(new Date(base.valueOf() + day * dayMs)).phase)));
     // rise, set and the next full and new moon only change per day, so work them out once per day
     X.moonDay = day;
     const t0 = new Date(T(X.todayKey + "T00:00").valueOf() + day * dayMs);
@@ -1833,7 +1839,7 @@ function moonGlide(to) {
 function bindMoonScrub() {
   const box = $("#moonStripBox"), cv = $("#moonCv");
   let x0 = 0, o0 = 0, px = 1;
-  const move = e => updateMoon(o0 - (e.clientX - x0) / px);
+  const move = perFrame(e => updateMoon(o0 - (e.clientX - x0) / px));
   const end = () => { box.classList.remove("grab"); cv.classList.remove("grab"); removeEventListener("pointermove", move); removeEventListener("pointerup", end); removeEventListener("pointercancel", end); moonGlide(Math.round(X.moonOff)); };
   const down = e => {
     if (e.button !== 0) return;
@@ -1896,13 +1902,9 @@ function updateSun(t) {
   const live = t == null, at = live ? new Date() : new Date(clamp(t, s.mid0, s.mid0 + dayMs - 6e4));
   s.t = live ? null : at.valueOf();
   const alt = sunAlt(at, X.lat, X.lon) / rad, f = clamp((at - s.mid0) / dayMs, 0, 1);
-  paint(card("c-sun"), window.Palette.skyPal(alt));
+  paint(card("c-sun"), window.Palette.skyPal(Math.round(alt * 2) / 2)); // half-degree steps: smooth to the eye, far fewer repaints
   $("#sunTri").style.left = `${(f * 100).toFixed(2)}%`;
   const state = alt > 6 ? `Sun ${Math.round(alt)}° high` : alt > -.8 ? "Golden hour" : alt > -6 ? "Twilight" : "Night";
-  // a tick per hour while scrubbing, a firmer one when the light changes (golden hour, twilight, night)
-  const phase = alt > 6 ? "day" : state, hour = Math.floor((at - s.mid0) / 36e5);
-  if (!live && s.hour != null && (phase !== s.phase || hour !== s.hour)) haptic(phase !== s.phase);
-  s.hour = live ? null : hour; s.phase = phase;
   $("#sunWhen").textContent = live ? "Sun" : fmtT(at);
   $("#sunSub").textContent = live ? s.daylight : state;
   $("#sunChange").hidden = !live; $("#sunNow").hidden = live;
@@ -1914,7 +1916,7 @@ function bindSunCard() {
   const band = $("#sunBand"), s = X.sunCard;
   const tAt = e => { const r = band.getBoundingClientRect(); return s.mid0 + clamp((e.clientX - r.left) / r.width, 0, 1) * dayMs; };
   const cur = () => s.t ?? Date.now();
-  const move = e => updateSun(tAt(e));
+  const move = perFrame(e => updateSun(tAt(e)));
   const end = () => { band.classList.remove("grab"); removeEventListener("pointermove", move); removeEventListener("pointerup", end); removeEventListener("pointercancel", end); };
   band.addEventListener("pointerdown", e => {
     if (e.button !== 0) return;
@@ -2104,25 +2106,62 @@ function rainLevel(r, g, b) {
   if (h >= 22) return .72;
   return .87;
 }
+/* Softens radar pixels before they're recoloured, so the rain has smooth edges instead of blocky steps. Done by hand
+   because Safari has no canvas blur filter: two box-blur passes each way (close to a Gaussian), on premultiplied colour
+   so the edges of a shower don't go dark. */
+const radarScratch = document.createElement("canvas");
+function softBlur(p, w, h) {
+  const n = w * h, a = new Float32Array(n * 4), b = new Float32Array(n * 4);
+  for (let i = 0; i < n * 4; i += 4) { const al = p[i + 3] / 255; a[i] = p[i] * al; a[i + 1] = p[i + 1] * al; a[i + 2] = p[i + 2] * al; a[i + 3] = p[i + 3]; }
+  const pass = (src, dst, horiz) => { // radius-1 box blur along rows or columns, edges clamped
+    const len = horiz ? w : h, lines = horiz ? h : w, step = horiz ? 4 : w * 4;
+    for (let l = 0; l < lines; l++) {
+      const base = horiz ? l * w * 4 : l * 4;
+      for (let x = 0; x < len; x++) {
+        const o = base + x * step, lo = base + Math.max(0, x - 1) * step, hi = base + Math.min(len - 1, x + 1) * step;
+        for (let c = 0; c < 4; c++) dst[o + c] = (src[lo + c] + src[o + c] + src[hi + c]) / 3;
+      }
+    }
+  };
+  pass(a, b, true); pass(b, a, false); pass(a, b, true); pass(b, a, false);
+  for (let i = 0; i < n * 4; i += 4) {
+    const al = a[i + 3]; p[i + 3] = al;
+    if (al > 0) { const m = 255 / al; p[i] = a[i] * m; p[i + 1] = a[i + 1] * m; p[i + 2] = a[i + 2] * m; }
+  }
+}
 const RadarLayer = window.L ? L.GridLayer.extend({
+  // few spare tiles and no redraws mid-zoom: every tile is a recoloured canvas, and iOS has a hard cap on canvas memory
+  options: { keepBuffer: 1, updateWhenZooming: false },
+  onAdd(map) {
+    L.GridLayer.prototype.onAdd.call(this, map);
+    // give a dropped tile's pixels back right away instead of waiting for the garbage collector
+    this.on("tileunload", e => { e.tile.width = e.tile.height = 0; });
+  },
   createTile(coords, done) {
     const tile = document.createElement("canvas"); tile.width = tile.height = 256;
     const z = Math.min(coords.z, 7), k = 2 ** (coords.z - z), img = new Image();
     img.crossOrigin = "anonymous";
     img.onload = () => {
-      const c = tile.getContext("2d", { willReadFrequently: true }), sw = 256 / k, pad = k > 1 ? 3 : 0;
-      const sx = (coords.x % k) * sw - pad, sy = (coords.y % k) * sw - pad, dpad = pad * k;
-      c.imageSmoothingEnabled = true; c.imageSmoothingQuality = "high";
-      if (k > 1) c.filter = `blur(${Math.min(k * .5, 7)}px)`;
-      c.drawImage(img, sx, sy, sw + pad * 2, sw + pad * 2, -dpad, -dpad, 256 + dpad * 2, 256 + dpad * 2);
-      c.filter = "none";
-      const im = c.getImageData(0, 0, 256, 256), p = im.data;
+      if (!tile.width) return; // dropped while its image was loading
+      // the part of the source tile this tile shows, plus a few pixels around it so the softening has neighbours
+      const sw = 256 / k, pad = 3, sx = (coords.x % k) * sw, sy = (coords.y % k) * sw;
+      const x0 = Math.max(0, sx - pad), y0 = Math.max(0, sy - pad), x1 = Math.min(256, sx + sw + pad), y1 = Math.min(256, sy + sw + pad);
+      const w = x1 - x0, h = y1 - y0;
+      radarScratch.width = w; radarScratch.height = h;
+      const s = radarScratch.getContext("2d", { willReadFrequently: true });
+      s.drawImage(img, x0, y0, w, h, 0, 0, w, h);
+      const im = s.getImageData(0, 0, w, h), p = im.data;
+      softBlur(p, w, h);
       for (let i = 0; i < p.length; i += 4) {
         const a = p[i + 3]; if (a < 10) { p[i + 3] = 0; continue; }
         const col = RAIN_LUT[Math.round(rainLevel(p[i], p[i + 1], p[i + 2]) * 100)];
         p[i] = col[0]; p[i + 1] = col[1]; p[i + 2] = col[2]; p[i + 3] = Math.round(col[3] * a);
       }
-      c.putImageData(im, 0, 0);
+      s.putImageData(im, 0, 0);
+      // recoloured at the source's own size, then scaled up smoothly
+      const c = tile.getContext("2d");
+      c.imageSmoothingEnabled = true; c.imageSmoothingQuality = "high";
+      c.drawImage(radarScratch, sx - x0, sy - y0, sw, sw, 0, 0, 256, 256);
       done(null, tile);
     };
     img.onerror = () => done(null, tile);
@@ -2145,9 +2184,10 @@ async function initRadar() {
     // drag along the timeline to move through the frames, like scrubbing a video
     const rt = $("#rTicks");
     const frameAt = x => { const r = rt.getBoundingClientRect(); return clamp(Math.floor((x - r.left) / r.width * frames.length), 0, frames.length - 1); };
-    const scrubTo = i => { if (i !== fi) { show(i); haptic(); } };
+    const scrubTo = i => { if (i !== fi) show(i); };
     rt.addEventListener("pointerdown", e => { if (!frames.length || e.button !== 0) return; stopLoop(); rt.setPointerCapture(e.pointerId); rt.classList.add("grab"); scrubTo(frameAt(e.clientX)); });
-    rt.addEventListener("pointermove", e => { if (rt.hasPointerCapture(e.pointerId)) scrubTo(frameAt(e.clientX)); });
+    const rMove = perFrame(e => scrubTo(frameAt(e.clientX)));
+    rt.addEventListener("pointermove", e => { if (rt.hasPointerCapture(e.pointerId)) rMove(e); });
     for (const ev of ["pointerup", "pointercancel"]) rt.addEventListener(ev, () => rt.classList.remove("grab"));
     rt.addEventListener("keydown", e => { const d = { ArrowRight: 1, ArrowLeft: -1 }[e.key]; if (d && frames.length) { e.preventDefault(); stopLoop(); show(fi + d); rt.children[fi].focus(); } });
   } else { map.setView(ll, map.getZoom()); marker.setLatLng(ll); base.setUrl(esri("Base")); }
@@ -2160,7 +2200,7 @@ async function initRadar() {
     layers.forEach(l => map.removeLayer(l)); stopLoop();
     const past = (j.radar && j.radar.past) || [], fut = (j.radar && j.radar.nowcast) || [];
     frames = [...past.map(f => ({ ...f, fut: false })), ...fut.map(f => ({ ...f, fut: true }))];
-    layers = frames.map(f => new RadarLayer({ url: `${radarHost}${f.path}/256/{z}/{x}/{y}/2/1_1.png`, opacity: 0, maxZoom: 12, zIndex: 10 }).addTo(map));
+    layers = frames.map(f => new RadarLayer({ url: `${radarHost}${f.path}/256/{z}/{x}/{y}/2/1_1.png`, opacity: 0, maxZoom: 12, zIndex: 10 })); // show() puts the ones it needs on the map
     $("#rTicks").innerHTML = frames.map((f, i) => `<button class="${f.fut ? "fut" : ""}" data-i="${i}" aria-label="Frame ${i + 1}"></button>`).join("");
     $("#rTicks").onclick = e => { const b = e.target.closest("button"); if (b) { stopLoop(); show(+b.dataset.i); } };
     $("#radarSub").textContent = fut.length ? "Last 2 hours and next 30 min" : "Last 2 hours";
@@ -2170,7 +2210,13 @@ async function initRadar() {
 function show(i) {
   if (!frames.length) return;
   fi = (i + frames.length) % frames.length;
-  layers.forEach((l, k) => l.setOpacity(k === fi ? .8 : 0));
+  // only the shown frame and two either side are loaded (enough to play smoothly); the rest are dropped to save memory
+  const n = frames.length, near = k => { const d = Math.abs(k - fi); return Math.min(d, n - d) <= 2; };
+  layers.forEach((l, k) => {
+    if (!near(k)) { if (map.hasLayer(l)) map.removeLayer(l); return; }
+    if (!map.hasLayer(l)) l.addTo(map);
+    l.setOpacity(k === fi ? .8 : 0);
+  });
   [...$("#rTicks").children].forEach((b, k) => b.classList.toggle("cur", k === fi));
   const t = new Date(frames[fi].time * 1000), mins = Math.round((t - Date.now()) / 6e4);
   $("#rTime").textContent = `${fmtT(t)} ${Math.abs(mins) < 6 ? "now" : (mins > 0 ? "+" : "") + mins + "m"}`;
@@ -2214,7 +2260,7 @@ function showError(msg) {
   $("#retry").onclick = () => load(place);
 }
 let loading = false, dataKey = "";
-async function load(p, { quiet = false, tactile = false } = {}) {
+async function load(p, { quiet = false } = {}) {
   if (!p || loading) return;
   const prev = place, key = cacheKey(p);
   loading = true; $("#refreshBtn").classList.add("spin"); $("#netPill").classList.add("busy");
@@ -2225,7 +2271,7 @@ async function load(p, { quiet = false, tactile = false } = {}) {
     const [w, a] = await fetchAll(p);
     adopt({ D: w, AQ: a, at: Date.now() }, key);
     forecasts.put(key, { D, AQ, at: fetchedAt });
-    netFail = false; if (tactile) haptic(); // a manual refresh lands with a tick
+    netFail = false;
     renderAll();
   } catch (e) {
     netFail = true;
@@ -2277,7 +2323,7 @@ function renderNet() {
   }
   $("#c-radar").classList.toggle("offline", offline);
 }
-$("#netPill").onclick = () => load(place, { tactile: true });
+$("#netPill").onclick = () => load(place);
 addEventListener("online", () => { netFail = false; renderNet(); if (place) load(place, { quiet: true }); });
 addEventListener("offline", renderNet);
 
@@ -2323,15 +2369,15 @@ dlgP.addEventListener("click", e => {
   dlgP.close(); load(p);
 });
 dlgP.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.matches(".row[data-kind]")) { e.preventDefault(); e.target.click(); } });
-$("#saveCur").onclick = () => { if (!place) return; saved.push({ name: place.name, sub: place.sub, lat: place.lat, lon: place.lon }); store.set("saved", saved); renderSaved(); haptic(); toast(`Saved ${place.name}`); };
+$("#saveCur").onclick = () => { if (!place) return; saved.push({ name: place.name, sub: place.sub, lat: place.lat, lon: place.lon }); store.set("saved", saved); renderSaved(); toast(`Saved ${place.name}`); };
 $("#placeBtn").onclick = openPlaces; $("#searchBtn").onclick = openPlaces;
 $("#locBtn").onclick = async () => {
   $("#locBtn").classList.add("spin");
-  try { const c = await geolocate(); haptic(); await load(await reverse(c.latitude, c.longitude)); }
+  try { const c = await geolocate(); await load(await reverse(c.latitude, c.longitude)); }
   catch (e) { toast(e.message); }
   finally { $("#locBtn").classList.remove("spin"); }
 };
-$("#refreshBtn").onclick = () => load(place, { tactile: true });
+$("#refreshBtn").onclick = () => load(place);
 $("#topbar").onclick = () => scrollTo({ top: 0, behavior: "smooth" });
 
 /* ---------------- settings ---------------- */
@@ -2345,7 +2391,7 @@ function setSetting(k, v) {
   S[k] = v;
   // units and models come from the server: offline that only works if this combination was kept before
   if (refetch && !navigator.onLine && place && !forecasts.get(cacheKey(place))) { S[k] = old; renderSettings(); return toast("That needs a connection. Try again once you're online."); }
-  store.set("settings", S); renderSettings(); haptic();
+  store.set("settings", S); renderSettings();
   if (refetch) load(place);
   else if (D) renderAll(); else applyMode();
 }
@@ -2388,25 +2434,13 @@ async function followMe() {
   } catch {}
 }
 
-/* A light tick from the iPhone's haptic engine (Safari 17.4+ ticks when a switch toggles), or a short buzz on Android
-   (a longer one when `strong`). Ticks closer together than 40 ms are dropped, so a fast scrub stays crisp instead of buzzing. */
-let lastTick = 0;
-function haptic(strong) {
-  const now = performance.now(); if (now - lastTick < 40) return; lastTick = now;
-  if (navigator.vibrate) { navigator.vibrate(strong ? 18 : 7); return; }
-  try {
-    const l = document.createElement("label"), i = document.createElement("input");
-    i.type = "checkbox"; i.setAttribute("switch", ""); l.setAttribute("aria-hidden", "true"); l.style.display = "none";
-    l.append(i); document.head.append(l); l.click(); l.remove();
-  } catch {}
-}
-
 /* Pull to refresh in the home-screen app (Safari has its own). */
 if (document.documentElement.classList.contains("standalone")) {
-  const el = $("#ptr"), ic = el.querySelector("svg"), need = 110;
+  const el = $("#ptr"), arc = $("#ptrArc"), need = 110;
   let y0 = null, pull = 0;
-  const set = p => { el.style.transform = `translateY(${-56 + Math.min(p, 170) * .5}px)`; el.style.opacity = Math.min(1, p / 70); ic.style.transform = `rotate(${p * 2.2}deg)`; };
-  const reset = () => { el.classList.add("snap"); el.classList.remove("ready"); el.style.transform = ""; el.style.opacity = ""; setTimeout(() => el.classList.remove("snap", "go"), 320); };
+  // the ring fills as you pull; full means letting go will refresh
+  const set = p => { el.style.transform = `translateY(${-50 + Math.min(p, 170) * .45}px)`; el.style.opacity = Math.min(1, p / 60); arc.style.strokeDasharray = `${Math.min(100, p / need * 100).toFixed(1)} 100`; };
+  const reset = () => { el.classList.add("snap"); el.style.transform = ""; el.style.opacity = ""; setTimeout(() => { el.classList.remove("snap", "go"); arc.style.strokeDasharray = ""; }, 320); };
   addEventListener("touchstart", e => {
     pull = 0;
     y0 = scrollY <= 0 && e.touches.length === 1 && !el.classList.contains("go") && !e.target.closest(".leaflet-container,dialog,#arcIn,[role=slider]") ? e.touches[0].clientY : null;
@@ -2415,14 +2449,12 @@ if (document.documentElement.classList.contains("standalone")) {
     if (y0 == null) return;
     if (scrollY > 0) { y0 = null; pull = 0; return reset(); }
     pull = Math.max(0, e.touches[0].clientY - y0); set(pull);
-    const ready = pull >= need;
-    if (ready !== el.classList.contains("ready")) { el.classList.toggle("ready", ready); if (ready) haptic(); }
   }, { passive: true });
   addEventListener("touchend", async () => {
     if (y0 == null) return; y0 = null;
     if (pull < need || !place) return reset();
-    el.classList.add("snap", "go"); el.classList.remove("ready"); el.style.transform = "translateY(8px)"; ic.style.transform = "";
-    await load(place, { tactile: true }); reset();
+    el.classList.add("snap", "go"); el.style.transform = "translateY(6px)";
+    await load(place); reset();
   });
 }
 setInterval(() => { if (place && !document.hidden) load(place, { quiet: true }); }, 10 * 6e4);
