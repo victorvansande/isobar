@@ -971,6 +971,7 @@ const GL = {
   ":": [".", ".", "#", ".", "#", ".", "."],
   "–": ["...", "...", "...", "###", "...", "...", "..."]
 };
+/* Where the dot-matrix numerals go (the app's number rule): the main temperature, the clock, and numbers that sit   inside an instrument, such as the wind compass, the UV gauge, the pressure dial and the air-quality scale. Plain   readings (feels like, humidity, visibility, rain, clouds, the moon, pollen) use the thin numeral font. */
 function dm(str, { deg = false, ghost = true } = {}) {
   let x = 0; const on = [], off = [];
   for (const ch of String(str)) {
