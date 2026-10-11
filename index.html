@@ -154,16 +154,15 @@ html.standalone[data-mode="day"] body::before{content:"";position:fixed;left:0;r
    "hero hero now now"
    "hero hero wind feels"
    "hourly hourly hourly hourly"
-   "days days uv humid"
-   "days days air air"
-   "days days moon moon"
-   "radar radar sun sun"
-   "radar radar press vis"
+   "uv humid air air"
+   "moon moon radar radar"
+   "sun sun radar radar"
+   "press vis radar radar"
    "rain clouds pollen pollen"
    "src src src src";}
 @media (max-width:1000px){
   .board{grid-template-columns:repeat(2,minmax(0,1fr));
-   grid-template-areas:"hero hero" "now now" "wind feels" "hourly hourly" "days days" "uv humid" "air air" "moon moon" "sun sun" "press vis" "rain clouds" "pollen pollen" "radar radar" "src src";}
+   grid-template-areas:"hero hero" "now now" "wind feels" "hourly hourly" "uv humid" "air air" "moon moon" "sun sun" "press vis" "rain clouds" "pollen pollen" "radar radar" "src src";}
 }
 .a-hero{grid-area:hero}.a-now{grid-area:now}.a-wind{grid-area:wind}.a-feels{grid-area:feels}.a-hourly{grid-area:hourly}
 .a-days{grid-area:days}.a-uv{grid-area:uv}.a-humid{grid-area:humid}.a-air{grid-area:air}.a-moon{grid-area:moon}
@@ -308,6 +307,29 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .hruler{width:100%;height:8px;background:repeating-linear-gradient(90deg,var(--ink-3) 0 1px,transparent 1px 9.66px);opacity:.7;align-self:end}
 .hcurve{position:absolute;left:0;top:96px;pointer-events:none;overflow:visible}
 .hcurve text{font:400 15px var(--f-num);fill:var(--ink);text-anchor:middle;font-variant-numeric:tabular-nums}
+/* one card, two views: the next 48 hours or the next 14 days */
+.hseg{display:flex;gap:2px;padding:3px;border-radius:999px;background:var(--seg-bg,rgba(255,255,255,.08));flex:none}
+:root[data-mode="day"] .hseg{--seg-bg:rgba(40,30,110,.07)}
+.hseg button{height:30px;padding:0 13px;border-radius:999px;font:500 11px/1 var(--f-mono);letter-spacing:.05em;text-transform:uppercase;color:var(--ink-2);white-space:nowrap}
+.hseg button[aria-selected="true"]{background:var(--ink);color:var(--seg-on,#100f18)}
+:root[data-mode="day"] .hseg button[aria-selected="true"]{--seg-on:#fff}
+.a-hourly .hall{display:inline-flex;align-items:center;gap:4px;margin-top:2px;font-size:14px;color:var(--ink-2);text-align:left}
+.a-hourly .hall svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.a-hourly .hall:hover{color:var(--ink)}
+.a-hourly .hv-d{display:none}
+.a-hourly[data-view="d"] .hv-d{display:block}
+.a-hourly[data-view="d"] .hv-h{display:none}
+.a-hourly[data-view="d"] .hall.hv-d{display:inline-flex}
+.dstrip{display:grid;padding-top:4px}
+.dcol{display:grid;grid-template-rows:22px 32px 150px 46px;justify-items:center;align-items:center;padding:6px 0 4px;border-radius:18px;cursor:pointer}
+.dcol:hover{background:rgba(255,255,255,.06)}
+:root[data-mode="day"] .dcol:hover{background:rgba(40,30,110,.05)}
+.dbar{position:relative;width:6px;height:100px;border-radius:6px;background:var(--ink-3);background:color-mix(in srgb,var(--ink) 10%,transparent)}
+.dfill{position:absolute;left:0;right:0;border-radius:6px;background:linear-gradient(0deg,var(--lo),var(--hi))}
+.dfill em{position:absolute;left:50%;transform:translateX(-50%);font:400 15px/1 var(--f-num);font-style:normal;font-variant-numeric:tabular-nums;white-space:nowrap}
+.dfill .dhi{bottom:calc(100% + 7px)}
+.dfill .dlo{top:calc(100% + 7px);color:var(--ink-2)}
+.dbar .nd{position:absolute;left:50%;width:10px;height:10px;margin:0 0 -5px -5px;border-radius:50%;background:var(--signal);box-shadow:0 0 0 2px rgba(0,0,0,.25)}
 
 /* ---------- 14-day deck ---------- */
 .a-days{display:flex;flex-direction:column;min-width:0}
@@ -569,6 +591,11 @@ dialog::backdrop{background:rgba(6,4,20,.4);-webkit-backdrop-filter:blur(8px);ba
   --ink:#fff;--ink-2:rgba(255,255,255,.6);--ink-3:rgba(255,255,255,.3);
   background:rgba(20,16,38,.74);-webkit-backdrop-filter:blur(34px) saturate(1.6);backdrop-filter:blur(34px) saturate(1.6);box-shadow:inset 0 0 0 1px rgba(255,255,255,.1)}
 @media (max-width:560px){.sheet{top:auto;bottom:10px;transform:translateX(-50%);max-height:82%}}
+/* the full 14-day stack, popped out of the hourly card */
+.sheet.days-sheet{width:min(560px,calc(100% - 24px));max-height:calc(100% - 40px);padding:18px 14px 14px}
+.days-sheet .sheet-h{padding:0 6px;margin-bottom:12px}
+.days-sheet .sheet-h p{margin:2px 0 0;font:500 11px/1 var(--f-mono);letter-spacing:.05em;color:var(--ink-2)}
+@media (max-width:560px){.sheet.days-sheet{max-height:88%}}
 .sheet-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
 .sheet-h h2{margin:0;font-size:22px;font-weight:700;letter-spacing:-.03em}
 .field-in{display:flex;align-items:center;gap:10px;padding:0 16px;height:52px;border-radius:18px;background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
@@ -699,7 +726,6 @@ body.net-off .toast{bottom:calc(140px + env(safe-area-inset-bottom,0px))}
     <section class="card pig a-wind" id="c-wind" data-fam="cobalt"><div class="sk"></div></section>
     <section class="card pig a-feels" id="c-feels" data-fam="coral"><div class="sk"></div></section>
     <section class="card glass a-hourly" id="c-hourly"><div class="sk" style="margin:0 20px"></div></section>
-    <section class="a-days" id="c-days"><div class="card glass"><div class="sk"></div></div></section>
     <section class="card pig a-uv" id="c-uv" data-fam="mint"><div class="sk"></div></section>
     <section class="card pig a-humid" id="c-humid" data-fam="indigo"><div class="sk"></div></section>
     <section class="card pig a-air" id="c-air" data-fam="mint"><div class="sk"></div></section>
@@ -742,6 +768,13 @@ body.net-off .toast{bottom:calc(140px + env(safe-area-inset-bottom,0px))}
     <div class="label">Saved</div>
     <div class="list" id="savedList"></div>
     <button class="row" id="saveCur" style="margin-top:6px"><span><b id="saveCurT">Save this place</b></span><span>+</span></button>
+  </div>
+</dialog>
+
+<dialog id="dlgDays" aria-label="14-day forecast">
+  <div class="sheet days-sheet">
+    <div class="sheet-h"><div><h2>14 days</h2><p id="daysRange"></p></div><button class="round lens" data-close aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <section class="a-days" id="c-days"></section>
   </div>
 </dialog>
 
@@ -1650,8 +1683,56 @@ function renderHourly() {
   const glyph = up => `<svg viewBox="0 0 16 12" aria-hidden="true"><path d="M1.5 11h13M4.5 11a3.5 3.5 0 0 1 7 0"/><path d="${up ? "M8 5.4V1M6.4 2.6L8 1l1.6 1.6" : "M8 1v4.4M6.4 3.8L8 5.4l1.6-1.6"}"/></svg>`;
   const track = `<span class="htrack" aria-hidden="true" style="width:${W}px;background:linear-gradient(90deg,${stops.join(",")})"></span>`
     + evs.map(e => `<span class="hev" style="left:${e.x.toFixed(1)}px" aria-label="${e.up ? "Sunrise" : "Sunset"} ${fmtT(new Date(e.t))}">${glyph(e.up)}${fmtT(new Date(e.t))}</span>`).join("");
-  el.innerHTML = `<div class="ch-row">${head("Next 48 hours", `${R(mn)}° to ${R(mx)}°`)}<span class="mono hnote">Chance of rain in blue</span></div>
-    <div class="hscroll" tabindex="0" aria-label="Hourly forecast, scroll sideways"><div class="hin" style="grid-template-columns:repeat(${n},${colW}px);width:${W}px">${track}${cols.join("")}${svg}</div></div>`;
+  const view = store.get("hview", "h");
+  el.dataset.view = view;
+  el.innerHTML = `<div class="ch-row"><header class="ch"><h3 id="hTitle">${view === "d" ? "Next 14 days" : "Next 48 hours"}</h3>
+      <p class="hv-h">${R(mn)}° to ${R(mx)}°</p>
+      <button class="hall hv-d" id="hAll">Full forecast<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4.5 2.5L8 6l-3.5 3.5"/></svg></button></header>
+      <div class="hseg" role="tablist" aria-label="Forecast range"><button role="tab" data-v="h" aria-selected="${view === "h"}">48 h</button><button role="tab" data-v="d" aria-selected="${view === "d"}">14 days</button></div></div>
+    <div class="hscroll hv-h" tabindex="0" aria-label="Hourly forecast, scroll sideways"><div class="hin" style="grid-template-columns:repeat(${n},${colW}px);width:${W}px">${track}${cols.join("")}${svg}</div></div>
+    <div class="hscroll hv-d" tabindex="0" aria-label="Daily forecast, scroll sideways">${dayStrip()}</div>`;
+}
+/* The next 14 days as columns: each day's low-to-high range as a bar on one shared scale, coloured by temperature,
+   with the chance of rain in dots. Tapping a day opens the full forecast with that day unfolded. */
+function dayStrip() {
+  const { Dy, di, c } = X;
+  const idx = []; for (let i = di; i < Dy.time.length && idx.length < 14; i++) idx.push(i);
+  const lo = Math.min(...idx.map(i => Dy.temperature_2m_min[i]).filter(v => v != null));
+  const hi = Math.max(...idx.map(i => Dy.temperature_2m_max[i]).filter(v => v != null));
+  const P = v => ((v - lo) / ((hi - lo) || 1) * 100).toFixed(1);
+  const tc = v => window.Palette.tempFam(toC(v)).mid;
+  const cols = idx.map((i, n) => {
+    const key = Dy.time[i], [label, kind] = wmo(Dy.weather_code[i]);
+    const mn = Dy.temperature_2m_min[i], mx = Dy.temperature_2m_max[i], pop = nz(Dy.precipitation_probability_max[i]);
+    const lit = pop == null ? 0 : Math.round(pop / 20);
+    let pd = ""; for (let q = 0; q < 5; q++) pd += `<circle cx="4" cy="${26 - q * 5.5}" r="${q < lit ? 2.2 : 1.5}" fill="${q < lit ? "var(--rain)" : "currentColor"}" opacity="${q < lit ? 1 : .18}"/>`;
+    const now = n === 0 && c.temperature_2m != null ? `<span class="nd" style="bottom:${P(clamp(c.temperature_2m, lo, hi))}%"></span>` : "";
+    return `<button class="dcol" data-n="${n}" aria-label="${n === 0 ? "Today" : wd(key) + " " + dm_(key)}: ${esc(label)}, ${R(mn)} to ${R(mx)} degrees${pop != null ? `, ${pop}% chance of rain` : ""}. Open details.">
+      <span class="htime${n === 0 ? " now" : ""}">${n === 0 ? "Today" : wd(key)}</span>${icon(kind, true)}
+      <span class="dbar"><span class="dfill" style="top:${(100 - P(mx)).toFixed(1)}%;bottom:${P(mn)}%;--lo:${tc(mn)};--hi:${tc(mx)}"><em class="dhi hiT" style="--tc:${tc(mx)}">${R(mx)}°</em><em class="dlo">${R(mn)}°</em></span>${now}</span>
+      <div class="hpop"><svg viewBox="0 0 8 30" aria-hidden="true">${pd}</svg><span>${pop != null && pop >= 10 ? pop + "%" : "&nbsp;"}</span></div></button>`;
+  });
+  return `<div class="dstrip" style="grid-template-columns:repeat(${cols.length},minmax(58px,1fr));min-width:${cols.length * 58}px">${cols.join("")}</div>`;
+}
+$("#c-hourly").addEventListener("click", e => {
+  const tab = e.target.closest(".hseg button");
+  if (tab) {
+    const v = tab.dataset.v, el = card("c-hourly"); store.set("hview", v); el.dataset.view = v;
+    el.querySelectorAll(".hseg button").forEach(b => b.setAttribute("aria-selected", String(b === tab)));
+    $("#hTitle").textContent = v === "d" ? "Next 14 days" : "Next 48 hours";
+    return;
+  }
+  const col = e.target.closest(".dcol"); if (col) return openDays(+col.dataset.n);
+  if (e.target.closest("#hAll")) openDays(null);
+});
+/* Pops the full 14-day stack out in a sheet; with a day number, that day comes up unfolded. */
+function openDays(n) {
+  if (n != null) store.set("openDay", n);
+  renderDays();
+  $("#dlgDays").showModal();
+  const sheet = $("#dlgDays .sheet");
+  sheet.scrollTop = 0;
+  if (n != null && n > 0) requestAnimationFrame(() => { const d = $("#deck .day.open"); if (d) sheet.scrollTop = d.offsetTop - 70; });
 }
 
 /* ---------------- 14 days ---------------- */
@@ -1699,7 +1780,8 @@ function renderDays() {
       </div></div></div>
     </article>`;
   }).join("");
-  el.innerHTML = `<div class="deck-h">${head(`${idx.length} days`, "Forecast")}<span class="mono">${R(lo)}° – ${R(hi)}°</span></div><div class="deck" id="deck">${items}</div>`;
+  el.innerHTML = `<div class="deck" id="deck">${items}</div>`;
+  $("#daysRange").textContent = `${R(lo)}° – ${R(hi)}°`;
 }
 
 /* ---------------- UV ---------------- */
@@ -2331,7 +2413,7 @@ let toastT;
 function toast(msg) { const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 3600); }
 
 /* ---------------- deck ---------------- */
-$("#board").addEventListener("click", e => {
+$("#c-days").addEventListener("click", e => {
   const b = e.target.closest(".day-h"); if (!b) return;
   const art = b.parentElement, was = art.classList.contains("open");
   document.querySelectorAll(".day.open").forEach(d => { d.classList.remove("open"); d.querySelector(".day-h").setAttribute("aria-expanded", "false"); });
@@ -2341,7 +2423,7 @@ $("#board").addEventListener("click", e => {
 /* ---------------- places ---------------- */
 const dlgP = $("#dlgPlaces"), dlgS = $("#dlgSet");
 document.querySelectorAll("[data-close]").forEach(b => b.onclick = () => b.closest("dialog").close());
-[dlgP, dlgS].forEach(d => d.addEventListener("click", e => { if (e.target === d) d.close(); }));
+[dlgP, dlgS, $("#dlgDays")].forEach(d => d.addEventListener("click", e => { if (e.target === d) d.close(); }));
 const placeRow = (p, i, kind) => `<div class="row" role="button" tabindex="0" data-kind="${kind}" data-i="${i}"><span><b>${esc(p.name)}</b><span>${esc(p.sub || `${p.lat}, ${p.lon}`)}</span></span>${kind === "saved" ? `<button class="x" data-del="${i}" aria-label="Remove ${esc(p.name)}">✕</button>` : ""}</div>`;
 let results = [];
 function renderSaved() {
