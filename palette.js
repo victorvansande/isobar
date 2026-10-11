@@ -33,7 +33,7 @@
      never across it, so neighbouring stops can't blend into khaki or mud. */
   const TEMP = [[-15, "ice"], [-4, "cobalt"], [4, "indigo"], [10, "violet"], [15, "orchid"], [20, "coral"], [26, "vermilion"], [33, "crimson"]];
   const ROLES = ["core", "mid", "hi", "acc"];
-  const SIGNAL = "#e4ff3c";
+  const SIGNAL = "#e80049";
 
   const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
   const h2r = h => [0, 2, 4].map(i => parseInt(h.slice(1 + i, 3 + i), 16));

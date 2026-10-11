@@ -13,6 +13,19 @@
 <meta name="format-detection" content="telephone=no">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<!-- launch screens for the home-screen app, one per iPhone screen size -->
+<link rel="apple-touch-startup-image" media="(device-width:440px) and (device-height:956px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" href="assets/splash/splash-1320x2868.png">
+<link rel="apple-touch-startup-image" media="(device-width:430px) and (device-height:932px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" href="assets/splash/splash-1290x2796.png">
+<link rel="apple-touch-startup-image" media="(device-width:420px) and (device-height:912px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" href="assets/splash/splash-1260x2736.png">
+<link rel="apple-touch-startup-image" media="(device-width:402px) and (device-height:874px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" href="assets/splash/splash-1206x2622.png">
+<link rel="apple-touch-startup-image" media="(device-width:393px) and (device-height:852px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" href="assets/splash/splash-1179x2556.png">
+<link rel="apple-touch-startup-image" media="(device-width:428px) and (device-height:926px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" href="assets/splash/splash-1284x2778.png">
+<link rel="apple-touch-startup-image" media="(device-width:390px) and (device-height:844px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" href="assets/splash/splash-1170x2532.png">
+<link rel="apple-touch-startup-image" media="(device-width:414px) and (device-height:896px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" href="assets/splash/splash-1242x2688.png">
+<link rel="apple-touch-startup-image" media="(device-width:414px) and (device-height:896px) and (-webkit-device-pixel-ratio:2) and (orientation:portrait)" href="assets/splash/splash-828x1792.png">
+<link rel="apple-touch-startup-image" media="(device-width:375px) and (device-height:812px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" href="assets/splash/splash-1125x2436.png">
+<link rel="apple-touch-startup-image" media="(device-width:360px) and (device-height:780px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" href="assets/splash/splash-1080x2340.png">
+<link rel="apple-touch-startup-image" media="(device-width:375px) and (device-height:667px) and (-webkit-device-pixel-ratio:2) and (orientation:portrait)" href="assets/splash/splash-750x1334.png">
 <link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
 <title>Isobar Weather</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -42,8 +55,8 @@
   --day-track:#ffc24a;
   --twilight-track:#8a6bff;
   --night-track:#6a5cf0;
-  --signal:#e4ff3c;
-  --signal-ink:#1b1f00;
+  --signal:#e80049;
+  --signal-ink:#fff;
   --f-display:"Geist","Helvetica Neue",Helvetica,Arial,sans-serif;
   --f-num:"Urbanist","Helvetica Neue",Helvetica,Arial,sans-serif;
   --f-mono:"Geist Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
@@ -528,7 +541,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .dock .round{width:48px;height:48px;background:rgba(255,255,255,.1)}
 .dock .round svg{width:20px;height:20px}
 .pill{height:48px;min-width:128px;padding:0 22px;border-radius:999px;display:flex;align-items:center;justify-content:center;gap:9px;font-weight:650;font-size:14px;letter-spacing:-.01em;color:var(--signal-ink);
-  background:radial-gradient(rgba(0,0,0,.13) 1px,transparent 1.6px) 0 0/5px 5px,var(--signal)}
+  background:radial-gradient(rgba(255,255,255,.16) 1px,transparent 1.6px) 0 0/5px 5px,var(--signal)}
 .pill svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2.1;stroke-linecap:round}
 .topbar{position:fixed;left:50%;top:calc(12px + env(safe-area-inset-top,0px));z-index:1000;display:flex;align-items:center;gap:10px;padding:8px 16px 8px 10px;border-radius:999px;
   transform:translate(-50%,-160%);transition:transform .45s cubic-bezier(.3,.8,.2,1);color:#fff;max-width:calc(100% - 32px)}
@@ -564,7 +577,7 @@ dialog::backdrop{background:rgba(6,4,20,.4);-webkit-backdrop-filter:blur(8px);ba
 .models button{display:grid;gap:2px;text-align:left;padding:11px 14px;border-radius:16px}
 .models button b{font-weight:600}
 .models button span{font-size:12.5px;color:var(--ink-2)}
-.models button[aria-pressed="true"]{background:rgba(228,255,60,.12);box-shadow:inset 0 0 0 1px rgba(228,255,60,.5)}
+.models button[aria-pressed="true"]{background:rgba(232,0,73,.16);box-shadow:inset 0 0 0 1px rgba(232,0,73,.7)}
 .models button:hover{background:rgba(255,255,255,.06)}
 .toast{position:fixed;left:50%;bottom:calc(94px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:1100;padding:11px 18px;border-radius:999px;font-weight:600;font-size:13.5px;max-width:calc(100% - 32px);text-align:center;color:#fff;transition:bottom .35s cubic-bezier(.2,.8,.2,1)}
 body.net-off .toast{bottom:calc(140px + env(safe-area-inset-bottom,0px))}
@@ -584,7 +597,7 @@ body.net-off .toast{bottom:calc(140px + env(safe-area-inset-bottom,0px))}
 .ptr{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 10px);z-index:1001;width:40px;height:40px;margin-left:-20px;border-radius:50%;display:grid;place-items:center;color:#fff;
   opacity:0;transform:translateY(-56px);pointer-events:none}
 .ptr svg{width:18px;height:18px}
-.ptr.ready{box-shadow:inset 0 0 0 1.5px rgba(228,255,60,.75)}
+.ptr.ready{box-shadow:inset 0 0 0 1.5px rgba(232,0,73,.9)}
 .ptr.snap{transition:transform .3s cubic-bezier(.2,.8,.2,1),opacity .3s}
 .ptr.go svg{animation:spin 1s linear infinite}
 
@@ -1070,7 +1083,7 @@ function drawStrip(cv, off, base, mirror) {
     if (tag) { ctx.fillStyle = `rgba(255,255,255,${(.75 * a).toFixed(3)})`; ctx.fillText(tag, x, h - 4); }
     prev = p;
   }
-  ctx.fillStyle = "#e4ff3c"; ctx.beginPath(); ctx.moveTo(mid - 5, cy + r + 10); ctx.lineTo(mid + 5, cy + r + 10); ctx.lineTo(mid, cy + r + 4); ctx.fill();
+  ctx.fillStyle = Palette.SIGNAL; ctx.beginPath(); ctx.moveTo(mid - 5, cy + r + 10); ctx.lineTo(mid + 5, cy + r + 10); ctx.lineTo(mid, cy + r + 4); ctx.fill();
 }
 
 /* ---------------- data ---------------- */
@@ -2107,7 +2120,7 @@ async function initRadar() {
   if (!map) {
     map = L.map(box, { zoomControl: false, scrollWheelZoom: false, attributionControl: false }).setView(ll, 7);
     base = L.tileLayer(esri("Base"), { maxZoom: 12, maxNativeZoom: 16 }).addTo(map);
-    marker = L.circleMarker(ll, { radius: 7, color: "#000", weight: 2, fillColor: "#e4ff3c", fillOpacity: 1 }).addTo(map);
+    marker = L.circleMarker(ll, { radius: 7, color: "#fff", weight: 2.5, fillColor: Palette.SIGNAL, fillOpacity: 1 }).addTo(map);
     cityLayer = L.layerGroup().addTo(map);
     map.on("moveend zoomend resize", placeCities);
     $("#zIn").onclick = () => map.zoomIn(); $("#zOut").onclick = () => map.zoomOut();
