@@ -2,8 +2,18 @@
 <html lang="en" data-mode="night">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#08080b">
+<!-- installs like an app from the home screen: full screen, own icon and name -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Isobar">
+<meta name="application-name" content="Isobar">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
 <title>Isobar Weather</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -26,7 +36,6 @@
   --g-c:rgba(255,255,255,.07);
   --g-rim:rgba(255,255,255,.2);
   --g-line:rgba(255,255,255,.08);
-  --g-glow:rgba(255,255,255,.2);
   --g-drop:rgba(0,0,0,.6);
   --aurora:.5;
   --rain:#8fb0ff;
@@ -54,7 +63,6 @@
   --g-c:rgba(255,255,255,.58);
   --g-rim:#fff;
   --g-line:rgba(255,255,255,.7);
-  --g-glow:rgba(255,255,255,.7);
   --g-drop:rgba(60,40,140,.22);
   --aurora:.5;
   --rain:#4562f5;
@@ -75,6 +83,19 @@ body{
   transition:background-color .6s ease;
 }
 button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+/* Behave like a native app: no sideways scrolling, no double-tap or pinch zoom (taps register immediately,
+   so quick repeated presses stay presses), no grey tap flash, no text-size inflation. */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulation}
+html,body{overflow-x:clip}
+body{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+button,[role="button"],[role="slider"],a,input,label{touch-action:manipulation}
+/* Opened from the home screen: no rubber-band bounce, no text selection or long-press menus on the interface */
+html.standalone,html.standalone body{overscroll-behavior:none}
+html.standalone body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+html.standalone input{-webkit-user-select:text;user-select:text}
+/* the status bar sits over the page in full screen; a soft scrim keeps its white text readable on the light look */
+html.standalone[data-mode="day"] body::before{content:"";position:fixed;left:0;right:0;top:0;height:calc(env(safe-area-inset-top,0px) + 14px);z-index:1001;pointer-events:none;
+  background:linear-gradient(rgba(24,18,52,.32),rgba(24,18,52,0))}
 :focus-visible{outline:2px solid var(--signal);outline-offset:3px;border-radius:12px}
 
 /* ---------- aurora: the colour field the glass refracts ---------- */
@@ -559,6 +580,7 @@ dialog::backdrop{background:rgba(6,4,20,.4);-webkit-backdrop-filter:blur(8px);ba
   .day-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
   .top{margin-bottom:16px}
   .chip,.hnote{display:none}
+  .place .sub{white-space:normal;font-size:15px}
   .vis{margin:auto -16px -18px}
 }
 @media (prefers-reduced-motion:reduce){
@@ -706,10 +728,17 @@ const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "
 const R = v => (v == null || isNaN(v)) ? "–" : Math.round(v);
 const nz = v => v == null || isNaN(v) ? null : v;
 const { FAM, weatherPal, paint } = window.Palette;
-const famStyle = p => `--core:${p.core};--mid:${p.mid};--hi:${p.hi};--acc:${p.acc}`;
 
 /* The dock's refraction uses an SVG filter inside backdrop-filter, which only Chromium renders. */
 if (navigator.userAgentData && navigator.userAgentData.brands.some(b => /Chromium/.test(b.brand))) document.documentElement.classList.add("lq");
+
+/* ---------------- app shell ---------------- */
+// Opened from the home screen: switch on the native-app behaviour in CSS (no bounce, no selection, status bar scrim)
+if (navigator.standalone || matchMedia("(display-mode: standalone)").matches) document.documentElement.classList.add("standalone");
+// Safari ignores user-scalable=no, so block its pinch gestures directly; the radar map handles its own pinch zoom
+for (const ev of ["gesturestart", "gesturechange"]) document.addEventListener(ev, e => { if (!e.target.closest || !e.target.closest(".leaflet-container")) e.preventDefault(); }, { passive: false });
+// Offline support and instant launch (see sw.js)
+if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) navigator.serviceWorker.register("sw.js").catch(() => {});
 
 /* ---------------- storage ---------------- */
 const store = {
@@ -1130,11 +1159,9 @@ function gustStreaks(dir, gKmh, from) {
   return `<span class="gusts" aria-hidden="true" style="--rot:${(dir + 180 - 90).toFixed(0)}deg">${out}</span>`;
 }
 
-/* Soft drifting banks. Clouds sit in the upper half (more and denser when overcast); fog lies low and wide. */
+/* Soft fog banks lying low and wide across the main card. */
 function mistLayer(seed, type) {
   const rnd = fxRand(seed), P = {
-    partly: { n: 2, w: [40, 25], h: [16, 8], y: [2, 30], o: [.16, .1], b: 18, t: [50, 30] },
-    overcast: { n: 5, w: [55, 35], h: [20, 10], y: [-4, 46], o: [.2, .14], b: 20, t: [55, 30] },
     fog: { n: 5, w: [90, 60], h: [14, 10], y: [28, 66], o: [.32, .16], b: 22, t: [20, 14] }
   }[type];
   let out = "";

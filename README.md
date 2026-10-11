@@ -26,5 +26,6 @@ Then visit http://localhost:5577.
 - `index.html`: the app
 - `palette.js`: every colour family and the temperature scale
 - `assets/moon-map.js`: NASA's lunar surface map, projected onto the moon card
+- `manifest.webmanifest`, `sw.js`, `assets/*.png`: install it from the home screen like an app (full screen, own icon, works offline)
 - `color-study.html`: how the palette was derived from the reference boards
 - `serve.ps1`: tiny local server for Windows
