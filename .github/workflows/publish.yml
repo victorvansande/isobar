@@ -1,0 +1,70 @@
+# On every push to main: check the app in Chromium and WebKit (Safari's engine), then publish it to GitHub Pages,
+# but only if every check passed. Screenshots of each check are kept with the run.
+#
+# Publishing from here needs Settings → Pages → Build and deployment → Source: "GitHub Actions". Until that is set,
+# the site keeps deploying straight from the branch and this workflow only runs the checks.
+name: Check and publish
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: publish
+  cancel-in-progress: true
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Syntax
+        run: node --check app.js && node --check palette.js && node --check sw.js && node --check tools/warnings.mjs && node --check tests/smoke.mjs
+      - name: Browsers
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.48.2
+          npx playwright install --with-deps chromium webkit
+      - name: Smoke test
+        run: node tests/smoke.mjs
+      - name: Screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: tests/out/
+          retention-days: 14
+
+  publish:
+    needs: check
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Is Pages set to publish from Actions?
+        id: mode
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: echo "type=$(gh api repos/${{ github.repository }}/pages --jq .build_type 2>/dev/null || echo none)" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        if: steps.mode.outputs.type == 'workflow'
+      - name: Leave out what the site doesn't need
+        if: steps.mode.outputs.type == 'workflow'
+        run: rm -rf tests tools .github refs color-study.html serve.ps1
+      - uses: actions/configure-pages@v5
+        if: steps.mode.outputs.type == 'workflow'
+      - uses: actions/upload-pages-artifact@v3
+        if: steps.mode.outputs.type == 'workflow'
+        with:
+          path: .
+      - id: deploy
+        if: steps.mode.outputs.type == 'workflow'
+        uses: actions/deploy-pages@v4

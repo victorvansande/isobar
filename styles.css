@@ -1,0 +1,666 @@
+/* Layout: a bento board of two materials on a dot-grid ground.
+   Pigment cards: saturated rim, deep core, grain (palette.js families).
+   Liquid glass cards: near-clear panels over a slow aurora painted from the current weather.
+   Ground follows the sun: pale lilac-grey by day, black at night. */
+:root{
+  --bg:#08080b;
+  --ground-dot:rgba(255,255,255,.07);
+  --ink:#f4f4f7;
+  --ink-2:rgba(244,244,247,.6);
+  --ink-3:rgba(244,244,247,.3);
+  --shade:rgba(0,0,0,.24);
+  --g-a:rgba(255,255,255,.12);
+  --g-b:rgba(255,255,255,.025);
+  --g-c:rgba(255,255,255,.07);
+  --g-rim:rgba(255,255,255,.2);
+  --g-line:rgba(255,255,255,.08);
+  --g-drop:rgba(0,0,0,.6);
+  --aurora:.5;
+  --rain:#8fb0ff;
+  --day-track:#ffc24a;
+  --twilight-track:#8a6bff;
+  --night-track:#6a5cf0;
+  --signal:#e80049;
+  --signal-ink:#fff;
+  --f-display:"Geist","Helvetica Neue",Helvetica,Arial,sans-serif;
+  --f-num:"Urbanist","Helvetica Neue",Helvetica,Arial,sans-serif;
+  --f-mono:"Geist Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --r-card:30px;
+  --grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  color-scheme:dark;
+}
+:root[data-mode="day"]{
+  --bg:#e8e7ef;
+  --ground-dot:rgba(40,30,110,.1);
+  --ink:#100f18;
+  --ink-2:rgba(16,15,24,.58);
+  --ink-3:rgba(16,15,24,.28);
+  --shade:rgba(70,50,160,.06);
+  --g-a:rgba(255,255,255,.74);
+  --g-b:rgba(255,255,255,.38);
+  --g-c:rgba(255,255,255,.58);
+  --g-rim:#fff;
+  --g-line:rgba(255,255,255,.7);
+  --g-drop:rgba(60,40,140,.22);
+  --aurora:.5;
+  --rain:#4562f5;
+  --twilight-track:#7a5be8;
+  --night-track:#2a2770;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;min-height:100%}
+body{
+  background-color:var(--bg);
+  background-image:radial-gradient(var(--ground-dot) 1px,transparent 1.5px);
+  background-size:14px 14px;
+  color:var(--ink);
+  font:15px/1.4 var(--f-display);
+  -webkit-font-smoothing:antialiased;
+  transition:background-color .6s ease;
+}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+/* Behave like a native app: no sideways scrolling, no double-tap or pinch zoom (taps register immediately,
+   so quick repeated presses stay presses), no grey tap flash, no text-size inflation. */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulation}
+html,body{overflow-x:clip}
+body{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+button,[role="button"],[role="slider"],a,input,label{touch-action:manipulation}
+/* Like an app: no text selection, long-press menus or image dragging on the interface (typing in fields still works) */
+body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+input,textarea{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+img,svg,canvas{-webkit-user-drag:none}
+/* opened from the home screen: no rubber-band bounce either */
+html.standalone,html.standalone body{overscroll-behavior:none}
+/* pressed controls give way a little, as native buttons do */
+.round,.pill,.chip,.btn,.hero-now,.netpill,.seg button,.models button,.row,.day-h,.place{transition:transform .16s cubic-bezier(.2,.8,.2,1),opacity .16s}
+.round:active,.pill:active,.chip:active,.btn:active,.hero-now:active{transform:scale(.93)}
+.netpill.on:active{transform:translate(-50%,0) scale(.96)}
+.seg button:active,.models button:active,.row:active,.day-h:active,.place:active{opacity:.6}
+/* the status bar sits over the page in full screen; a soft scrim keeps its white text readable on the light look */
+html.standalone[data-mode="day"] body::before{content:"";position:fixed;left:0;right:0;top:0;height:calc(env(safe-area-inset-top,0px) + 14px);z-index:1001;pointer-events:none;
+  background:linear-gradient(rgba(24,18,52,.32),rgba(24,18,52,0))}
+:focus-visible{outline:2px solid var(--signal);outline-offset:3px;border-radius:12px}
+
+/* ---------- aurora: the colour field the glass refracts ---------- */
+.aurora{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;opacity:var(--aurora);transition:opacity .8s}
+.aurora i{position:absolute;border-radius:50%;filter:blur(90px);transition:background-color 1.4s ease;animation:float 40s ease-in-out infinite alternate;will-change:transform}
+.aurora .a1{width:58vmax;height:58vmax;left:-16vmax;top:-22vmax;background:var(--mid,#333)}
+.aurora .a2{width:50vmax;height:50vmax;right:-18vmax;top:6vh;background:var(--acc,#444);animation-duration:46s;animation-delay:-14s}
+.aurora .a3{width:38vmax;height:38vmax;left:18vw;top:52vh;background:var(--hi,#555);animation-duration:52s;animation-delay:-6s;opacity:.7}
+.aurora .a4{width:52vmax;height:52vmax;right:-8vmax;bottom:-26vmax;background:var(--x,#333);animation-duration:43s;animation-delay:-22s}
+@keyframes float{0%{transform:translate3d(0,0,0) scale(1)}50%{transform:translate3d(7vw,5vh,0) scale(1.14)}100%{transform:translate3d(-5vw,-4vh,0) scale(.94)}}
+
+.app{max-width:1240px;margin:0 auto;padding:calc(18px + env(safe-area-inset-top,0px)) 20px calc(124px + env(safe-area-inset-bottom,0px))}
+
+/* ---------- top ---------- */
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin:8px 4px 22px}
+/* the forecast in a sentence or two, right under the place */
+.summary{margin:-6px 4px 18px;max-width:46ch;font-size:17px;font-weight:500;line-height:1.4;letter-spacing:-.01em;color:var(--ink);text-wrap:pretty}
+.summary:empty{display:none}
+/* official weather warning: a calm glass banner with the level as a coloured dot (yellow, orange, red) */
+.warn{display:flex;align-items:center;gap:12px;width:calc(100% - 8px);margin:-8px 4px 20px;padding:12px 16px 12px 14px;border-radius:20px;text-align:left;color:var(--ink)}
+.warn[hidden]{display:none}
+.warn .wl{width:10px;height:10px;border-radius:50%;flex:none;background:var(--wc);box-shadow:0 0 0 4px color-mix(in srgb,var(--wc) 25%,transparent)}
+.warn span{flex:1;min-width:0;display:grid;gap:2px}
+.warn b{font-weight:600;font-size:15px}
+.warn small{font-size:13px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.warn svg{width:12px;height:12px;flex:none;fill:none;stroke:var(--ink-2);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.wx{padding:14px 0;border-top:1px solid rgba(255,255,255,.1)}
+.wx:first-child{border-top:0;padding-top:0}
+.wx h3{display:flex;align-items:center;gap:9px;margin:0 0 4px;font-size:16px;font-weight:650}
+.wx h3 i{width:9px;height:9px;border-radius:50%;background:var(--wc);flex:none}
+.wx .when{margin:0 0 8px;font:500 11px/1.4 var(--f-mono);letter-spacing:.04em;text-transform:uppercase;color:var(--ink-2)}
+.wx p{margin:0 0 8px;font-size:14px;line-height:1.5;color:var(--ink-2)}
+.wx a{color:var(--ink);font-size:13px}
+.place{display:grid;text-align:left;min-width:0}
+.place h1{margin:0;font-weight:700;font-size:clamp(34px,5.2vw,56px);letter-spacing:-.04em;line-height:1;display:flex;align-items:center;gap:10px;text-wrap:balance}
+.place h1 svg{width:22px;height:22px;flex:none;opacity:.45;stroke:currentColor;fill:none;stroke-width:2}
+.place .sub{font-weight:600;font-size:clamp(16px,2vw,20px);letter-spacing:-.02em;color:var(--ink-3);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top-r{display:flex;gap:8px;align-items:center;flex:none}
+.chip{display:flex;align-items:center;gap:.6em;height:38px;font:500 11px/1 var(--f-mono);letter-spacing:.06em;text-transform:uppercase;padding:0 14px;border-radius:999px;color:var(--ink-2);white-space:nowrap}
+.chip b{color:var(--ink);font-weight:500}
+/* local time in dot-matrix digits; each character has its own slot so only changed digits replay their animation */
+.clock{display:flex;align-items:center;gap:3px;height:38px;padding:0 14px;border-radius:999px;color:var(--ink)}
+.clock:empty{display:none}
+.clock .ck .dm{height:17px}
+.clock .ck-ap{margin-left:5px}
+.clock .ck-ap:empty{display:none} /* 24-hour clock: no am/pm, so nothing may take space after the digits */
+.round{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;flex:none}
+.round svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.spin svg{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ---------- board ---------- */
+.board{display:grid;gap:14px;grid-template-columns:repeat(4,minmax(0,1fr));
+  grid-template-areas:
+   "hero hero now now"
+   "hero hero wind feels"
+   "hourly hourly hourly hourly"
+   "uv humid air air"
+   "moon moon radar radar"
+   "sun sun radar radar"
+   "press vis radar radar"
+   "rain clouds pollen pollen"
+   "src src src src";}
+@media (max-width:1000px){
+  .board{grid-template-columns:repeat(2,minmax(0,1fr));
+   grid-template-areas:"hero hero" "now now" "wind feels" "hourly hourly" "uv humid" "air air" "moon moon" "sun sun" "press vis" "rain clouds" "pollen pollen" "radar radar" "src src";}
+}
+.a-hero{grid-area:hero}.a-now{grid-area:now}.a-wind{grid-area:wind}.a-feels{grid-area:feels}.a-hourly{grid-area:hourly}
+.a-days{grid-area:days}.a-uv{grid-area:uv}.a-humid{grid-area:humid}.a-air{grid-area:air}.a-moon{grid-area:moon}
+.a-radar{grid-area:radar}.a-sun{grid-area:sun}.a-press{grid-area:press}.a-vis{grid-area:vis}.a-rain{grid-area:rain}
+.a-clouds{grid-area:clouds}.a-pollen{grid-area:pollen}.a-src{grid-area:src}
+
+/* ---------- card base ---------- */
+.card{position:relative;isolation:isolate;overflow:hidden;border-radius:var(--r-card);padding:18px 20px 20px;min-width:0;min-height:190px;display:flex;flex-direction:column}
+@supports (corner-shape:squircle){.card,.day{border-radius:54px;corner-shape:squircle}}
+/* iOS Safari lets blurred, animated layers (the drifting pigment, the sun rays) spill past rounded corners
+   despite overflow:hidden, which shows as a square behind each corner. Clip the shape explicitly there. */
+@supports (-webkit-touch-callout:none){.card{clip-path:inset(0 round var(--r-card))}.day{clip-path:inset(0 round 26px)}}
+
+/* pigment: saturated rim, deep core */
+.pig{--ink:#fff;--ink-2:rgba(255,255,255,.64);--ink-3:rgba(255,255,255,.34);color:#fff;background:var(--mid,#222);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 34px 60px -40px color-mix(in srgb,var(--mid,#000) 70%,transparent)}
+.pig::before{content:"";position:absolute;inset:-18%;z-index:-2;filter:blur(18px);
+  background:
+    radial-gradient(var(--cs) calc(var(--cs) * .9) at 52% 52%,var(--core) 0%,color-mix(in srgb,var(--core) 55%,transparent) 48%,transparent 76%),
+    radial-gradient(var(--hs) calc(var(--hs) * .9) at var(--hx) var(--hy),var(--hi),transparent 70%),
+    radial-gradient(calc(var(--hs) + 6%) calc(var(--hs) + 4%) at var(--ax) var(--ay),var(--acc),transparent 72%),
+    var(--mid);
+  animation:inflow 34s ease-in-out var(--delay,0s) infinite alternate}
+.pig::after{content:"";position:absolute;inset:0;z-index:-1;background-image:var(--grain);opacity:.2;mix-blend-mode:soft-light}
+/* Inflow: the bright rim colours drift slowly toward the dark core and get swallowed by it, then ease back out. */
+@property --hx{syntax:"<percentage>";inherits:false;initial-value:6%}
+@property --hy{syntax:"<percentage>";inherits:false;initial-value:0%}
+@property --ax{syntax:"<percentage>";inherits:false;initial-value:104%}
+@property --ay{syntax:"<percentage>";inherits:false;initial-value:98%}
+@property --hs{syntax:"<percentage>";inherits:false;initial-value:40%}
+@property --cs{syntax:"<percentage>";inherits:false;initial-value:42%}
+@keyframes inflow{
+  0%{--hx:6%;--hy:0%;--ax:104%;--ay:98%;--hs:40%;--cs:42%}
+  55%{--hx:26%;--hy:24%;--ax:82%;--ay:72%;--hs:31%;--cs:47%}
+  100%{--hx:40%;--hy:38%;--ax:66%;--ay:62%;--hs:22%;--cs:53%}}
+
+/* liquid glass panel */
+.glass{background:linear-gradient(155deg,var(--g-a),var(--g-b) 46%,var(--g-c));
+  -webkit-backdrop-filter:blur(30px) saturate(1.9);backdrop-filter:blur(30px) saturate(1.9);
+  box-shadow:inset 0 1px 0 var(--g-rim),inset 0 0 0 1px var(--g-line),0 34px 64px -40px var(--g-drop)}
+
+/* glass control: flat translucent fill and one hairline. Only the floating dock and top bar refract. */
+.lens{position:relative;background:rgba(255,255,255,.12);
+  -webkit-backdrop-filter:blur(14px) saturate(1.3);backdrop-filter:blur(14px) saturate(1.3);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+.lens.dark{background:rgba(16,14,30,.42);color:#fff}
+:root[data-mode="day"] .top .lens{background:rgba(255,255,255,.62);box-shadow:inset 0 0 0 1px rgba(20,10,60,.06)}
+html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-filter:url(#lq-lens)}
+/* flat tile inside a pigment card */
+.tile{background:rgba(255,255,255,.1);border-radius:14px}
+
+.ch{display:grid;gap:0;margin:0 0 10px}
+.ch h3,.ch h2{margin:0;font-weight:650;font-size:17px;letter-spacing:-.02em;line-height:1.15}
+.ch p{margin:0;font-weight:650;font-size:17px;letter-spacing:-.02em;line-height:1.15;color:var(--ink-2)}
+.ch-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.mono{font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2)}
+.num{font-family:var(--f-num);font-weight:300;letter-spacing:-.04em;line-height:.9;font-variant-numeric:tabular-nums}
+.pig .num{text-shadow:0 .1em .22em rgba(255,255,255,.22)}
+.num small{font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;font-weight:400;margin-left:6px;color:var(--ink-2);text-shadow:none;vertical-align:.25em}
+.big{font-size:clamp(44px,5vw,62px)}
+.foot{margin-top:auto;display:flex;justify-content:space-between;gap:10px;align-items:flex-end;font-size:13px;color:var(--ink-2)}
+/* a small, quiet "i" that opens an explainer */
+.info-i{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;color:var(--ink-2);box-shadow:inset 0 0 0 1px var(--ink-3);flex:none}
+.info-i svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.info-i:hover{color:var(--ink)}
+.learn h3{margin:18px 0 4px;font-size:15px;font-weight:650;letter-spacing:-.01em}
+.learn p{margin:0;font-size:14px;line-height:1.55;color:var(--ink-2)}
+.learn .now{padding:12px 14px;border-radius:16px;background:rgba(255,255,255,.07);color:var(--ink)}
+.foot b{color:var(--ink);font-weight:550}
+.muted{color:var(--ink-2)}
+.empty{margin:auto 0;color:var(--ink-2);font-size:14px;max-width:34ch}
+.tri{position:absolute;width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:11px solid var(--signal);margin-left:-7px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.35))}
+
+/* dot matrix numerals */
+.dm{display:block;overflow:visible}
+.dm .o{fill:currentColor;animation:dmIn .7s cubic-bezier(.2,.7,.2,1) both;animation-delay:var(--d)}
+.dm .g{fill:currentColor;opacity:.1}
+.pig .dm{filter:drop-shadow(0 0 6px rgba(255,255,255,.5))}
+@keyframes dmIn{from{opacity:.1;transform:scale(.4);transform-box:fill-box;transform-origin:center}to{opacity:1;transform:none}}
+
+.ic{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* ---------- hero ---------- */
+.hero{min-height:540px;padding:22px 22px 20px}
+.hero .ch h3,.hero .ch p{font-size:20px}
+.hero-upd{position:absolute;top:24px;right:22px}
+.hero-temp{display:flex;justify-content:center;margin:26px 0 14px}
+.hero-temp .dm{height:clamp(112px,15vw,168px)}
+.hero-meta{text-align:center;font-weight:600;font-size:15px;letter-spacing:-.01em;display:grid;gap:2px}
+.hero-meta span:last-child{color:var(--ink-2)}
+.arc{margin-top:auto;padding-top:14px}
+.arc-in{position:relative;touch-action:pan-y;border-radius:14px}
+.arc-in[role="slider"]{cursor:grab}
+.arc-in.grab{cursor:grabbing}
+.sun-dot circle:first-child{transition:r .2s}
+.arc-in:hover .sun-dot circle:first-child,.arc-in.grab .sun-dot circle:first-child,.arc-in:focus-visible .sun-dot circle:first-child{r:12}
+.hero-now{position:absolute;top:18px;right:18px;padding:8px 12px;border-radius:999px;font:500 10.5px/1 var(--f-mono);letter-spacing:.06em;text-transform:uppercase;background:var(--signal);color:var(--signal-ink)}
+.pig.hero{transition:background-color .5s}
+.arc svg{width:100%;height:auto;display:block;overflow:visible}
+.hero-foot{display:grid;grid-template-columns:1fr auto 1fr;align-items:end;margin-top:4px}
+.hero-foot div{display:grid;gap:1px}
+.hero-foot b{font:400 20px/1 var(--f-num);letter-spacing:-.02em}
+.hero-foot span{font-size:12px;color:var(--ink-2)}
+.hero-foot .mid{text-align:center;justify-items:center}
+.hero-foot .r{text-align:right}
+
+/* ---------- rain next hours (glass) ---------- */
+.now-say{font-weight:650;font-size:clamp(20px,2.3vw,26px);letter-spacing:-.03em;line-height:1.1;margin:2px 0 14px;max-width:24ch;text-wrap:balance}
+.now-chart svg{width:100%;height:auto;display:block;overflow:visible}
+.now-chart .wet{transform-box:fill-box;transform-origin:center;animation:fillin .6s cubic-bezier(.2,.7,.2,1) var(--d) both}
+.now-chart .wet.top{animation:fillin .6s cubic-bezier(.2,.7,.2,1) var(--d) both,land var(--p) ease-out var(--w2) infinite}
+@keyframes fillin{from{opacity:0;transform:translateY(-2px) scale(.55)}to{opacity:1;transform:none}}
+@keyframes land{0%,100%{transform:none}1.2%{transform:scale(1.35)}7%{transform:none}}
+.now-chart .drip{opacity:0;animation:drip var(--p) linear var(--w) infinite}
+@keyframes drip{0%{opacity:0}.5%{opacity:.95}2.4%{opacity:.45}4.8%{opacity:.15}7.2%,100%{opacity:0}}
+.now-axis{display:grid;grid-template-columns:repeat(6,1fr);margin-top:8px}
+
+/* ---------- wind ---------- */
+.compass{position:relative;width:min(100%,200px);aspect-ratio:1;margin:0 auto}
+.compass svg{position:relative;width:100%;height:100%;display:block}
+.compass-c{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:6px}
+.compass-c .dm{height:34px}
+
+/* ---------- feels ---------- */
+.ftrack{position:relative;height:46px;margin:16px 4px 6px}
+.ftrack .line{position:absolute;left:0;right:0;top:22px;height:2px;border-radius:2px;background:rgba(255,255,255,.3)}
+.ftrack .seg{position:absolute;top:21px;height:4px;border-radius:4px;background:#fff}
+.ftrack .tick{position:absolute;top:12px;width:2px;height:22px;margin-left:-1px;background:#fff;border-radius:2px;opacity:.8}
+.ftrack .tri{top:4px}
+.ftrack .lab{position:absolute;top:36px;transform:translateX(-50%);font:500 10px/1 var(--f-mono);letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;color:var(--ink-2)}
+.feels-why{font-size:13px;color:var(--ink-2);margin:auto 0 0;max-width:30ch}
+
+/* ---------- hourly (glass) ---------- */
+.a-hourly{min-height:0;padding:18px 0 14px}
+.a-hourly .ch-row{padding:0 20px}
+.hscroll{overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;scrollbar-color:var(--ink-3) transparent;padding:0 14px 6px;-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 14px,#000 calc(100% - 24px),transparent);mask-image:linear-gradient(90deg,transparent 0,#000 14px,#000 calc(100% - 24px),transparent)}
+.hin{position:relative;display:grid;padding-top:30px}
+/* sun and moon track: sunlight turning to night and back at the real sunset and sunrise */
+.htrack{position:absolute;left:0;top:6px;height:4px;border-radius:4px}
+.hev{position:absolute;top:14px;transform:translateX(-50%);display:flex;align-items:center;gap:4px;font:500 10px/1 var(--f-mono);letter-spacing:.04em;color:var(--ink-2);white-space:nowrap}
+.hev svg{width:15px;height:12px;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+.hcol{display:grid;grid-template-rows:22px 32px 78px 46px 10px;justify-items:center;align-items:center;padding:6px 0 4px}
+.htime{font:500 11px/1 var(--f-mono);letter-spacing:.04em;color:var(--ink-2);white-space:nowrap}
+.htime.now{background:var(--signal);color:var(--signal-ink);padding:5px 8px;border-radius:999px}
+.htime.mid{color:var(--ink);font-weight:600}
+.hpop{display:grid;justify-items:center;gap:4px;align-self:end}
+.hpop svg{width:8px;height:30px}
+.hpop span{font:500 10px/1 var(--f-mono);color:var(--rain)}
+.hruler{width:100%;height:8px;background:repeating-linear-gradient(90deg,var(--ink-3) 0 1px,transparent 1px 9.66px);opacity:.7;align-self:end}
+.hcurve{position:absolute;left:0;top:96px;pointer-events:none;overflow:visible}
+.hcurve text{font:400 15px var(--f-num);fill:var(--ink);text-anchor:middle;font-variant-numeric:tabular-nums}
+/* one card, two views: the next 48 hours or the next 14 days */
+.hseg{display:flex;gap:2px;padding:3px;border-radius:999px;background:var(--seg-bg,rgba(255,255,255,.08));flex:none}
+:root[data-mode="day"] .hseg{--seg-bg:rgba(40,30,110,.07)}
+.hseg button{height:30px;padding:0 13px;border-radius:999px;font:500 11px/1 var(--f-mono);letter-spacing:.05em;text-transform:uppercase;color:var(--ink-2);white-space:nowrap}
+.hseg button[aria-selected="true"]{background:var(--ink);color:var(--seg-on,#100f18)}
+:root[data-mode="day"] .hseg button[aria-selected="true"]{--seg-on:#fff}
+.a-hourly .hall{display:inline-flex;align-items:center;gap:4px;margin-top:2px;font-size:14px;color:var(--ink-2);text-align:left}
+.a-hourly .hall svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.a-hourly .hall:hover{color:var(--ink)}
+.a-hourly .hv-d{display:none}
+.a-hourly[data-view="d"] .hv-d{display:block}
+.a-hourly[data-view="d"] .hv-h{display:none}
+.a-hourly[data-view="d"] .hall.hv-d{display:inline-flex}
+.dstrip{display:grid;padding-top:4px}
+.dcol{display:grid;grid-template-rows:22px 32px 26px 96px 26px 46px;justify-items:center;align-items:center;padding:6px 0 4px;border-radius:18px;cursor:pointer}
+.dcol:hover{background:rgba(255,255,255,.06)}
+:root[data-mode="day"] .dcol:hover{background:rgba(40,30,110,.05)}
+.dbar{position:relative;width:6px;height:96px;border-radius:6px;background:var(--ink-3);background:color-mix(in srgb,var(--ink) 10%,transparent)}
+.dfill{position:absolute;left:0;right:0;border-radius:6px;background:linear-gradient(0deg,var(--lo),var(--hi))}
+.dcol .dhi,.dcol .dlo{font:400 15px/1 var(--f-num);font-style:normal;font-variant-numeric:tabular-nums;white-space:nowrap}
+.dcol .dlo{color:var(--ink-2)}
+.dbar .nd{position:absolute;left:50%;width:10px;height:10px;margin:0 0 -5px -5px;border-radius:50%;background:var(--signal);box-shadow:0 0 0 2px rgba(0,0,0,.25)}
+
+/* ---------- 14-day deck ---------- */
+.a-days{display:flex;flex-direction:column;min-width:0}
+.deck-h{display:flex;justify-content:space-between;align-items:flex-end;padding:4px 6px 12px}
+.deck-h .ch{margin:0}
+.deck{display:flex;flex-direction:column;flex:1}
+/* calm rows: the temperature colour lives in the low–high bar and the high, not the card */
+.day{position:relative;border-radius:26px;overflow:hidden;isolation:isolate;--ink:#fff;--ink-2:rgba(255,255,255,.6);--ink-3:rgba(255,255,255,.32);color:#fff;
+  background:linear-gradient(120deg,#201f2e,#15141f);
+  box-shadow:0 -14px 28px -14px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.1)}
+.day::after{content:"";position:absolute;inset:0;z-index:-1;background-image:var(--grain);opacity:.12;mix-blend-mode:soft-light}
+/* in the light look the rows are frosted glass with dark text; the bars and highs keep their temperature colour */
+:root[data-mode="day"] .day{--ink:#100f18;--ink-2:rgba(16,15,24,.56);--ink-3:rgba(16,15,24,.28);color:#100f18;
+  background:linear-gradient(155deg,var(--g-a),var(--g-b) 46%,var(--g-c));-webkit-backdrop-filter:blur(30px) saturate(1.9);backdrop-filter:blur(30px) saturate(1.9);
+  box-shadow:inset 0 1px 0 var(--g-rim),inset 0 0 0 1px var(--g-line)} /* the same frosted glass as the other white cards; no drop shadow, so overlaps stay clean */
+:root[data-mode="day"] .day .tile{background:rgba(40,30,110,.05)}
+:root[data-mode="day"] .day .bar{background:rgba(40,30,110,.1)}
+:root[data-mode="day"] .day .fx i{background:linear-gradient(to bottom,rgba(70,80,170,0),rgba(70,80,170,.7))}
+:root[data-mode="day"] .day .fx.snow i,:root[data-mode="day"] .day .fx.hail i{background:#8d9cd6}
+.hiT{color:color-mix(in srgb,var(--tc) 70%,#fff)}
+:root[data-mode="day"] .hiT{color:color-mix(in srgb,var(--tc) 80%,#000)}
+.day + .day{margin-top:-20px}
+.day:not(.open){flex:1 1 auto;min-height:68px}
+/* rain or snow falling inside a day card; sits between the gradient and the text */
+.fx{position:absolute;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
+.fx i{position:absolute;top:-24px;left:var(--x);width:1.2px;height:var(--l);border-radius:1px;opacity:var(--o);
+  background:linear-gradient(to bottom,rgba(255,255,255,0),#fff);animation:rainfall var(--t) linear var(--w) infinite}
+@keyframes rainfall{from{transform:translate3d(0,0,0) rotate(14deg)}to{transform:translate3d(-130px,520px,0) rotate(14deg)}}
+.fx.snow i{width:3px;height:3px;border-radius:50%;background:#fff;animation-name:snowfall}
+@keyframes snowfall{0%{transform:translate3d(0,0,0)}50%{transform:translate3d(10px,260px,0)}100%{transform:translate3d(-6px,520px,0)}}
+/* closed card: a short fall that loops through the visible strip, so the rain stays readable */
+.day:not(.open) .fx i{width:1.6px;opacity:min(1,calc(var(--o) * 2.2));animation-name:rainfall-short;animation-duration:calc(var(--t) * .42)}
+@keyframes rainfall-short{from{transform:translate3d(0,0,0) rotate(14deg)}to{transform:translate3d(-26px,104px,0) rotate(14deg)}}
+.day:not(.open) .fx.snow i{animation-name:snowfall-short;animation-duration:calc(var(--t) * .35)}
+@keyframes snowfall-short{0%{transform:translate3d(0,0,0)}50%{transform:translate3d(5px,52px,0)}100%{transform:translate3d(-3px,104px,0)}}
+.fx.storm{animation:flash 9s linear infinite}
+@keyframes flash{0%,91%,93.5%,95.5%,100%{background:transparent}92%{background:rgba(255,255,255,.2)}94.5%{background:rgba(255,255,255,.1)}}
+.day-h{width:100%;display:grid;grid-template-columns:minmax(0,1.3fr) 28px 40px minmax(0,2.2fr);align-items:center;gap:10px;padding:14px 18px 34px;text-align:left}
+.dn{display:flex;gap:7px;align-items:baseline;min-width:0;white-space:nowrap}
+.dn b{font-weight:650;font-size:17px;letter-spacing:-.02em}
+.dn i{font-style:normal;font-weight:600;font-size:14px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis}
+.dp{font:500 11px/1 var(--f-mono);color:var(--ink-2);text-align:right}
+.dr{display:grid;grid-template-columns:30px 1fr 30px;align-items:center;gap:8px}
+.dr em{font:400 17px/1 var(--f-num);font-style:normal;font-variant-numeric:tabular-nums}
+.dr em:first-child{color:var(--ink-2);text-align:right}
+.bar{position:relative;height:5px;border-radius:5px;background:rgba(255,255,255,.12)}
+.bar .fill{position:absolute;top:0;bottom:0;border-radius:5px;background:linear-gradient(90deg,var(--lo),var(--hi))}
+.bar .nd{position:absolute;top:50%;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;background:var(--signal);box-shadow:0 0 0 2px rgba(0,0,0,.25)}
+.day-b{display:grid;grid-template-rows:0fr;transition:grid-template-rows .45s cubic-bezier(.3,.7,.2,1);margin-top:-22px}
+.day.open .day-b{grid-template-rows:1fr}
+.day-bi{overflow:hidden}
+.day-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:6px 14px 38px}
+.day-grid .say{grid-column:1/-1;font-weight:600;font-size:15px;letter-spacing:-.01em;padding:0 4px 4px}
+.tile{display:grid;gap:4px;padding:10px 12px}
+.tile b{font:400 19px/1.05 var(--f-num);letter-spacing:-.02em}
+
+/* ---------- UV ---------- */
+.gauge{position:relative;margin-top:auto}
+/* heat haze: the layers ripple, but they're oversized and clipped by the card so its edge never moves */
+.a-uv.hot::before{filter:blur(18px) url(#haze-uv)}
+.a-uv.hot::after{inset:-16px;filter:url(#haze-uv)}
+.a-uv.hot .gauge svg{filter:url(#haze-uv)}
+.a-hero.hot::before{filter:blur(18px) url(#haze-hero)}
+.a-hero.hot::after{inset:-16px;filter:url(#haze-hero)}
+.a-hero.hot .arc svg{filter:url(#haze-hero)}
+
+/* ---------- weather-reactive layers ---------- */
+/* drizzle: finer, shorter, slower streaks. hail: hard pellets that bounce once at the bottom */
+.fx.drizzle i{width:1px;height:calc(var(--l) * .55)}
+.fx.hail i{width:3px;height:3px;border-radius:50%;background:#fff;animation-name:hailfall}
+@keyframes hailfall{0%{transform:translate3d(0,0,0)}86%{transform:translate3d(-14px,500px,0)}93%{transform:translate3d(-17px,474px,0)}100%{transform:translate3d(-19px,505px,0)}}
+/* lightning: three bolts take turns, each lighting up with the storm flash (9 s cycle) */
+.bolt{position:absolute;top:0;width:64px;height:60%;z-index:-1;pointer-events:none;opacity:0;overflow:visible;
+  filter:drop-shadow(0 0 5px rgba(255,255,255,.9)) drop-shadow(0 0 16px rgba(196,176,255,.75));animation:bolt 27s linear var(--d) infinite}
+@keyframes bolt{0%,30.4%{opacity:0}30.7%{opacity:1}31.1%{opacity:.2}31.6%{opacity:.9}32.6%,100%{opacity:0}}
+/* soft drifting banks: clouds near the top, fog low and wide */
+.mist{position:absolute;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
+.mist i{position:absolute;left:var(--x);top:var(--y);width:var(--w);height:var(--h);border-radius:50%;background:rgba(255,255,255,var(--o));filter:blur(var(--b));
+  animation:mistdrift var(--t) ease-in-out var(--dl) infinite alternate}
+@keyframes mistdrift{from{transform:translateX(-12%)}to{transform:translateX(14%)}}
+/* puffy clouds drifting across the main card; how many follows the actual cloud cover */
+.clouds{position:absolute;inset:0;z-index:-1;pointer-events:none;overflow:hidden;container-type:size}
+.cloud{position:absolute;left:0;top:var(--y);width:var(--w);aspect-ratio:2.4;opacity:var(--o);filter:blur(var(--b));animation:cloudflow var(--t) linear var(--d) infinite}
+.cloud i{position:absolute;border-radius:50%;background:var(--cc)}
+@keyframes cloudflow{from{transform:translateX(-105%)}to{transform:translateX(calc(100cqw + 5%))}}
+.overcast-sky{position:absolute;inset:0;background:linear-gradient(180deg,rgba(150,152,178,.34),rgba(150,152,178,.08) 55%,transparent 80%)}
+/* a clear day: warm light in the corner that breathes */
+.sunglow{position:absolute;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
+.sunglow::before{content:"";position:absolute;width:90%;aspect-ratio:1;right:-34%;top:-38%;border-radius:50%;
+  background:radial-gradient(closest-side,rgba(255,248,226,.55),rgba(255,236,190,.16) 45%,transparent 75%);animation:sunpulse 9s ease-in-out infinite alternate}
+/* god rays: two sets of irregular, soft beams fanning down-left from the corner, fading with distance and
+   swaying slowly against each other, like light shafts rather than drawn lines */
+.sunglow::after,.sunglow i{content:"";position:absolute;inset:0;transform-origin:104% -4%;
+  -webkit-mask-image:radial-gradient(135% 115% at 104% -4%,#000 0%,rgba(0,0,0,.55) 38%,transparent 78%);mask-image:radial-gradient(135% 115% at 104% -4%,#000 0%,rgba(0,0,0,.55) 38%,transparent 78%)}
+.sunglow::after{filter:blur(7px);animation:raysway 17s ease-in-out infinite alternate;
+  background:conic-gradient(from 180deg at 104% -4%,transparent 0deg 7deg,rgba(255,247,226,.26) 11deg,transparent 17deg 22deg,rgba(255,247,226,.15) 26deg,transparent 31deg,rgba(255,247,226,.32) 39deg,rgba(255,247,226,.08) 46deg,transparent 51deg 57deg,rgba(255,247,226,.2) 62deg,transparent 68deg,rgba(255,247,226,.12) 75deg,transparent 81deg 360deg)}
+.sunglow i{filter:blur(11px);opacity:.85;animation:raysway 24s ease-in-out infinite alternate-reverse;
+  background:conic-gradient(from 180deg at 104% -4%,transparent 0deg 3deg,rgba(255,240,214,.18) 7deg,transparent 13deg 19deg,rgba(255,240,214,.28) 31deg,transparent 37deg 44deg,rgba(255,240,214,.16) 53deg,transparent 60deg 66deg,rgba(255,240,214,.22) 70deg,transparent 77deg 360deg)}
+@keyframes sunpulse{from{transform:scale(1);opacity:.8}to{transform:scale(1.12);opacity:1}}
+@keyframes raysway{from{transform:rotate(-3.5deg);opacity:.7}to{transform:rotate(3deg);opacity:1}}
+/* frost on the main card */
+.frost{position:absolute;inset:0;width:100%;height:100%;z-index:3;pointer-events:none}
+.glint{position:absolute;z-index:3;width:var(--s);height:var(--s);margin:calc(var(--s) / -2) 0 0 calc(var(--s) / -2);pointer-events:none;opacity:0;animation:glint var(--t) ease-in-out var(--w) infinite}
+.glint::before,.glint::after{content:"";position:absolute;left:50%;top:0;width:1px;height:100%;background:linear-gradient(transparent,#f2f9ff,transparent);transform:translateX(-50%)}
+.glint::after{transform:translateX(-50%) rotate(90deg)}
+@keyframes glint{0%,100%{opacity:0}50%{opacity:.9}}
+/* condensation on the humidity card */
+.condense{position:absolute;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none}
+/* wind lines: a short bright stretch runs along each line, curl and all, then fades */
+.wlines{position:absolute;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none;overflow:visible}
+.wlines path{fill:none;stroke:#fff;stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke;stroke-dasharray:70 400;opacity:0;animation:wline var(--t) linear var(--w) infinite}
+@keyframes wline{0%{stroke-dashoffset:70;opacity:0}12%,78%{opacity:var(--o)}100%{stroke-dashoffset:-400;opacity:0}}
+/* a pressure needle that trembles when pressure is changing fast */
+.tremble{transform-box:view-box;transform-origin:100px 100px;animation:tremble 2.6s ease-in-out infinite}
+@keyframes tremble{0%,55%,100%{transform:rotate(0)}8%{transform:rotate(1.2deg)}16%{transform:rotate(-.9deg)}24%{transform:rotate(.6deg)}32%{transform:rotate(-.35deg)}40%{transform:rotate(.15deg)}}
+/* smog drifting over the air quality card on poor days */
+.smog{position:absolute;inset:-40%;z-index:-1;pointer-events:none;opacity:.6;mix-blend-mode:multiply;background-size:440px 440px;animation:smog 70s linear infinite alternate;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='440' height='440'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.011' numOctaves='3' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .34 0 0 0 0 .31 0 0 0 0 .33 1.7 0 0 0 -.55'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23s)'/%3E%3C/svg%3E")}
+@keyframes smog{to{transform:translate(14%,5%)}}
+.gauge svg{width:100%;height:auto;display:block;overflow:visible}
+.gauge-v{position:absolute;left:0;right:0;bottom:0;text-align:center}
+.gauge-v .dm{height:32px;margin:0 auto 4px}
+
+/* ---------- humidity ---------- */
+/* humidity as a water level: the card fills like a glass, with a slowly moving surface; the dotted line on top is 100%: saturated air, where water starts to condense out as dew, mist or fog */
+.water{position:absolute;left:0;right:0;bottom:0;height:var(--h);z-index:-1;pointer-events:none;transition:height 1.2s cubic-bezier(.3,.7,.2,1)}
+.water .body{position:absolute;left:0;right:0;top:12px;bottom:0;background:linear-gradient(rgba(175,200,255,.24),rgba(130,165,255,.12))}
+.water svg{position:absolute;left:0;top:0;width:200%;height:12px;animation:wave 11s linear infinite}
+@keyframes wave{to{transform:translateX(-50%)}}
+.sat{position:absolute;left:0;right:0;top:7px;border-top:1px dotted rgba(255,255,255,.4);pointer-events:none}
+.sat span{position:absolute;right:16px;top:4px;font:500 9.5px/1 var(--f-mono);letter-spacing:.05em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.a-humid .num{margin-bottom:auto}
+
+/* ---------- air ---------- */
+.air{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:20px;flex:1}
+.air-l{display:flex;flex-direction:column}
+.air-l .dm{height:58px;margin:8px 0 6px;align-self:flex-start}
+.scale{display:grid;grid-template-columns:repeat(6,1fr);gap:3px;margin-top:auto;position:relative;padding-top:14px}
+.scale i{height:5px;border-radius:3px;background:rgba(255,255,255,.28)}
+.scale i.on{background:#fff}
+.scale .tri{top:0}
+.pol{gap:9px;align-content:center;padding:14px 16px;border-radius:18px}
+.pol-r{display:grid;grid-template-columns:44px 1fr 62px;gap:10px;align-items:center}
+.pol-r .mono{color:var(--ink)}
+.pol-r .v{font:400 15px/1 var(--f-num);text-align:right;font-variant-numeric:tabular-nums}
+.pol-r .v small{font:400 9px var(--f-mono);color:var(--ink-2);margin-left:3px}
+.mbar{position:relative;height:4px;border-radius:4px;background:rgba(255,255,255,.24)}
+.mbar .fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:#fff}
+.mbar .lim{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--signal);border-radius:2px}
+.lim-key{display:flex;align-items:center;gap:7px}
+.lim-key i{width:2px;height:12px;border-radius:2px;background:var(--signal)}
+
+/* ---------- moon ---------- */
+.moon{display:grid;grid-template-columns:minmax(120px,190px) minmax(0,1fr);gap:20px;align-items:center;flex:1}
+.moon canvas{width:100%;aspect-ratio:1;display:block}
+.moon-stats{display:grid;gap:12px}
+.stars{position:absolute;inset:0;z-index:-1;pointer-events:none}
+.stars i{position:absolute;width:var(--s);height:var(--s);border-radius:50%;background:#fff;opacity:var(--o);animation:twinkle var(--t) ease-in-out var(--w) infinite alternate}
+@keyframes twinkle{to{opacity:calc(var(--o) * .2)}}
+.kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.kv .tile b{font-size:18px}
+.strip{margin-top:14px;cursor:grab;touch-action:pan-y;border-radius:12px;-webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)}
+.strip canvas{width:100%;height:58px;display:block}
+.moon canvas{cursor:grab;touch-action:pan-y}
+.strip.grab,.moon canvas.grab{cursor:grabbing}
+
+/* ---------- sun ---------- */
+.band{position:relative;margin:18px 0 6px;cursor:grab;touch-action:pan-y;border-radius:15px}
+.band.grab{cursor:grabbing}
+.band .tri{transition:left .12s linear}
+/* while dragging, everything follows the finger directly: no easing on the marker or the card colour */
+.band.grab .tri,.hero:has(.grab),.a-sun:has(.grab){transition:none}
+.a-sun{transition:background-color .5s}
+.band svg{width:100%;height:30px;display:block;border-radius:15px}
+.band .tri{top:-12px}
+.band-axis{display:flex;justify-content:space-between;margin-top:6px}
+.kv5{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:auto;padding-top:14px}
+.kv5 div{display:grid;gap:2px}
+.kv5 b{font:400 18px/1.05 var(--f-num);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+@media (max-width:560px){.kv5{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+/* ---------- pressure / visibility / rain / clouds ---------- */
+.dial{position:relative;width:min(100%,190px);margin:0 auto;color:var(--ink)}
+.dial svg{width:100%;height:auto;display:block;overflow:visible}
+.dial-v{position:absolute;left:0;right:0;top:50%;transform:translateY(-44%);text-align:center}
+.dial-v .dm{height:25px;margin:0 auto 8px}
+.vis{margin:auto -20px -20px;padding-top:12px;color:var(--ink)}
+/* atmospheric depth: near ridges dark, far ones blue-grey under a blue sky; lost ones wash into the haze colour */
+.a-vis{--v-near:#1d1a2a;--v-far:#8f99bd;--v-haze:#e7e4ec;--v-sky:#a9c6ff}
+:root:not([data-mode="day"]) .a-vis{--v-near:#cfcbe4;--v-far:#4d5680;--v-haze:#3b3a52;--v-sky:#24418c}
+.vis-sky{position:absolute;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(180deg,color-mix(in oklab,var(--v-sky) var(--clear),var(--v-haze)) 0%,transparent 70%);opacity:var(--skyA)}
+.vis-fog{position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(180deg,transparent 35%,var(--v-haze) 100%);opacity:var(--fogA)}
+.vis-say{margin:8px 0 0;font-size:13px;color:var(--ink-2);max-width:26ch}
+.vis svg{width:100%;height:84px;display:block}
+.vis path{animation:ridgeflow var(--t) linear var(--dl) infinite,ridgebob var(--b) ease-in-out var(--dl) infinite alternate}
+@keyframes ridgeflow{to{transform:translateX(-240px)}}
+@keyframes ridgebob{from{translate:0 0}to{translate:0 2px}}
+.vis text{font:500 8.5px var(--f-mono);fill:var(--ink-2);letter-spacing:.04em}
+.spark svg{width:100%;height:42px;display:block;margin-top:10px}
+.field svg{width:100%;height:auto;display:block;margin:4px 0 6px}
+
+/* ---------- pollen ---------- */
+.pgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:4px}
+.pgrid .tile{gap:5px}
+.pgrid b{font:400 22px/1 var(--f-num);letter-spacing:-.02em}
+.dots{display:flex;gap:4px}
+.dots i{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.25)}
+.dots i.on{background:#fff}
+@media (max-width:460px){.pgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* ---------- radar ---------- */
+.card.a-radar{padding:0;min-height:440px}
+.a-radar .ch{position:absolute;z-index:500;top:14px;left:14px;pointer-events:none;padding:10px 14px;border-radius:18px}
+.here-pin{border-radius:50%;background:var(--signal);box-shadow:0 0 0 2.5px #fff,0 1px 4px rgba(0,0,0,.3)}
+#radarMap{position:absolute;inset:6px;border-radius:calc(var(--r-card) - 6px);overflow:hidden;background:#474749}
+:root[data-mode="day"] #radarMap{background:#efefef}
+@supports (corner-shape:squircle){#radarMap{border-radius:48px;corner-shape:squircle}}
+.leaflet-container{font:11px var(--f-mono)}
+/* map labels in the app's own type */
+.mlab{pointer-events:none}
+.mlab i{position:absolute;left:-2.5px;top:-2.5px;width:5px;height:5px;border-radius:50%;background:var(--ink);opacity:.5}
+.mlab span{position:absolute;left:8px;top:-7px;white-space:nowrap;font:500 11.5px/1 var(--f-display);letter-spacing:-.01em;color:var(--ink-2);text-shadow:0 0 6px var(--bg),0 0 2px var(--bg)}
+.mlab.here i{display:none}
+.mlab.here span{left:12px;top:-8px;font-weight:650;font-size:13px;color:var(--ink)}
+.rbar{position:absolute;z-index:500;left:16px;right:16px;bottom:24px;display:flex;align-items:center;gap:12px;padding:7px 14px 7px 7px;border-radius:999px}
+.rbar .round{width:34px;height:34px}
+.rbar .round svg{fill:#fff;stroke:none}
+.rticks{flex:1;display:flex;gap:3px;align-items:center;height:34px;margin:-7px 0;cursor:grab;touch-action:pan-y}
+.rticks.grab{cursor:grabbing}
+.rticks button{flex:1;height:14px;border-radius:3px;background:rgba(255,255,255,.26)}
+.rticks button.cur{background:var(--signal);height:20px}
+.rticks button.fut{background:rgba(143,176,255,.45)}
+.rtime{font:500 11px/1 var(--f-mono);letter-spacing:.05em;min-width:70px;text-align:right}
+.zoomer{position:absolute;z-index:500;right:16px;top:16px;display:grid;gap:6px}
+.ch.lens.dark h3{color:#fff}.ch.lens.dark p{color:rgba(255,255,255,.65)}
+
+/* ---------- source ---------- */
+.a-src{display:flex;align-items:center;gap:12px;padding:2px 2px 0;color:var(--ink-2)}
+.a-src .mono{font-size:11px;line-height:1.5}
+#dlgInfo p{margin:0 0 12px;font-size:14px;line-height:1.5;color:var(--ink-2)}
+#dlgInfo p b{color:var(--ink);font-weight:600}
+
+/* ---------- loading ---------- */
+.sk{flex:1;border-radius:18px;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.08) 50%,transparent 70%) 0 0/300% 100%;animation:sk 1.6s linear infinite;min-height:80px}
+@keyframes sk{to{background-position:-300% 0}}
+.err{margin:auto;text-align:center;display:grid;gap:14px;justify-items:center;max-width:36ch}
+.btn{font-weight:600;font-size:14px;padding:11px 18px;border-radius:999px;background:var(--signal);color:var(--signal-ink)}
+
+/* ---------- floating chrome ---------- */
+.dock{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:1000;display:flex;gap:8px;align-items:center;padding:7px;border-radius:999px;color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12),0 18px 40px -16px rgba(0,0,0,.45)}
+.dock .round{width:48px;height:48px;background:rgba(255,255,255,.1)}
+.dock .round svg{width:20px;height:20px}
+.pill{height:48px;min-width:128px;padding:0 22px;border-radius:999px;display:flex;align-items:center;justify-content:center;gap:9px;font-weight:650;font-size:14px;letter-spacing:-.01em;color:var(--signal-ink);
+  background:radial-gradient(rgba(255,255,255,.16) 1px,transparent 1.6px) 0 0/5px 5px,var(--signal)}
+.pill svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2.1;stroke-linecap:round}
+.topbar{position:fixed;left:50%;top:calc(12px + env(safe-area-inset-top,0px));z-index:1000;display:flex;align-items:center;gap:10px;padding:8px 16px 8px 10px;border-radius:999px;
+  transform:translate(-50%,-160%);transition:transform .45s cubic-bezier(.3,.8,.2,1);color:#fff;max-width:calc(100% - 32px)}
+.topbar.show{transform:translate(-50%,0)}
+.topbar .ic{width:22px;height:22px}
+.topbar b{font-weight:650;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar span{font:300 20px/1 var(--f-num)}
+
+/* ---------- sheets ---------- */
+dialog{border:0;padding:0;background:transparent;color:#fff;max-width:none;max-height:none;width:100%;height:100%;margin:0;overflow:visible}
+dialog::backdrop{background:rgba(6,4,20,.4);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.sheet{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(460px,calc(100% - 24px));max-height:min(680px,calc(100% - 40px));overflow:auto;border-radius:30px;padding:22px;
+  --ink:#fff;--ink-2:rgba(255,255,255,.6);--ink-3:rgba(255,255,255,.3);
+  background:rgba(20,16,38,.74);-webkit-backdrop-filter:blur(34px) saturate(1.6);backdrop-filter:blur(34px) saturate(1.6);box-shadow:inset 0 0 0 1px rgba(255,255,255,.1)}
+@media (max-width:560px){.sheet{top:auto;bottom:10px;transform:translateX(-50%);max-height:82%}}
+/* the full 14-day stack, popped out of the hourly card */
+.sheet.days-sheet{width:min(560px,calc(100% - 24px));max-height:calc(100% - 40px);padding:18px 14px 14px}
+.days-sheet .sheet-h{padding:0 6px;margin-bottom:12px}
+.days-sheet .sheet-h p{margin:2px 0 0;font:500 11px/1 var(--f-mono);letter-spacing:.05em;color:var(--ink-2)}
+@media (max-width:560px){.sheet.days-sheet{max-height:88%}}
+.sheet-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.sheet-h h2{margin:0;font-size:22px;font-weight:700;letter-spacing:-.03em}
+.field-in{display:flex;align-items:center;gap:10px;padding:0 16px;height:52px;border-radius:18px;background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.field-in svg{width:18px;height:18px;stroke:rgba(255,255,255,.5);fill:none;stroke-width:2;stroke-linecap:round;flex:none}
+.field-in input{flex:1;min-width:0;background:none;border:0;outline:0;color:#fff;font:500 16px var(--f-display)}
+.list{display:grid;gap:4px;margin-top:12px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:12px 14px;border-radius:16px;text-align:left;cursor:pointer}
+.row:hover,.row:focus-visible{background:rgba(255,255,255,.08)}
+.row b{font-weight:600;display:block}
+.row span{font-size:13px;color:var(--ink-2)}
+.row .x{color:var(--ink-2);padding:6px;border-radius:50%}
+.row .x:hover{color:#fff;background:rgba(255,255,255,.1)}
+.label{font:500 11px/1 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);margin:20px 0 8px}
+.seg{display:flex;gap:4px;padding:4px;border-radius:999px;background:rgba(255,255,255,.07);flex-wrap:wrap}
+.seg button{flex:1;padding:9px 10px;border-radius:999px;font-weight:600;font-size:13px;color:var(--ink-2);white-space:nowrap}
+.seg button[aria-pressed="true"]{background:#fff;color:#000}
+.models{display:grid;gap:4px}
+#dlgSet.model-only .sheet > .label,#dlgSet.model-only .seg{display:none}
+.models button{display:grid;gap:2px;text-align:left;padding:11px 14px;border-radius:16px}
+.models button b{font-weight:600}
+.models button span{font-size:12.5px;color:var(--ink-2)}
+.models button[aria-pressed="true"]{background:rgba(232,0,73,.16);box-shadow:inset 0 0 0 1px rgba(232,0,73,.7)}
+.models button:hover{background:rgba(255,255,255,.06)}
+.toast{position:fixed;left:50%;bottom:calc(94px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:1100;padding:11px 18px;border-radius:999px;font-weight:600;font-size:13.5px;max-width:calc(100% - 32px);text-align:center;color:#fff;transition:bottom .35s cubic-bezier(.2,.8,.2,1)}
+body.net-off .toast{bottom:calc(140px + env(safe-area-inset-bottom,0px))}
+/* offline: the last forecast stays up and this pill says how old it is (tap to try again) */
+.netpill{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom,0px));z-index:1050;display:flex;align-items:center;gap:9px;padding:10px 16px 10px 14px;border-radius:999px;font-size:13px;color:#fff;white-space:nowrap;max-width:calc(100% - 32px);
+  opacity:0;transform:translate(-50%,14px) scale(.96);pointer-events:none;transition:opacity .35s,transform .45s cubic-bezier(.2,.8,.2,1)}
+.netpill.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.netpill i{width:7px;height:7px;border-radius:50%;background:#ffcf5c;box-shadow:0 0 0 3px rgba(255,207,92,.2);flex:none}
+.netpill b{font-weight:600}
+.netpill span{color:rgba(255,255,255,.62);overflow:hidden;text-overflow:ellipsis}
+.netpill.busy i{animation:netpulse .9s ease-in-out infinite}
+@keyframes netpulse{50%{opacity:.25;transform:scale(.7)}}
+.roff{position:absolute;z-index:500;left:50%;top:50%;transform:translate(-50%,-50%);margin:0;padding:10px 16px;border-radius:999px;font-size:13px;font-weight:600;white-space:nowrap;display:none}
+#c-radar.offline .roff{display:block}
+#c-radar.offline .rbar{opacity:.45;pointer-events:none}
+/* pull to refresh (home-screen app only) */
+.ptr{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 10px);z-index:1001;width:30px;height:30px;margin-left:-15px;border-radius:50%;display:grid;place-items:center;color:#fff;
+  opacity:0;transform:translateY(-56px);pointer-events:none}
+.ptr svg{width:16px;height:16px;transform:rotate(-90deg);overflow:visible}
+.ptr circle{fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-dasharray:0 100}
+.ptr circle.track{stroke:rgba(255,255,255,.18);stroke-dasharray:none}
+.ptr.snap{transition:transform .3s cubic-bezier(.2,.8,.2,1),opacity .3s}
+.ptr.go svg{animation:ptrspin .8s linear infinite}
+.ptr.go circle:not(.track){stroke-dasharray:26 100!important}
+@keyframes ptrspin{from{transform:rotate(-90deg)}to{transform:rotate(270deg)}}
+
+@media (max-width:600px){
+  .app{padding-left:14px;padding-right:14px}
+  .board{gap:10px}
+  .card{padding:16px 16px 18px;min-height:170px}
+  .hero{min-height:500px}
+  .air{grid-template-columns:1fr}
+  .moon{grid-template-columns:110px minmax(0,1fr);gap:14px}
+  .day-h{grid-template-columns:minmax(0,1fr) 24px 34px minmax(0,1.6fr);gap:8px;padding:13px 14px 34px}
+  .dn i{display:none}
+  .day-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .top{margin-bottom:16px}
+  .summary{margin-top:0} /* the same breathing room above and below the summary */
+  .chip,.hnote{display:none}
+  .place .sub{white-space:normal;font-size:15px}
+  .vis{margin:auto -16px -18px}
+}
+/* cards scrolled well out of view pause their animations (they resume where they were, before they come into view) */
+.offscreen,.offscreen *,.offscreen::before,.offscreen::after,.offscreen *::before,.offscreen *::after{animation-play-state:paused!important}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  .fx i{top:var(--y);transform:rotate(14deg)}
+}

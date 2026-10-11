@@ -24,10 +24,13 @@ Then visit http://localhost:5577.
 
 ## Files
 
-- `index.html`: the app
+- `index.html`: the page structure
+- `styles.css`: all the styling
+- `app.js`: the app itself (data, cards, effects, radar, sheets)
 - `palette.js`: every colour family and the temperature scale
 - `assets/moon-map.js`: NASA's lunar surface map, projected onto the moon card
 - `manifest.webmanifest`, `sw.js`, `assets/*.png`, `assets/splash/`: install it from the home screen like an app (own icon and launch screen, full screen, works offline)
 - `color-study.html`: how the palette was derived from the reference boards
 - `serve.ps1`: tiny local server for Windows
 - `tools/warnings.mjs`, `.github/workflows/warnings.yml`: builds the weather warnings
+- `tests/smoke.mjs`, `.github/workflows/publish.yml`: on every push the app is checked in Chromium and WebKit (Safari's engine) at phone and desktop size, with saved weather from `tests/fixtures/`, before it is published
