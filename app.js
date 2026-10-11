@@ -930,9 +930,9 @@ function renderWind() {
   for (let i = 0; i < 72; i++) {
     const a = i * 5 * rad, major = i % 18 === 0, mid = i % 9 === 0;
     const r1 = 92, r2 = major ? 80 : mid ? 84 : 87;
-    ticks += `<line x1="${100 + r1 * sin(a)}" y1="${100 - r1 * cos(a)}" x2="${100 + r2 * sin(a)}" y2="${100 - r2 * cos(a)}" stroke="#fff" stroke-opacity="${major ? .95 : mid ? .6 : .32}" stroke-width="${major ? 1.8 : 1}" stroke-linecap="round"/>`;
+    ticks += `<line x1="${100 + r1 * sin(a)}" y1="${100 - r1 * cos(a)}" x2="${100 + r2 * sin(a)}" y2="${100 - r2 * cos(a)}" stroke="currentColor" stroke-opacity="${major ? .95 : mid ? .6 : .32}" stroke-width="${major ? 1.8 : 1}" stroke-linecap="round"/>`;
   }
-  const lab = ["N", "E", "S", "W"].map((t, i) => { const a = i * 90 * rad; return `<text x="${100 + 68 * sin(a)}" y="${100 - 68 * cos(a) + 3.5}" text-anchor="middle" font-family="Geist Mono, monospace" font-size="10" fill="rgba(255,255,255,.75)">${t}</text>`; }).join("");
+  const lab = ["N", "E", "S", "W"].map((t, i) => { const a = i * 90 * rad; return `<text x="${100 + 68 * sin(a)}" y="${100 - 68 * cos(a) + 3.5}" text-anchor="middle" font-family="Geist Mono, monospace" font-size="10" fill="currentColor" fill-opacity=".75">${t}</text>`; }).join("");
   const a = dir * rad, tip = 78, base = 97, w = 6 * rad;
   const tri = `<path d="M${100 + tip * sin(a)} ${100 - tip * cos(a)} L${100 + base * sin(a - w)} ${100 - base * cos(a - w)} L${100 + base * sin(a + w)} ${100 - base * cos(a + w)}Z" fill="var(--signal)"/>`;
 
@@ -1132,14 +1132,14 @@ function renderUV() {
     if (v >= 3) { if (!from) from = T(H.time[k]); to = T(H.time[k]); }
   }
   let ticks = "";
-  for (let v = 0; v <= 12; v++) { const th = PI * (1 - v / 12); ticks += `<line x1="${100 + 86 * cos(th)}" y1="${100 - 86 * sin(th)}" x2="${100 + (v % 3 ? 90 : 94) * cos(th)}" y2="${100 - (v % 3 ? 90 : 94) * sin(th)}" stroke="#fff" stroke-opacity="${v % 3 ? .38 : .75}" stroke-linecap="round"/>`; }
+  for (let v = 0; v <= 12; v++) { const th = PI * (1 - v / 12); ticks += `<line x1="${100 + 86 * cos(th)}" y1="${100 - 86 * sin(th)}" x2="${100 + (v % 3 ? 90 : 94) * cos(th)}" y2="${100 - (v % 3 ? 90 : 94) * sin(th)}" stroke="currentColor" stroke-opacity="${v % 3 ? .38 : .75}" stroke-linecap="round"/>`; }
   const th = PI * (1 - clamp(uv, 0, 12) / 12), mx_ = 100 + 80 * cos(th), my_ = 100 - 80 * sin(th);
   const tri = `<path d="M${100 + 76 * cos(th)} ${100 - 76 * sin(th)} L${100 + 90 * cos(th + .07)} ${100 - 90 * sin(th + .07)} L${100 + 90 * cos(th - .07)} ${100 - 90 * sin(th - .07)}Z" fill="var(--signal)"/>`;
   const sub = uv < 3 && peak >= 3 && from ? `Protection ${fmtT(from)}–${fmtT(new Date(to.valueOf() + 36e5))}` : peak > uv ? `Peak ${peak.toFixed(0)} at ${fmtT(peakT)}` : `Today's max ${R(Dy.uv_index_max[di])}`;
   el.innerHTML = `${head("UV index", L[1])}
     <div class="gauge"><svg viewBox="0 0 200 108" aria-hidden="true">${ticks}
-      <path d="M20 100 A80 80 0 0 1 180 100" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="2"/>
-      <path d="M20 100 A80 80 0 0 1 ${mx_.toFixed(1)} ${my_.toFixed(1)}" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+      <path d="M20 100 A80 80 0 0 1 180 100" fill="none" stroke="currentColor" stroke-opacity=".3" stroke-width="2"/>
+      <path d="M20 100 A80 80 0 0 1 ${mx_.toFixed(1)} ${my_.toFixed(1)}" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
       ${tri}</svg>
       <div class="gauge-v" role="img" aria-label="UV index ${uv < 10 ? uv.toFixed(1) : Math.round(uv)}">${dm(uv < 10 ? uv.toFixed(1) : String(Math.round(uv)))}</div></div>
     <div class="foot" style="margin-top:12px"><span>${esc(sub)}</span></div>`;
@@ -1154,7 +1154,7 @@ function renderHumid() {
   const lab = dpC == null || h == null ? "–" : dpC >= 21 ? "Oppressive" : dpC >= 18 ? "Humid" : dpC >= 16 ? "A little humid"
     : h >= 90 ? "Very damp" : h >= 75 ? "Damp" : h >= 45 ? "Comfortable" : h >= 25 ? "Dry" : "Very dry";
   // the surface: two periods of a gentle swell in 400 units, so sliding it by half its width loops without a seam
-  const wave = cls => `<svg class="${cls}" viewBox="0 0 400 12" preserveAspectRatio="none" aria-hidden="true"><path d="M0 6 Q50 1 100 6 T200 6 T300 6 T400 6 V12 H0Z" fill="rgba(175,200,255,.24)"/><path d="M0 6 Q50 1 100 6 T200 6 T300 6 T400 6" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1" vector-effect="non-scaling-stroke"/></svg>`;
+  const wave = cls => `<svg class="${cls}" viewBox="0 0 400 12" preserveAspectRatio="none" aria-hidden="true"><path d="M0 6 Q50 1 100 6 T200 6 T300 6 T400 6 V12 H0Z" fill="rgba(175,200,255,.24)"/><path d="M0 6 Q50 1 100 6 T200 6 T300 6 T400 6" fill="none" stroke="currentColor" stroke-opacity=".5" stroke-width="1" vector-effect="non-scaling-stroke"/></svg>`;
   const wet = (h ?? 0) >= 85; // condensation beads up on the card on very humid days
   el.innerHTML = `<span class="water" style="--h:${clamp(h ?? 0, 0, 100)}%">${wave("w1")}<span class="body"></span></span>
     <span class="sat" aria-hidden="true"><span>100%</span></span>
@@ -1440,7 +1440,7 @@ function renderRain() {
   const today = Dy.precipitation_sum[di], pop = nz(Dy.precipitation_probability_max[di]);
   const next = []; for (let k = hi; k < hi + 24 && k < H.time.length; k++) next.push(H.precipitation[k] ?? 0);
   const sum24 = next.reduce((a, b) => a + b, 0), mx = Math.max(...next.map(toMm), 1);
-  const bars = next.map((v, i) => { const h = toMm(v) / mx * 36; return `<rect x="${i * 10 + 2}" y="${40 - Math.max(h, 1.5)}" width="6" height="${Math.max(h, 1.5)}" rx="3" fill="#fff" opacity="${v > 0 ? 1 : .24}"/>`; }).join("");
+  const bars = next.map((v, i) => { const h = toMm(v) / mx * 36; return `<rect x="${i * 10 + 2}" y="${40 - Math.max(h, 1.5)}" width="6" height="${Math.max(h, 1.5)}" rx="3" fill="currentColor" opacity="${v > 0 ? 1 : .24}"/>`; }).join("");
   el.innerHTML = `${head("Rain", "Today")}
     <div class="num big">${fmtP(today)}<small>${PU()}</small></div>
     <div class="spark"><svg viewBox="0 0 240 42" preserveAspectRatio="none" aria-hidden="true">${bars}</svg></div>
@@ -1456,7 +1456,7 @@ function renderClouds() {
   // seeded order that clusters lit dots into soft cloud banks
   const order = Array.from({ length: total }, (_, i) => { const x = i % cols, y = Math.floor(i / cols); return [i, Math.sin(x * .7 + y * 1.3) * Math.cos(x * .35 - y * .9) + ((i * 9301 + 49297) % 233280) / 233280 * .5]; }).sort((a, b) => b[1] - a[1]).map(a => a[0]);
   const on = new Set(order.slice(0, lit));
-  let dots = ""; for (let i = 0; i < total; i++) { const x = i % cols, y = Math.floor(i / cols); dots += `<circle cx="${x * 17 + 8}" cy="${y * 13 + 7}" r="${on.has(i) ? 4.6 : 2}" fill="#fff" opacity="${on.has(i) ? .95 : .24}"/>`; }
+  let dots = ""; for (let i = 0; i < total; i++) { const x = i % cols, y = Math.floor(i / cols); dots += `<circle cx="${x * 17 + 8}" cy="${y * 13 + 7}" r="${on.has(i) ? 4.6 : 2}" fill="currentColor" opacity="${on.has(i) ? .95 : .24}"/>`; }
   el.innerHTML = `${head("Cloud cover", lab)}
     <div class="num big">${R(cc)}<small>%</small></div>
     <div class="field"><svg viewBox="0 0 238 78" aria-hidden="true">${dots}</svg></div>`;
