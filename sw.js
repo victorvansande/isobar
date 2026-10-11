@@ -3,14 +3,14 @@
    a few seconds and opens the last copy instead of hanging on a blank screen. Fonts and the map library never change,
    so they come straight from the cache. Weather, radar and map data always go to the network
    (the app keeps its own copy of the last forecasts). */
-const CACHE = "isobar-v4";
+const CACHE = "isobar-v5";
 const SHELL = ["./", "./index.html", "./palette.js", "./assets/moon-map.js", "./manifest.webmanifest", "./assets/icon-192.png", "./assets/apple-touch-icon.png"];
 const LIBS = [
   "https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Urbanist:wght@200;300;400&display=swap",
   "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css",
   "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"
 ];
-const LIVE = /open-meteo\.com|rainviewer\.com|arcgisonline\.com|bigdatacloud\.net/;
+const LIVE = /open-meteo\.com|rainviewer\.com|arcgisonline\.com|bigdatacloud\.net|githubusercontent\.com/;
 const FIXED = /fonts\.googleapis\.com|fonts\.gstatic\.com|cdnjs\.cloudflare\.com/;
 
 self.addEventListener("install", e => {

@@ -1,0 +1,37 @@
+# Every half hour: fetch the official weather warnings from MeteoAlarm and publish them, tiled by location, on the
+# "warnings" branch, where the app reads them (see tools/warnings.mjs). The branch always holds a single commit.
+name: Weather warnings
+on:
+  schedule:
+    - cron: "7,37 * * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: warnings
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Region outlines (cached)
+        uses: actions/cache@v4
+        with:
+          path: .geo
+          key: region-outlines-v1
+      - name: Build warnings
+        run: node tools/warnings.mjs out
+      - name: Publish to the warnings branch
+        working-directory: out
+        run: |
+          git init -q -b warnings
+          git config user.name "isobar-warnings"
+          git config user.email "isobar-warnings@users.noreply.github.com"
+          git add -A
+          git commit -qm "Weather warnings $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push -qf "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" warnings

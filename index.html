@@ -133,8 +133,23 @@ html.standalone[data-mode="day"] body::before{content:"";position:fixed;left:0;r
 /* ---------- top ---------- */
 .top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin:8px 4px 22px}
 /* the forecast in a sentence or two, right under the place */
-.summary{margin:-4px 4px 22px;max-width:46ch;font-size:17px;font-weight:500;line-height:1.4;letter-spacing:-.01em;color:var(--ink);text-wrap:pretty}
+.summary{margin:-6px 4px 18px;max-width:46ch;font-size:17px;font-weight:500;line-height:1.4;letter-spacing:-.01em;color:var(--ink);text-wrap:pretty}
 .summary:empty{display:none}
+/* official weather warning: a calm glass banner with the level as a coloured dot (yellow, orange, red) */
+.warn{display:flex;align-items:center;gap:12px;width:calc(100% - 8px);margin:-8px 4px 20px;padding:12px 16px 12px 14px;border-radius:20px;text-align:left;color:var(--ink)}
+.warn[hidden]{display:none}
+.warn .wl{width:10px;height:10px;border-radius:50%;flex:none;background:var(--wc);box-shadow:0 0 0 4px color-mix(in srgb,var(--wc) 25%,transparent)}
+.warn span{flex:1;min-width:0;display:grid;gap:2px}
+.warn b{font-weight:600;font-size:15px}
+.warn small{font-size:13px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.warn svg{width:12px;height:12px;flex:none;fill:none;stroke:var(--ink-2);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.wx{padding:14px 0;border-top:1px solid rgba(255,255,255,.1)}
+.wx:first-child{border-top:0;padding-top:0}
+.wx h3{display:flex;align-items:center;gap:9px;margin:0 0 4px;font-size:16px;font-weight:650}
+.wx h3 i{width:9px;height:9px;border-radius:50%;background:var(--wc);flex:none}
+.wx .when{margin:0 0 8px;font:500 11px/1.4 var(--f-mono);letter-spacing:.04em;text-transform:uppercase;color:var(--ink-2)}
+.wx p{margin:0 0 8px;font-size:14px;line-height:1.5;color:var(--ink-2)}
+.wx a{color:var(--ink);font-size:13px}
 .place{display:grid;text-align:left;min-width:0}
 .place h1{margin:0;font-weight:700;font-size:clamp(34px,5.2vw,56px);letter-spacing:-.04em;line-height:1;display:flex;align-items:center;gap:10px;text-wrap:balance}
 .place h1 svg{width:22px;height:22px;flex:none;opacity:.45;stroke:currentColor;fill:none;stroke-width:2}
@@ -674,6 +689,7 @@ body.net-off .toast{bottom:calc(140px + env(safe-area-inset-bottom,0px))}
   .dn i{display:none}
   .day-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
   .top{margin-bottom:16px}
+  .summary{margin-top:0} /* the same breathing room above and below the summary */
   .chip,.hnote{display:none}
   .place .sub{white-space:normal;font-size:15px}
   .vis{margin:auto -16px -18px}
@@ -742,6 +758,7 @@ body.net-off .toast{bottom:calc(140px + env(safe-area-inset-bottom,0px))}
     </div>
   </header>
   <p class="summary" id="summary" aria-live="polite"></p>
+  <button class="warn lens" id="warn" hidden><i class="wl"></i><span><b id="warnT"></b><small id="warnS"></small></span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4.5 2.5L8 6l-3.5 3.5"/></svg></button>
 
   <main class="board" id="board">
     <section class="card pig hero a-hero" id="c-hero"><div class="sk"></div></section>
@@ -798,6 +815,13 @@ body.net-off .toast{bottom:calc(140px + env(safe-area-inset-bottom,0px))}
   <div class="sheet days-sheet">
     <div class="sheet-h"><div><h2>14 days</h2><p id="daysRange"></p></div><button class="round lens" data-close aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
     <section class="a-days" id="c-days"></section>
+  </div>
+</dialog>
+
+<dialog id="dlgWarn" aria-label="Weather warnings">
+  <div class="sheet">
+    <div class="sheet-h"><h2>Weather warnings</h2><button class="round lens" data-close aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div id="warnBody"></div>
   </div>
 </dialog>
 
@@ -2320,6 +2344,7 @@ function renderSrc() {
   $("#infoBody").innerHTML = `<p><b>Forecast</b> Open-Meteo, ${esc(m[1])} model. ${esc(m[2])}</p>
     <p><b>Air and pollen</b> Copernicus CAMS.</p>
     <p><b>Rain radar</b> RainViewer, on Esri map tiles (Esri, HERE, Garmin, © OpenStreetMap).</p>
+    <p><b>Weather warnings</b> MeteoAlarm (EUMETNET) and the national weather services, such as KMI. Region outlines © EuroGeographics.</p>
     <p><b>Moon</b> NASA LRO imagery. Phases, sunrise and twilight are calculated on this device.</p>`;
   // where the forecast is for: coordinates, height above sea level and time zone
   const ll = (v, p, n) => `${Math.abs(v).toFixed(2)}° ${v >= 0 ? p : n}`;
@@ -2559,7 +2584,7 @@ async function load(p, { quiet = false } = {}) {
     const [w, a] = await fetchAll(p);
     adopt({ D: w, AQ: a, at: Date.now() }, key);
     forecasts.put(key, { D, AQ, at: fetchedAt });
-    netFail = false;
+    netFail = false; loadWarnings(p);
     renderAll();
   } catch (e) {
     netFail = true;
@@ -2590,6 +2615,62 @@ const forecasts = {
     }
     try { localStorage.removeItem("isobar:cache"); } catch {}
   }
+};
+
+/* ---------------- official weather warnings ---------------- */
+/* MeteoAlarm's warnings (KMI, KNMI, DWD...), prepared every half hour by .github/workflows/warnings.yml and stored
+   in 5° tiles on the "warnings" branch. The app fetches its own tile and keeps the warnings whose area it is in. */
+const WARN_URL = "https://raw.githubusercontent.com/victorvansande/isobar/warnings/w/";
+const WLEVEL = { 2: ["Yellow", "#ffd23f"], 3: ["Orange", "#ff8a1f"], 4: ["Red", "#ff3b30"] };
+let warnings = [];
+// is the point inside the warning's outline? (even-odd rule, so holes in a region count as outside)
+function inWarning(w, x, y) {
+  const [x0, y0, x1, y1] = w.bbox; if (x < x0 || x > x1 || y < y0 || y > y1) return false;
+  return w.polys.some(rings => {
+    let inside = false;
+    for (const r of rings) for (let i = 0, j = r.length - 2; i < r.length; j = i, i += 2) {
+      const xi = r[i], yi = r[i + 1], xj = r[j], yj = r[j + 1];
+      if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) inside = !inside;
+    }
+    return inside;
+  });
+}
+async function loadWarnings(p) {
+  try {
+    const r = await fetch(`${WARN_URL}${Math.floor(p.lat / 5)}_${Math.floor(p.lon / 5)}.json`, { cache: "no-cache" });
+    if (r.status === 404) warnings = []; // no warnings anywhere in this tile
+    else if (r.ok) {
+      const soon = Date.now() + 36 * 36e5; // what's on now, and what starts within the next day and a half
+      warnings = (await r.json()).warnings.filter(w => Date.parse(w.expires) > Date.now() && Date.parse(w.onset) < soon && inWarning(w, p.lon, p.lat))
+        .sort((a, b) => b.level - a.level || Date.parse(a.onset) - Date.parse(b.onset));
+    } // other failures (offline, a hiccup): keep what was shown
+  } catch {}
+  if (place === p) renderWarnings();
+}
+// "14:00", "tomorrow 06:00" or "Tue 09:00", in the place's own time
+function whenAt(d) {
+  const key = x => new Date(x.valueOf() + OFF * 1000).toISOString().slice(0, 10), today = key(new Date()), k = key(d);
+  return k === today ? fmtT(d) : k === key(new Date(Date.now() + 864e5)) ? `tomorrow ${fmtT(d)}` : `${wd(k)} ${fmtT(d)}`;
+}
+function renderWarnings() {
+  const b = $("#warn"); b.hidden = !warnings.length; if (!warnings.length) return;
+  const w = warnings[0], [name, col] = WLEVEL[w.level] || WLEVEL[2], now = Date.now() >= Date.parse(w.onset);
+  b.style.setProperty("--wc", col);
+  $("#warnT").textContent = `${name} warning · ${w.type}`;
+  $("#warnS").textContent = [now ? `Until ${whenAt(new Date(w.expires))}` : `From ${whenAt(new Date(w.onset))}`, warnings.length > 1 ? `+${warnings.length - 1} more` : (w.areas[0] || "")].filter(Boolean).join(" · ");
+  b.setAttribute("aria-label", `${name} weather warning for ${w.type}. ${$("#warnS").textContent}. Show details.`);
+}
+$("#warn").onclick = () => {
+  const link = u => /^https?:\/\//.test(u) ? ` · <a href="${esc(u)}" target="_blank" rel="noopener">More details</a>` : "";
+  $("#warnBody").innerHTML = warnings.map(w => {
+    const [name, col] = WLEVEL[w.level] || WLEVEL[2];
+    return `<div class="wx" style="--wc:${col}"><h3><i></i>${esc(name)} warning · ${esc(w.type)}</h3>
+      <p class="when">${esc(whenAt(new Date(w.onset)))} – ${esc(whenAt(new Date(w.expires)))}${w.areas.length ? " · " + esc(w.areas.slice(0, 3).join(", ")) : ""}</p>
+      ${w.description ? `<p>${esc(w.description)}</p>` : w.headline ? `<p>${esc(w.headline)}</p>` : ""}
+      ${w.instruction && !/^be (vigilant|aware)\.?$/i.test(w.instruction.trim()) ? `<p>${esc(w.instruction)}</p>` : ""}
+      <p>${esc(w.sender || "MeteoAlarm")}${link(w.web)}</p></div>`;
+  }).join("");
+  $("#dlgWarn").showModal();
 };
 
 /* ---------------- connection ---------------- */
@@ -2629,7 +2710,7 @@ $("#c-days").addEventListener("click", e => {
 /* ---------------- places ---------------- */
 const dlgP = $("#dlgPlaces"), dlgS = $("#dlgSet");
 document.querySelectorAll("[data-close]").forEach(b => b.onclick = () => b.closest("dialog").close());
-[dlgP, dlgS, $("#dlgDays"), $("#dlgInfo"), $("#dlgLearn")].forEach(d => d.addEventListener("click", e => { if (e.target === d) d.close(); }));
+[dlgP, dlgS, $("#dlgDays"), $("#dlgInfo"), $("#dlgLearn"), $("#dlgWarn")].forEach(d => d.addEventListener("click", e => { if (e.target === d) d.close(); }));
 const placeRow = (p, i, kind) => `<div class="row" role="button" tabindex="0" data-kind="${kind}" data-i="${i}"><span><b>${esc(p.name)}</b><span>${esc(p.sub || `${p.lat}, ${p.lon}`)}</span></span>${kind === "saved" ? `<button class="x" data-del="${i}" aria-label="Remove ${esc(p.name)}">✕</button>` : ""}</div>`;
 let results = [];
 function renderSaved() {
