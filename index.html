@@ -166,6 +166,9 @@ html.standalone[data-mode="day"] body::before{content:"";position:fixed;left:0;r
 /* ---------- card base ---------- */
 .card{position:relative;isolation:isolate;overflow:hidden;border-radius:var(--r-card);padding:18px 20px 20px;min-width:0;min-height:190px;display:flex;flex-direction:column}
 @supports (corner-shape:squircle){.card,.day{border-radius:54px;corner-shape:squircle}}
+/* iOS Safari lets blurred, animated layers (the drifting pigment, the sun rays) spill past rounded corners
+   despite overflow:hidden, which shows as a square behind each corner. Clip the shape explicitly there. */
+@supports (-webkit-touch-callout:none){.card{clip-path:inset(0 round var(--r-card))}.day{clip-path:inset(0 round 26px)}}
 
 /* pigment: saturated rim, deep core */
 .pig{--ink:#fff;--ink-2:rgba(255,255,255,.64);--ink-3:rgba(255,255,255,.34);color:#fff;background:var(--mid,#222);
