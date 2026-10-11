@@ -85,7 +85,9 @@ html.standalone[data-mode="day"] body::before{content:"";position:fixed;left:0;r
 
 /* ---------- aurora: the colour field the glass refracts ---------- */
 .aurora{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;opacity:var(--aurora);transition:opacity .8s}
-.aurora i{position:absolute;border-radius:50%;filter:blur(90px);transition:background-color 1.4s ease;animation:float 40s ease-in-out infinite alternate;will-change:transform}
+/* soft-edged circles: a radial mask fades each one out, rather than a live 90px blur (which Chrome can render with
+   flickering square tiles while the circles drift) */
+.aurora i{position:absolute;border-radius:50%;-webkit-mask-image:radial-gradient(closest-side,#000 38%,rgba(0,0,0,.55) 66%,transparent);mask-image:radial-gradient(closest-side,#000 38%,rgba(0,0,0,.55) 66%,transparent);transition:background-color 1.4s ease;animation:float 40s ease-in-out infinite alternate;will-change:transform}
 .aurora .a1{width:58vmax;height:58vmax;left:-16vmax;top:-22vmax;background:var(--mid,#333)}
 .aurora .a2{width:50vmax;height:50vmax;right:-18vmax;top:6vh;background:var(--acc,#444);animation-duration:46s;animation-delay:-14s}
 .aurora .a3{width:38vmax;height:38vmax;left:18vw;top:52vh;background:var(--hi,#555);animation-duration:52s;animation-delay:-6s;opacity:.7}
