@@ -132,6 +132,9 @@ html.standalone[data-mode="day"] body::before{content:"";position:fixed;left:0;r
 
 /* ---------- top ---------- */
 .top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin:8px 4px 22px}
+/* the forecast in a sentence or two, right under the place */
+.summary{margin:-4px 4px 22px;max-width:46ch;font-size:17px;font-weight:500;line-height:1.4;letter-spacing:-.01em;color:var(--ink);text-wrap:pretty}
+.summary:empty{display:none}
 .place{display:grid;text-align:left;min-width:0}
 .place h1{margin:0;font-weight:700;font-size:clamp(34px,5.2vw,56px);letter-spacing:-.04em;line-height:1;display:flex;align-items:center;gap:10px;text-wrap:balance}
 .place h1 svg{width:22px;height:22px;flex:none;opacity:.45;stroke:currentColor;fill:none;stroke-width:2}
@@ -675,6 +678,8 @@ body.net-off .toast{bottom:calc(140px + env(safe-area-inset-bottom,0px))}
   .place .sub{white-space:normal;font-size:15px}
   .vis{margin:auto -16px -18px}
 }
+/* cards scrolled well out of view pause their animations (they resume where they were, before they come into view) */
+.offscreen,.offscreen *,.offscreen::before,.offscreen::after,.offscreen *::before,.offscreen *::after{animation-play-state:paused!important}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none!important;transition:none!important}
   .fx i{top:var(--y);transform:rotate(14deg)}
@@ -736,6 +741,7 @@ body.net-off .toast{bottom:calc(140px + env(safe-area-inset-bottom,0px))}
       <button class="round lens" id="refreshBtn" aria-label="Refresh"><svg viewBox="0 0 24 24"><path d="M20.5 12a8.5 8.5 0 1 1-2.5-6.01L20.5 8.5"/><path d="M20.5 3.5v5h-5"/></svg></button>
     </div>
   </header>
+  <p class="summary" id="summary" aria-live="polite"></p>
 
   <main class="board" id="board">
     <section class="card pig hero a-hero" id="c-hero"><div class="sk"></div></section>
@@ -1244,6 +1250,61 @@ function derive() {
   X = { c, H, Dy, hi, di, lat: D.latitude, lon: D.longitude, todayKey: Dy.time[di], kind: wmo(c.weather_code)[1], isDay: !!c.is_day };
 }
 
+/* ---------------- one-glance summary ---------------- */
+/* One or two plain sentences: what the next 12 hours do, then the one thing most worth knowing after that. */
+function renderSummary() {
+  const { H, hi, Dy, di, c } = X, end = Math.min(H.time.length, hi + 12);
+  const kindAt = k => wmo(H.weather_code[k])[1];
+  const PRECIP = ["rain", "drizzle", "snow", "sleet", "thunder"];
+  const mmh = k => toMm(H.precipitation[k] ?? 0);
+  const wet = k => mmh(k) >= .2 || ((H.precipitation_probability[k] ?? 0) >= 60 && PRECIP.includes(kindAt(k)));
+  const at = k => fmtT(T(H.time[k]));
+  // what falls during a wet spell, named after its wettest hour
+  const what = (a, b) => {
+    let peak = a; for (let k = a; k < b; k++) if (mmh(k) > mmh(peak)) peak = k;
+    const kind = kindAt(peak), r = mmh(peak), any = [];
+    for (let k = a; k < b; k++) any.push(kindAt(k));
+    if (any.includes("thunder")) return "thunderstorms";
+    const base = kind === "snow" || any.includes("snow") ? "snow" : kind === "sleet" ? "sleet" : kind === "drizzle" && r < 1 ? "drizzle" : "rain";
+    return base === "drizzle" || base === "sleet" ? base : (r < .6 ? "light " : r >= 4 ? "heavy " : "") + base;
+  };
+  const cap = s => s[0].toUpperCase() + s.slice(1);
+  let first;
+  const wetNow = wet(hi) || (c.precipitation ?? 0) > 0;
+  if (wetNow) {
+    let stop = hi; while (stop < end && wet(stop)) stop++;
+    first = stop < end ? `${cap(what(hi, stop))} until ${at(stop)}, then dry.` : `${cap(what(hi, end))} on and off for the next 12 hours.`;
+  } else {
+    let start = hi; while (start < end && !wet(start)) start++;
+    if (start < end) {
+      let stop = start; while (stop < end && wet(stop)) stop++;
+      first = stop - start <= 2 ? `Dry, with ${what(start, stop).replace(/^(light |heavy )?rain$/, m => m.startsWith("heavy") ? "a heavy shower" : m.startsWith("light") ? "a light shower" : "a shower")} around ${at(start)}.`
+        : `Dry until ${at(start)}, then ${what(start, stop)}.`;
+    } else {
+      // no rain: describe the sky, or the fog if it hangs around
+      let fog = 0, cc = 0, day = 0, n = 0;
+      for (let k = hi; k < end; k++) { if (kindAt(k) === "fog") fog++; cc += H.cloud_cover[k] ?? 50; day += H.is_day[k] ? 1 : 0; n++; }
+      cc /= n || 1;
+      if (fog >= 3 && kindAt(hi) === "fog") { let f = hi; while (f < end && kindAt(f) === "fog") f++; first = f < end ? `Foggy until ${at(f)}, then dry.` : "Foggy and dry."; }
+      else if (day >= n / 2) first = cc < 30 ? "Dry and sunny." : cc < 70 ? "Dry, with some sun." : "Dry but cloudy.";
+      else first = cc < 30 ? "Clear and dry tonight." : "Dry, with a cloudy night.";
+    }
+  }
+  // the second sentence: the most useful thing after that
+  const tc = v => toC(v), wu = WU[S.wind];
+  let gust = 0, gk = hi; for (let k = hi; k < end; k++) if ((H.wind_gusts_10m[k] ?? 0) > gust) { gust = H.wind_gusts_10m[k]; gk = k; }
+  const tonightMin = Dy.temperature_2m_min[di + 1] ?? Dy.temperature_2m_min[di];
+  const dTomorrow = Dy.temperature_2m_max[di + 1] != null ? tc(Dy.temperature_2m_max[di + 1]) - tc(Dy.temperature_2m_max[di]) : 0;
+  const localHour = +new Intl.DateTimeFormat("en-GB", { hour: "numeric", hourCycle: "h23", timeZone: TZ }).format(new Date());
+  let second = "";
+  if (toMs(gust) * 3.6 >= 60) second = `Gusts up to ${R(gust)} ${wu} around ${at(gk)}.`;
+  else if (tc(tonightMin) <= 0 && tc(c.temperature_2m) > 0 && localHour >= 12) second = `Frost tonight, down to ${R(tonightMin)}°.`;
+  else if (Math.abs(dTomorrow) >= 3) second = `${dTomorrow > 0 ? "Warmer" : "Colder"} tomorrow, up to ${R(Dy.temperature_2m_max[di + 1])}°.`;
+  else if (localHour < 14 && tc(Dy.temperature_2m_max[di]) - tc(c.temperature_2m) >= 2) second = `Up to ${R(Dy.temperature_2m_max[di])}° this afternoon.`;
+  else if (Dy.temperature_2m_max[di + 1] != null) second = (Dy.precipitation_probability_max[di + 1] ?? 0) >= 60 && !wetNow ? "Rain likely tomorrow." : `Similar tomorrow, around ${R(Dy.temperature_2m_max[di + 1])}°.`;
+  $("#summary").textContent = `${first} ${second}`.trim();
+}
+
 /* ---------------- weather-reactive effects ---------------- */
 const calmMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const fxRand = seed => () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
@@ -1359,7 +1420,7 @@ function setHaze(which, scale) {
   const t0 = performance.now(), noise = { uv: document.getElementById("hazeNoise-uv"), hero: document.getElementById("hazeNoise-hero") };
   const tick = now => {
     const k = (now - t0) / 1000;
-    for (const [id, ph] of [["uv", 0], ["hero", 2.1]]) if (HAZE[id])
+    for (const [id, ph] of [["uv", 0], ["hero", 2.1]]) if (HAZE[id] && !offscreen(id === "uv" ? "c-uv" : "c-hero"))
       noise[id].setAttribute("baseFrequency", `${(.006 + .002 * sin(k * .6 + 1 + ph)).toFixed(4)} ${(.05 + .012 * sin(k * .9 + ph)).toFixed(4)}`);
     hazeRAF = requestAnimationFrame(tick);
   };
@@ -1490,6 +1551,7 @@ function startCondensation(cv) {
   let raf = 0, timer = 0, run = null, stopped = false;
   const next = () => { timer = setTimeout(startRun, 3500 + rnd() * 5000); };
   const startRun = () => {
+    if (offscreen("c-humid")) return next(); // nobody is looking: try again later
     const big = beads.filter(b => b.r > 3.4 && b.y < h * .6);
     if (!big.length) return;
     const b = big[Math.floor(rnd() * big.length)];
@@ -2447,7 +2509,7 @@ function show(i) {
   const t = new Date(frames[fi].time * 1000), mins = Math.round((t - Date.now()) / 6e4);
   $("#rTime").textContent = `${fmtT(t)} ${Math.abs(mins) < 6 ? "now" : (mins > 0 ? "+" : "") + mins + "m"}`;
 }
-function startLoop() { if (!frames.length) return; timer = setInterval(() => show(fi + 1), 650); $("#rPlayIc").innerHTML = '<path d="M7 5.5h3.5v13H7zM13.5 5.5H17v13h-3.5z"/>'; $("#rPlay").setAttribute("aria-label", "Pause radar loop"); }
+function startLoop() { if (!frames.length) return; timer = setInterval(() => { if (!offscreen("c-radar")) show(fi + 1); }, 650); $("#rPlayIc").innerHTML = '<path d="M7 5.5h3.5v13H7zM13.5 5.5H17v13h-3.5z"/>'; $("#rPlay").setAttribute("aria-label", "Pause radar loop"); }
 function stopLoop() { clearInterval(timer); timer = null; $("#rPlayIc").innerHTML = '<path d="M8 5.5v13l10.5-6.5z"/>'; $("#rPlay").setAttribute("aria-label", "Play radar loop"); }
 
 /* ---------------- orchestration ---------------- */
@@ -2475,7 +2537,7 @@ function renderPlace() {
 }
 function renderAll() {
   derive(); applyMode(); renderPlace(); renderClock();
-  const parts = [renderHero, renderNow, renderWind, renderFeels, renderHourly, renderDays, renderUV, renderHumid, renderAir, renderMoon, renderSun, renderPress, renderVis, renderRain, renderClouds, renderPollen, renderSrc];
+  const parts = [renderSummary, renderHero, renderNow, renderWind, renderFeels, renderHourly, renderDays, renderUV, renderHumid, renderAir, renderMoon, renderSun, renderPress, renderVis, renderRain, renderClouds, renderPollen, renderSrc];
   for (const f of parts) { try { f(); } catch (e) { console.error(f.name, e); } }
   initRadar();
 }
@@ -2630,6 +2692,16 @@ const openSettings = modelOnly => { dlgS.classList.toggle("model-only", modelOnl
 $("#setBtn").onclick = () => openSettings(false);
 $("#modelChip").onclick = () => openSettings(true);
 $("#infoBtn").onclick = () => $("#dlgInfo").showModal();
+
+/* ---------------- only animate what can be seen ---------------- */
+// Each card pauses its CSS animations, and the JS loops tied to it (radar playback, heat shimmer, running
+// condensation beads), while it's scrolled out of view. The margin is generous, so everything is already running
+// again by the time it scrolls in, exactly as it was left: nothing changes on screen, the phone just does less work.
+const offscreen = id => { const el = card(id); return !!el && el.classList.contains("offscreen"); };
+if ("IntersectionObserver" in window) {
+  const io = new IntersectionObserver(es => { for (const e of es) e.target.classList.toggle("offscreen", !e.isIntersecting); }, { rootMargin: "300px 0px" });
+  document.querySelectorAll("#board > .card").forEach(el => io.observe(el));
+}
 
 /* ---------------- lifecycle ---------------- */
 document.querySelectorAll("[data-fam]").forEach(el => paint(el, FAM[el.dataset.fam]));
