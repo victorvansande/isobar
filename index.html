@@ -26,6 +26,7 @@
 <link rel="apple-touch-startup-image" media="(device-width:375px) and (device-height:812px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" href="assets/splash/splash-1125x2436.png">
 <link rel="apple-touch-startup-image" media="(device-width:360px) and (device-height:780px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" href="assets/splash/splash-1080x2340.png">
 <link rel="apple-touch-startup-image" media="(device-width:375px) and (device-height:667px) and (-webkit-device-pixel-ratio:2) and (orientation:portrait)" href="assets/splash/splash-750x1334.png">
+<link rel="icon" type="image/png" sizes="64x64" href="assets/favicon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
 <title>Isobar Weather</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -141,7 +142,7 @@ html.standalone[data-mode="day"] body::before{content:"";position:fixed;left:0;r
 /* local time in dot-matrix digits; each character has its own slot so only changed digits replay their animation */
 .clock{display:flex;align-items:center;gap:3px;height:38px;padding:0 14px;border-radius:999px;color:var(--ink)}
 .clock:empty{display:none}
-.clock .ck .dm{height:14px}
+.clock .ck .dm{height:17px}
 .clock .ck-ap{margin-left:5px}
 .round{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;flex:none}
 .round svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
@@ -321,14 +322,13 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .a-hourly[data-view="d"] .hv-h{display:none}
 .a-hourly[data-view="d"] .hall.hv-d{display:inline-flex}
 .dstrip{display:grid;padding-top:4px}
-.dcol{display:grid;grid-template-rows:22px 32px 150px 46px;justify-items:center;align-items:center;padding:6px 0 4px;border-radius:18px;cursor:pointer}
+.dcol{display:grid;grid-template-rows:22px 32px 26px 96px 26px 46px;justify-items:center;align-items:center;padding:6px 0 4px;border-radius:18px;cursor:pointer}
 .dcol:hover{background:rgba(255,255,255,.06)}
 :root[data-mode="day"] .dcol:hover{background:rgba(40,30,110,.05)}
-.dbar{position:relative;width:6px;height:100px;border-radius:6px;background:var(--ink-3);background:color-mix(in srgb,var(--ink) 10%,transparent)}
+.dbar{position:relative;width:6px;height:96px;border-radius:6px;background:var(--ink-3);background:color-mix(in srgb,var(--ink) 10%,transparent)}
 .dfill{position:absolute;left:0;right:0;border-radius:6px;background:linear-gradient(0deg,var(--lo),var(--hi))}
-.dfill em{position:absolute;left:50%;transform:translateX(-50%);font:400 15px/1 var(--f-num);font-style:normal;font-variant-numeric:tabular-nums;white-space:nowrap}
-.dfill .dhi{bottom:calc(100% + 7px)}
-.dfill .dlo{top:calc(100% + 7px);color:var(--ink-2)}
+.dcol .dhi,.dcol .dlo{font:400 15px/1 var(--f-num);font-style:normal;font-variant-numeric:tabular-nums;white-space:nowrap}
+.dcol .dlo{color:var(--ink-2)}
 .dbar .nd{position:absolute;left:50%;width:10px;height:10px;margin:0 0 -5px -5px;border-radius:50%;background:var(--signal);box-shadow:0 0 0 2px rgba(0,0,0,.25)}
 
 /* ---------- 14-day deck ---------- */
@@ -446,10 +446,6 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .gusts i{position:absolute;left:-140px;top:var(--y);height:1px;width:var(--l);opacity:0;
   background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.75),rgba(255,255,255,0));animation:gust var(--t) cubic-bezier(.4,0,.6,1) var(--w) infinite}
 @keyframes gust{0%{transform:translateX(0);opacity:0}15%,80%{opacity:var(--o,1)}100%{transform:translateX(640px);opacity:0}}
-/* the dotted line from the compass marker pulses inward at the pace of the wind */
-.flowray{animation:rayflow var(--ft) linear infinite}
-@keyframes rayflow{to{stroke-dashoffset:-8}}
-.flowray[data-calm]{animation:none}
 /* a pressure needle that trembles when pressure is changing fast */
 .tremble{transform-box:view-box;transform-origin:100px 100px;animation:tremble 2.6s ease-in-out infinite}
 @keyframes tremble{0%,55%,100%{transform:rotate(0)}8%{transform:rotate(1.2deg)}16%{transform:rotate(-.9deg)}24%{transform:rotate(.6deg)}32%{transform:rotate(-.35deg)}40%{transform:rotate(.15deg)}}
@@ -459,6 +455,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 @keyframes smog{to{transform:translate(14%,5%)}}
 .gauge svg{width:100%;height:auto;display:block;overflow:visible}
 .gauge-v{position:absolute;left:0;right:0;bottom:0;text-align:center}
+.gauge-v .dm{height:32px;margin:0 auto 4px}
 
 /* ---------- humidity ---------- */
 .hum-arc{width:100%;height:auto;display:block;margin:auto 0 10px;overflow:visible}
@@ -479,6 +476,8 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .mbar{position:relative;height:4px;border-radius:4px;background:rgba(255,255,255,.24)}
 .mbar .fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:#fff}
 .mbar .lim{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--signal);border-radius:2px}
+.lim-key{display:flex;align-items:center;gap:7px}
+.lim-key i{width:2px;height:12px;border-radius:2px;background:var(--signal)}
 
 /* ---------- moon ---------- */
 .moon{display:grid;grid-template-columns:minmax(120px,190px) minmax(0,1fr);gap:20px;align-items:center;flex:1}
@@ -513,7 +512,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .dial{position:relative;width:min(100%,190px);margin:0 auto;color:var(--ink)}
 .dial svg{width:100%;height:auto;display:block;overflow:visible}
 .dial-v{position:absolute;left:0;right:0;top:50%;transform:translateY(-44%);text-align:center}
-.dial-v .num{font-size:34px}
+.dial-v .dm{height:25px;margin:0 auto 8px}
 .vis{margin:auto -20px -20px;padding-top:12px;color:var(--ink)}
 .vis-say{margin:8px 0 0;font-size:13px;color:var(--ink-2);max-width:26ch}
 .vis svg{width:100%;height:84px;display:block}
@@ -536,6 +535,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 /* ---------- radar ---------- */
 .card.a-radar{padding:0;min-height:440px}
 .a-radar .ch{position:absolute;z-index:500;top:14px;left:14px;pointer-events:none;padding:10px 14px;border-radius:18px}
+.here-pin{border-radius:50%;background:var(--signal);box-shadow:0 0 0 2.5px #fff,0 1px 4px rgba(0,0,0,.3)}
 #radarMap{position:absolute;inset:6px;border-radius:calc(var(--r-card) - 6px);overflow:hidden;background:#474749}
 :root[data-mode="day"] #radarMap{background:#efefef}
 @supports (corner-shape:squircle){#radarMap{border-radius:48px;corner-shape:squircle}}
@@ -559,10 +559,10 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .ch.lens.dark h3{color:#fff}.ch.lens.dark p{color:rgba(255,255,255,.65)}
 
 /* ---------- source ---------- */
-.a-src{min-height:0;flex-direction:row;flex-wrap:wrap;align-items:center;gap:14px 28px;padding:18px 22px}
-.a-src p{margin:0;font-size:13px;color:var(--ink-2);max-width:72ch}
-.a-src p b{color:var(--ink);font-weight:600}
-.a-src a{color:var(--ink)}
+.a-src{display:flex;align-items:center;gap:12px;padding:2px 2px 0;color:var(--ink-2)}
+.a-src .mono{font-size:11px;line-height:1.5}
+#dlgInfo p{margin:0 0 12px;font-size:14px;line-height:1.5;color:var(--ink-2)}
+#dlgInfo p b{color:var(--ink);font-weight:600}
 
 /* ---------- loading ---------- */
 .sk{flex:1;border-radius:18px;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.08) 50%,transparent 70%) 0 0/300% 100%;animation:sk 1.6s linear infinite;min-height:80px}
@@ -613,6 +613,7 @@ dialog::backdrop{background:rgba(6,4,20,.4);-webkit-backdrop-filter:blur(8px);ba
 .seg button{flex:1;padding:9px 10px;border-radius:999px;font-weight:600;font-size:13px;color:var(--ink-2);white-space:nowrap}
 .seg button[aria-pressed="true"]{background:#fff;color:#000}
 .models{display:grid;gap:4px}
+#dlgSet.model-only .sheet > .label,#dlgSet.model-only .seg{display:none}
 .models button{display:grid;gap:2px;text-align:left;padding:11px 14px;border-radius:16px}
 .models button b{font-weight:600}
 .models button span{font-size:12.5px;color:var(--ink-2)}
@@ -732,7 +733,7 @@ body.net-off .toast{bottom:calc(140px + env(safe-area-inset-bottom,0px))}
     <section class="card pig a-moon" id="c-moon" data-fam="night"><div class="sk"></div></section>
     <section class="card glass a-radar" id="c-radar">
       <div id="radarMap"></div>
-      <header class="ch lens dark"><h3>Radar</h3><p id="radarSub">Last 2 hours</p></header>
+      <header class="ch lens dark"><h3>Rain radar</h3><p id="radarSub">Last 2 hours</p></header>
       <div class="zoomer">
         <button class="round lens dark" id="zIn" aria-label="Zoom in"><svg viewBox="0 0 24 24"><path d="M12 6v12M6 12h12"/></svg></button>
         <button class="round lens dark" id="zOut" aria-label="Zoom out"><svg viewBox="0 0 24 24"><path d="M6 12h12"/></svg></button>
@@ -750,7 +751,7 @@ body.net-off .toast{bottom:calc(140px + env(safe-area-inset-bottom,0px))}
     <section class="card pig a-rain" id="c-rain" data-fam="violet"><div class="sk"></div></section>
     <section class="card pig a-clouds" id="c-clouds" data-fam="lilac"><div class="sk"></div></section>
     <section class="card pig a-pollen" id="c-pollen" data-fam="lime"><div class="sk"></div></section>
-    <section class="card glass a-src" id="c-src"><p>Loading forecast…</p></section>
+    <footer class="a-src" id="c-src"><button class="round lens" id="infoBtn" aria-label="About the data"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5"/><circle cx="12" cy="7.8" r=".4" fill="currentColor"/></svg></button><span class="mono" id="locLine"></span></footer>
   </main>
 </div>
 
@@ -778,9 +779,16 @@ body.net-off .toast{bottom:calc(140px + env(safe-area-inset-bottom,0px))}
   </div>
 </dialog>
 
+<dialog id="dlgInfo" aria-label="About the data">
+  <div class="sheet">
+    <div class="sheet-h"><h2>About the data</h2><button class="round lens" data-close aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div id="infoBody"></div>
+  </div>
+</dialog>
+
 <dialog id="dlgSet" aria-label="Settings">
   <div class="sheet">
-    <div class="sheet-h"><h2>Settings</h2><button class="round lens" data-close aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="sheet-h"><h2 id="setTitle">Settings</h2><button class="round lens" data-close aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
     <div class="label" style="margin-top:0">Temperature</div>
     <div class="seg" data-k="temp"><button data-v="c">°C</button><button data-v="f">°F</button></div>
     <div class="label">Wind</div>
@@ -791,7 +799,7 @@ body.net-off .toast{bottom:calc(140px + env(safe-area-inset-bottom,0px))}
     <div class="seg" data-k="clock"><button data-v="24">24-hour</button><button data-v="12">12-hour</button></div>
     <div class="label">Look</div>
     <div class="seg" data-k="mode"><button data-v="auto">Follow the sun</button><button data-v="day">Day</button><button data-v="night">Night</button></div>
-    <div class="label">Forecast model</div>
+    <div class="label" id="lblModel">Forecast model</div>
     <div class="models" id="models"></div>
   </div>
 </dialog>
@@ -1332,17 +1340,46 @@ function setHaze(which, scale) {
   hazeRAF = requestAnimationFrame(tick);
 }
 
-/* Frosted rim: fine icy grain fogging the card's edges, densest at the rim and thinning toward the middle,
-   with a few small glints that catch the light. The grain is drawn once; the glints twinkle in CSS. */
+/* A well-mixed random generator (mulberry32) for the fine-grained textures. The simple one above is fine for placing
+   a few dozen things, but its consecutive values are correlated, so thousands of grains line up into a woven lattice. */
+const prng = seed => () => { seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+/* Smooth value noise (0–1) on a `cell`-pixel grid, for uneven, natural-looking patches. */
+function patchNoise(rnd, cell) {
+  const g = new Map(), v = (i, j) => { const k = i + "," + j; if (!g.has(k)) g.set(k, rnd()); return g.get(k); }, s = t => t * t * (3 - 2 * t);
+  return (x, y) => {
+    const i = Math.floor(x / cell), j = Math.floor(y / cell), u = s(x / cell - i), q = s(y / cell - j);
+    const a = v(i, j), b = v(i + 1, j), c = v(i, j + 1), d = v(i + 1, j + 1);
+    return a + (b - a) * u + (c - a) * q + (a - b - c + d) * u * q;
+  };
+}
+/* Frosted rim: frost creeping in from the card's edges in uneven patches. A soft matte haze gives the frosted-glass
+   look; over it, fine ice needles and grains catch the light, densest at the rim and thinning toward the middle.
+   Drawn once; a few glints twinkle on top in CSS. */
 function frostRim(cv, seed = 17) {
   const s = sizeCanvas(cv); if (!s) return;
-  const { ctx, w, h } = s, rnd = fxRand(seed), reach = Math.min(w, h) * .32;
+  const { ctx, w, h } = s, rnd = prng(seed), patch = patchNoise(prng(seed + 7), 54), reach = Math.min(w, h) * .34;
   const edge = (side, u, d) => side === 0 ? [u * w, d] : side === 1 ? [w - d, u * h] : side === 2 ? [u * w, h - d] : [d, u * h];
   ctx.clearRect(0, 0, w, h);
-  for (let i = 0; i < (w + h) * 9; i++) {
-    const d = Math.pow(rnd(), 2.2) * reach, [x, y] = edge(i % 4, rnd(), d);
-    ctx.fillStyle = `rgba(238,247,255,${((.08 + .45 * rnd()) * (1 - d / reach)).toFixed(3)})`;
-    ctx.beginPath(); ctx.arc(x, y, .35 + rnd() * .7, 0, PI * 2); ctx.fill();
+  // matte haze: overlapping soft blobs along the edges
+  for (let i = 0; i < (w + h) / 9; i++) {
+    const d = Math.pow(rnd(), 1.6) * reach * .8, [x, y] = edge(Math.floor(rnd() * 4), rnd(), d), r = 18 + rnd() * 42;
+    const a = .07 * (1 - d / reach) * (.3 + patch(x, y));
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, `rgba(232,244,255,${a.toFixed(3)})`); g.addColorStop(1, "rgba(232,244,255,0)");
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, PI * 2); ctx.fill();
+  }
+  // crystals: short needles at random angles and fine grains, kept or skipped by the patch pattern
+  ctx.lineCap = "round";
+  for (let i = 0; i < (w + h) * 10; i++) {
+    const d = Math.pow(rnd(), 1.9) * reach, [x, y] = edge(Math.floor(rnd() * 4), rnd(), d);
+    const k = (1 - d / reach) * (.25 + .75 * patch(x, y));
+    if (rnd() > k) continue;
+    const a = ((.07 + .32 * rnd()) * k).toFixed(3);
+    if (rnd() < .6) {
+      const ang = rnd() * PI, len = .7 + rnd() * 2.4, dx = cos(ang) * len, dy = sin(ang) * len;
+      ctx.strokeStyle = `rgba(238,247,255,${a})`; ctx.lineWidth = .45 + rnd() * .45;
+      ctx.beginPath(); ctx.moveTo(x - dx, y - dy); ctx.lineTo(x + dx, y + dy); ctx.stroke();
+    } else { ctx.fillStyle = `rgba(238,247,255,${a})`; ctx.beginPath(); ctx.arc(x, y, .3 + rnd() * .5, 0, PI * 2); ctx.fill(); }
   }
 }
 function frostGlints(seed, n) {
@@ -1375,10 +1412,16 @@ function drawBead(c, x, y, r) {
 function startCondensation(cv) {
   condStop();
   const s = sizeCanvas(cv); if (!s) return;
-  const { ctx, w, h } = s, dpr = cv.width / w, rnd = fxRand(31);
+  const { ctx, w, h } = s, dpr = cv.width / w, rnd = prng(31);
   const layer = () => { const c = document.createElement("canvas"); c.width = cv.width; c.height = cv.height; const x = c.getContext("2d"); x.setTransform(dpr, 0, 0, dpr, 0, 0); return [c, x]; };
   const [mist, m] = layer(), [beadC, bc] = layer();
-  for (let i = 0; i < w * h / 14; i++) { m.fillStyle = `rgba(255,255,255,${(.05 + rnd() * .17).toFixed(3)})`; m.beginPath(); m.arc(rnd() * w, rnd() * h, .3 + rnd() * .6, 0, PI * 2); m.fill(); }
+  // fogged glass: a faint haze made of dense, barely-visible micro-droplets, each a tiny lens (dark above, light below)
+  m.fillStyle = "rgba(225,235,255,.05)"; m.fillRect(0, 0, w, h);
+  for (let i = 0; i < w * h / 10; i++) {
+    const x = rnd() * w, y = rnd() * h, r = .3 + rnd() * .5;
+    m.fillStyle = `rgba(0,18,40,${(.05 + rnd() * .07).toFixed(3)})`; m.beginPath(); m.arc(x, y - r * .25, r, 0, PI * 2); m.fill();
+    m.fillStyle = `rgba(255,255,255,${(.06 + rnd() * .1).toFixed(3)})`; m.beginPath(); m.arc(x + r * .2, y + r * .3, r * .5, 0, PI * 2); m.fill();
+  }
   const beads = [];
   for (let tries = 0; tries < 900 && beads.length < w * h / 950; tries++) {
     const r = 1.2 + Math.pow(rnd(), 2.4) * 5.6, x = rnd() * w, y = rnd() * h;
@@ -1437,14 +1480,15 @@ function renderHero() {
     else if (now > set) { const nr = Dy.sunrise[di + 1] ? T(Dy.sunrise[di + 1]) : null; mid = nr ? `Sunrise in ${inMins((nr - now) / 6e4)}` : "After sunset"; }
     else mid = `Solar noon ${fmtT(st.noon)}`;
   } else mid = sunAlt(new Date(), X.lat, X.lon) > 0 ? "Midnight sun" : "Polar night";
+  arcDay = rise && set && !isNaN(rise) ? { rise, set } : null;
   const [px, py] = arcPoint(f).map(v => v.toFixed(1));
   const up = rise && set && now >= rise && now <= set;
   const scrub = !!(rise && set && !isNaN(rise));
   X.sun = scrub ? { rise, set, f, cur: f } : null;
   const arc = `<svg viewBox="0 0 300 108" aria-hidden="true">
     <line x1="0" y1="95" x2="300" y2="95" stroke="rgba(255,255,255,.45)" stroke-width="1.6" stroke-dasharray="0 6" stroke-linecap="round"/>
-    <path id="arcDone" d="M30 95 A120 78 0 0 1 ${px} ${py}" fill="none" stroke="#fff" stroke-width="1.6"/>
-    <path id="arcLeft" d="M${px} ${py} A120 78 0 0 1 270 95" fill="none" stroke="rgba(255,255,255,.38)" stroke-width="1.2" stroke-dasharray="2 4"/>
+    <path id="arcDone" d="${arcPath(0, f)}" fill="none" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/>
+    <path id="arcLeft" d="${arcPath(f, 1)}" fill="none" stroke="rgba(255,255,255,.38)" stroke-width="1.2" stroke-dasharray="2 4"/>
     <line id="arcDrop" x1="${px}" y1="${py}" x2="${px}" y2="95" stroke="rgba(255,255,255,.55)" stroke-width="1" stroke-dasharray="1 3"/>
     <circle cx="30" cy="95" r="2.6" fill="#fff"/><circle cx="150" cy="95" r="2.6" fill="#fff"/><circle cx="270" cy="95" r="2.6" fill="#fff"/>
     <g id="sunDot" class="sun-dot" transform="translate(${px} ${py})" opacity="${up ? 1 : .5}"><circle r="9" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="1"/><circle r="4" fill="#fff"/></g>
@@ -1497,7 +1541,19 @@ let heroFrostGrown = false;
 /* Runs `fn` with the latest event at most once per screen refresh. Touch screens report moves faster than the screen
    redraws, so updating on every event queues work up and the indicator trails the finger. */
 function perFrame(fn) { let last = null, id = 0; return e => { last = e; if (!id) id = requestAnimationFrame(() => { id = 0; fn(last); }); }; }
-const arcPoint = f => { const th = PI * (1 - f); return [150 + 120 * cos(th), 95 - 78 * sin(th)]; };
+/* Where the sun sits on the main card's arc: across is the time from sunrise to sunset, up is the sun's real height in
+   the sky (90° would reach the top). So the arc is low and flat in winter and tall in summer, as it is outside. */
+let arcDay = null;
+const arcPoint = f => {
+  if (!arcDay) { const th = PI * (1 - f); return [150 + 120 * cos(th), 95 - 78 * sin(th)]; } // midnight sun or polar night
+  const t = new Date(arcDay.rise.valueOf() + f * (arcDay.set - arcDay.rise));
+  return [30 + 240 * f, 95 - 82 * Math.max(0, sunAlt(t, X.lat, X.lon)) / (PI / 2)];
+};
+const arcPath = (f0, f1) => {
+  const n = Math.max(2, Math.ceil(Math.abs(f1 - f0) * 48)); let d = "";
+  for (let i = 0; i <= n; i++) { const [x, y] = arcPoint(f0 + (f1 - f0) * i / n); d += `${i ? "L" : "M"}${x.toFixed(1)} ${y.toFixed(1)}`; }
+  return d;
+};
 /* Hourly values at any instant, interpolated between the two nearest hours. */
 function hourAt(t) {
   const H = X.H; let k = H.time.findIndex(s => T(s) > t) - 1;
@@ -1512,8 +1568,8 @@ function scrubSun(f) {
   f = clamp(f, 0, 1); s.cur = f;
   const t = new Date(s.rise.valueOf() + f * (s.set - s.rise));
   const [px, py] = arcPoint(f).map(v => v.toFixed(1));
-  $("#arcDone").setAttribute("d", `M30 95 A120 78 0 0 1 ${px} ${py}`);
-  $("#arcLeft").setAttribute("d", `M${px} ${py} A120 78 0 0 1 270 95`);
+  $("#arcDone").setAttribute("d", arcPath(0, f));
+  $("#arcLeft").setAttribute("d", arcPath(f, 1));
   const drop = $("#arcDrop"); drop.setAttribute("x1", px); drop.setAttribute("x2", px); drop.setAttribute("y1", py);
   const dot = $("#sunDot"); dot.setAttribute("transform", `translate(${px} ${py})`); dot.setAttribute("opacity", "1");
   const h = hourAt(t), [label, kind] = wmo(h.code), v = R(h.temp), box = $("#heroTemp");
@@ -1605,13 +1661,12 @@ function renderWind() {
   const lab = ["N", "E", "S", "W"].map((t, i) => { const a = i * 90 * rad; return `<text x="${100 + 68 * sin(a)}" y="${100 - 68 * cos(a) + 3.5}" text-anchor="middle" font-family="Geist Mono, monospace" font-size="10" fill="rgba(255,255,255,.75)">${t}</text>`; }).join("");
   const a = dir * rad, tip = 78, base = 97, w = 6 * rad;
   const tri = `<path d="M${100 + tip * sin(a)} ${100 - tip * cos(a)} L${100 + base * sin(a - w)} ${100 - base * cos(a - w)} L${100 + base * sin(a + w)} ${100 - base * cos(a + w)}Z" fill="var(--signal)"/>`;
-  const flowS = clamp(1.6 - toMs(sp ?? 0) * 3.6 / 40, .3, 1.6), calm = toMs(sp ?? 0) * 3.6 < 2;
-  const ray = `<line class="flowray"${calm ? " data-calm" : ""} style="--ft:${flowS.toFixed(2)}s" x1="${100 + 74 * sin(a)}" y1="${100 - 74 * cos(a)}" x2="${100 + 46 * sin(a)}" y2="${100 - 46 * cos(a)}" stroke="#fff" stroke-opacity=".75" stroke-width="1.2" stroke-dasharray="1 3" stroke-linecap="round"/>`;
+
   const spTxt = sp == null ? "–" : String(Math.round(sp)).padStart(2, "0");
   // streaks flow across the card from the side the wind comes from, scaled to its strength
   const kmh = toMs(sp ?? 0) * 3.6, gusts = windFlow(dir, kmh, toMs(gust ?? 0) * 3.6);
   el.innerHTML = `${gusts}${head("Wind", sp == null ? "–" : `From the ${pt8(dir)}`)}
-    <div class="compass"><svg viewBox="0 0 200 200" role="img" aria-label="Wind from ${pt16(dir)}">${ticks}${lab}${ray}${tri}</svg>
+    <div class="compass"><svg viewBox="0 0 200 200" role="img" aria-label="Wind from ${pt16(dir)}">${ticks}${lab}${tri}</svg>
       <div class="compass-c">${dm(spTxt)}<span class="mono">${WU[S.wind]}</span></div></div>
     <div class="foot"><span>Gusts <b>${R(gust)}</b></span><span>Bft <b>${b}</b> · ${esc(bname)}</span></div>`;
 }
@@ -1626,12 +1681,14 @@ function renderFeels() {
   else if (dC < 0) { sub = "Colder"; why = ms > 3 ? `Wind makes it feel ${Math.abs(Math.round(diff))}° colder than the air.` : `Damp air makes it feel ${Math.abs(Math.round(diff))}° colder.`; }
   else { sub = "Warmer"; why = (c.relative_humidity_2m ?? 0) > 55 ? `Humidity makes it feel ${Math.round(diff)}° warmer.` : `Sunshine and still air make it feel ${Math.round(diff)}° warmer.`; }
   const lo = Math.min(t, f) - 6, hi = Math.max(t, f) + 6, P = v => ((v - lo) / (hi - lo) * 100).toFixed(1);
+  // when it feels the same as the thermometer (to the degree), the marker sits right on it with no gap to fill
+  const same = R(f) === R(t), fp = same ? t : f;
   el.innerHTML = `${head("Feels like", sub)}
     <div class="num big">${R(f)}°</div>
     <div class="ftrack" aria-hidden="true"><div class="line"></div>
-      <div class="seg" style="left:${P(Math.min(t, f))}%;width:${(Math.abs(t - f) / (hi - lo) * 100).toFixed(1)}%"></div>
-      <div class="tick" style="left:${P(t)}%"></div><div class="tri" style="left:${P(f)}%"></div>
-      <span class="lab" style="left:${P(t)}%">Air ${R(t)}°</span></div>
+      ${same ? "" : `<div class="seg" style="left:${P(Math.min(t, f))}%;width:${(Math.abs(t - f) / (hi - lo) * 100).toFixed(1)}%"></div>`}
+      <div class="tick" style="left:${P(t)}%"></div><div class="tri" style="left:${P(fp)}%"></div>
+      <span class="lab" style="left:${P(t)}%">Measured ${R(t)}°</span></div>
     <p class="feels-why">${esc(why)}</p>`;
 }
 
@@ -1709,7 +1766,9 @@ function dayStrip() {
     const now = n === 0 && c.temperature_2m != null ? `<span class="nd" style="bottom:${P(clamp(c.temperature_2m, lo, hi))}%"></span>` : "";
     return `<button class="dcol" data-n="${n}" aria-label="${n === 0 ? "Today" : wd(key) + " " + dm_(key)}: ${esc(label)}, ${R(mn)} to ${R(mx)} degrees${pop != null ? `, ${pop}% chance of rain` : ""}. Open details.">
       <span class="htime${n === 0 ? " now" : ""}">${n === 0 ? "Today" : wd(key)}</span>${icon(kind, true)}
-      <span class="dbar"><span class="dfill" style="top:${(100 - P(mx)).toFixed(1)}%;bottom:${P(mn)}%;--lo:${tc(mn)};--hi:${tc(mx)}"><em class="dhi hiT" style="--tc:${tc(mx)}">${R(mx)}°</em><em class="dlo">${R(mn)}°</em></span>${now}</span>
+      <em class="dhi hiT" style="--tc:${tc(mx)}">${R(mx)}°</em>
+      <span class="dbar"><span class="dfill" style="top:${(100 - P(mx)).toFixed(1)}%;bottom:${P(mn)}%;--lo:${tc(mn)};--hi:${tc(mx)}"></span>${now}</span>
+      <em class="dlo">${R(mn)}°</em>
       <div class="hpop"><svg viewBox="0 0 8 30" aria-hidden="true">${pd}</svg><span>${pop != null && pop >= 10 ? pop + "%" : "&nbsp;"}</span></div></button>`;
   });
   return `<div class="dstrip" style="grid-template-columns:repeat(${cols.length},minmax(58px,1fr));min-width:${cols.length * 58}px">${cols.join("")}</div>`;
@@ -1808,7 +1867,7 @@ function renderUV() {
       <path d="M20 100 A80 80 0 0 1 180 100" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="2"/>
       <path d="M20 100 A80 80 0 0 1 ${mx_.toFixed(1)} ${my_.toFixed(1)}" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
       ${tri}</svg>
-      <div class="gauge-v"><span class="num big">${uv < 10 ? uv.toFixed(1) : Math.round(uv)}</span></div></div>
+      <div class="gauge-v" role="img" aria-label="UV index ${uv < 10 ? uv.toFixed(1) : Math.round(uv)}">${dm(uv < 10 ? uv.toFixed(1) : String(Math.round(uv)))}</div></div>
     <div class="foot" style="margin-top:12px"><span>${esc(sub)}</span></div>`;
 }
 
@@ -1847,7 +1906,7 @@ function renderAir() {
       <div class="scale" aria-hidden="true">${scale}<span class="tri" style="left:${clamp(v / 120 * 100, 2, 98)}%"></span></div>
       <span class="mono" style="margin-top:8px">${peakT ? `Peaks at ${Math.round(peak)} around ${fmtT(peakT)}` : "Steady over the next 24 h"}</span></div>
     <div class="pol tile">${rows.map(([n, val, lim]) => `<div class="pol-r"><span class="mono">${n}</span><div class="mbar"><div class="fill" style="width:${clamp(val / (lim * 2) * 100, 2, 100)}%"></div><span class="lim" style="left:50%"></span></div><span class="v">${val < 10 ? val.toFixed(1) : Math.round(val)}<small>µg/m³</small></span></div>`).join("")}
-      <span class="mono">Yellow mark: WHO daily guideline</span></div></div>`;
+      <span class="mono lim-key"><i aria-hidden="true"></i>WHO daily guideline</span></div></div>`;
 }
 
 /* ---------------- moon ---------------- */
@@ -2034,9 +2093,10 @@ function renderPress() {
     <div class="dial"><svg viewBox="0 0 200 188" aria-hidden="true">${ticks}
       <path d="M${s1x} ${s1y} A94 94 0 1 1 ${s2x} ${s2y}" fill="none" stroke="currentColor" stroke-opacity=".16" stroke-width="1"/>
       <path${fast ? ` class="tremble"` : ""} d="M${tx} ${ty} L${b1x} ${b1y} L${b2x} ${b2y}Z" fill="var(--signal)" stroke="rgba(0,0,0,.35)" stroke-width=".8"/>
+      <circle cx="${pt(A(1013.25), 94)[0].toFixed(1)}" cy="${pt(A(1013.25), 94)[1].toFixed(1)}" r="2.6" fill="currentColor"><title>Standard pressure, 1013 hPa</title></circle>
       <text x="${s1x + 6}" y="${s1y + 14}" font-family="Geist Mono, monospace" font-size="9" fill="currentColor" fill-opacity=".6">LOW</text>
       <text x="${s2x - 6}" y="${s2y + 14}" text-anchor="end" font-family="Geist Mono, monospace" font-size="9" fill="currentColor" fill-opacity=".6">HIGH</text></svg>
-      <div class="dial-v"><div class="num">${val}</div><span class="mono">${inHg ? "inHg" : "hPa"}</span></div></div>
+      <div class="dial-v" role="img" aria-label="${val} ${inHg ? "inches of mercury" : "hectopascals"}">${dm(String(val))}<span class="mono">${inHg ? "inHg" : "hPa"}</span></div></div>
     <div class="foot"><span>Last 3 hours</span><b>${dp == null ? "–" : `${dp >= 0 ? "+" : "−"}${Math.abs(inHg ? dp * 0.02953 : dp).toFixed(inHg ? 2 : 1)}`}</b></div>`;
 }
 
@@ -2117,9 +2177,14 @@ function renderPollen() {
 /* ---------------- source ---------------- */
 function renderSrc() {
   const m = MODELS.find(x => x[0] === S.model) || MODELS[0];
-  card("c-src").innerHTML = `<p><b>Forecast</b> Open-Meteo, ${esc(m[1])} model. ${esc(m[2])}</p>
-    <p><b>Air and pollen</b> Copernicus CAMS. <b>Radar</b> RainViewer, on Esri map tiles (Esri, HERE, Garmin, © OpenStreetMap). <b>Moon</b> NASA LRO imagery; phases and twilight calculated on this device.</p>
-    <p class="mono">${D.latitude.toFixed(2)}°, ${D.longitude.toFixed(2)}° · ${Math.round(D.elevation ?? 0)} m · ${esc(D.timezone)}</p>`;
+  $("#infoBody").innerHTML = `<p><b>Forecast</b> Open-Meteo, ${esc(m[1])} model. ${esc(m[2])}</p>
+    <p><b>Air and pollen</b> Copernicus CAMS.</p>
+    <p><b>Rain radar</b> RainViewer, on Esri map tiles (Esri, HERE, Garmin, © OpenStreetMap).</p>
+    <p><b>Moon</b> NASA LRO imagery. Phases, sunrise and twilight are calculated on this device.</p>`;
+  // where the forecast is for: coordinates, height above sea level and time zone
+  const ll = (v, p, n) => `${Math.abs(v).toFixed(2)}° ${v >= 0 ? p : n}`;
+  const elev = D.elevation ?? 0, elevTxt = S.precip === "inch" ? `${Math.round(elev * 3.281)} ft` : `${Math.round(elev)} m`;
+  $("#locLine").textContent = `${ll(D.latitude, "N", "S")}, ${ll(D.longitude, "E", "W")} · ${elevTxt} above sea level · ${D.timezone.replace(/_/g, " ")}`;
   $("#modelChip").innerHTML = `Model <b>${esc(m[1].split(" ·")[0])}</b>`;
 }
 
@@ -2258,7 +2323,8 @@ async function initRadar() {
   if (!map) {
     map = L.map(box, { zoomControl: false, scrollWheelZoom: false, attributionControl: false }).setView(ll, 7);
     base = L.tileLayer(esri("Base"), { maxZoom: 12, maxNativeZoom: 16 }).addTo(map);
-    marker = L.circleMarker(ll, { radius: 7, color: "#fff", weight: 2.5, fillColor: Palette.SIGNAL, fillOpacity: 1 }).addTo(map);
+    // an HTML dot rather than a vector circle: vector shapes stretch with the map during a zoom and then snap back
+    marker = L.marker(ll, { icon: L.divIcon({ className: "here-pin", iconSize: [14, 14] }), interactive: false, keyboard: false }).addTo(map);
     cityLayer = L.layerGroup().addTo(map);
     map.on("moveend zoomend resize", placeCities);
     $("#zIn").onclick = () => map.zoomIn(); $("#zOut").onclick = () => map.zoomOut();
@@ -2423,7 +2489,7 @@ $("#c-days").addEventListener("click", e => {
 /* ---------------- places ---------------- */
 const dlgP = $("#dlgPlaces"), dlgS = $("#dlgSet");
 document.querySelectorAll("[data-close]").forEach(b => b.onclick = () => b.closest("dialog").close());
-[dlgP, dlgS, $("#dlgDays")].forEach(d => d.addEventListener("click", e => { if (e.target === d) d.close(); }));
+[dlgP, dlgS, $("#dlgDays"), $("#dlgInfo")].forEach(d => d.addEventListener("click", e => { if (e.target === d) d.close(); }));
 const placeRow = (p, i, kind) => `<div class="row" role="button" tabindex="0" data-kind="${kind}" data-i="${i}"><span><b>${esc(p.name)}</b><span>${esc(p.sub || `${p.lat}, ${p.lon}`)}</span></span>${kind === "saved" ? `<button class="x" data-del="${i}" aria-label="Remove ${esc(p.name)}">✕</button>` : ""}</div>`;
 let results = [];
 function renderSaved() {
@@ -2481,8 +2547,11 @@ dlgS.addEventListener("click", e => {
   const b = e.target.closest(".seg button"); if (b) return setSetting(b.parentElement.dataset.k, b.dataset.v);
   const m = e.target.closest("[data-m]"); if (m) setSetting("model", m.dataset.m);
 });
-$("#setBtn").onclick = () => { renderSettings(); dlgS.showModal(); };
-$("#modelChip").onclick = () => { renderSettings(); dlgS.showModal(); };
+// the dock button opens all settings; the model chip opens just the forecast models
+const openSettings = modelOnly => { dlgS.classList.toggle("model-only", modelOnly); $("#setTitle").textContent = modelOnly ? "Forecast model" : "Settings"; renderSettings(); dlgS.showModal(); };
+$("#setBtn").onclick = () => openSettings(false);
+$("#modelChip").onclick = () => openSettings(true);
+$("#infoBtn").onclick = () => $("#dlgInfo").showModal();
 
 /* ---------------- lifecycle ---------------- */
 document.querySelectorAll("[data-fam]").forEach(el => paint(el, FAM[el.dataset.fam]));
