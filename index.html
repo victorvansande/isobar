@@ -1739,7 +1739,7 @@ function renderFeels() {
     <div class="ftrack" aria-hidden="true"><div class="line"></div>
       ${same ? "" : `<div class="seg" style="left:${P(Math.min(t, f))}%;width:${(Math.abs(t - f) / (hi - lo) * 100).toFixed(1)}%"></div>`}
       <div class="tick" style="left:${P(t)}%"></div><div class="tri" style="left:${P(fp)}%"></div>
-      <span class="lab" style="left:${P(t)}%">Measured ${R(t)}°</span></div>
+      <span class="lab" style="left:${P(t)}%">Measured: ${R(t)}°</span></div>
     <p class="feels-why">${esc(why)}</p>`;
 }
 
