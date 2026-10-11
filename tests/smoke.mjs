@@ -122,7 +122,9 @@ async function run(engine, name, viewport, variant = "normal") {
     check("tapping a day opens it in the full forecast", await page.evaluate(() => document.querySelector("#dlgDays").open && document.querySelector("#deck .day.open .day-h").dataset.n === "3"));
     await page.keyboard.press("Escape");
     await tap(page, '.hseg button[data-v="h"]');
-    await tap(page, "#searchBtn"); check("places sheet opens", await page.evaluate(() => document.querySelector("#dlgPlaces").open)); await page.keyboard.press("Escape");
+    await tap(page, "#searchBtn"); check("places sheet opens", await page.evaluate(() => document.querySelector("#dlgPlaces").open));
+    await page.goBack(); await page.waitForTimeout(300); // Android's back button
+    check("back closes the sheet and stays in the app", await page.evaluate(() => !document.querySelector("#dlgPlaces").open && !!document.querySelector("#heroTemp")));
     await tap(page, "#setBtn"); check("settings open", await page.evaluate(() => document.querySelector("#dlgSet").open)); await page.keyboard.press("Escape");
     await tap(page, "#infoBtn"); check("about the data opens", await page.evaluate(() => document.querySelector("#dlgInfo").open)); await page.keyboard.press("Escape");
     await tap(page, "#humidInfo"); check("humidity explainer opens", await page.evaluate(() => document.querySelector("#dlgLearn").open)); await page.keyboard.press("Escape");

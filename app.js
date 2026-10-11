@@ -1968,6 +1968,35 @@ $("#setBtn").onclick = () => openSettings(false);
 $("#modelChip").onclick = () => openSettings(true);
 $("#infoBtn").onclick = () => $("#dlgInfo").showModal();
 
+/* ---------------- Android ---------------- */
+// The back button (or gesture) closes an open sheet instead of leaving the app. Each sheet adds a step to the
+// history while it's open; closing it any other way (✕, a tap outside, Escape) takes that step back out again.
+{
+  let skipPop = 0;
+  document.querySelectorAll("dialog").forEach(d => {
+    new MutationObserver(() => { if (d.open && !d.hist) { d.hist = true; history.pushState({ sheet: d.id }, ""); } }).observe(d, { attributes: true, attributeFilter: ["open"] });
+    d.addEventListener("close", () => { if (!d.hist) return; d.hist = false; if (history.state && history.state.sheet === d.id) { skipPop++; history.back(); } });
+  });
+  addEventListener("popstate", () => {
+    if (skipPop) { skipPop--; return; }
+    const d = document.querySelector("dialog[open]"); if (d) { d.hist = false; d.close(); }
+  });
+}
+// Chrome offers to install the app: show "Install Isobar as an app" in Settings while that offer stands
+// (iPhones never make this offer; there it's Share → Add to Home Screen).
+let installOffer = null;
+addEventListener("beforeinstallprompt", e => { e.preventDefault(); installOffer = e; $("#installBtn").hidden = false; });
+addEventListener("appinstalled", () => { installOffer = null; $("#installBtn").hidden = true; });
+$("#installBtn").onclick = async () => { if (!installOffer) return; installOffer.prompt(); await installOffer.userChoice.catch(() => {}); installOffer = null; $("#installBtn").hidden = true; };
+// shortcuts from a long press on the app icon: ?open=places, radar or days
+function openFromLink() {
+  const what = new URLSearchParams(location.search).get("open"); if (!what) return;
+  history.replaceState(history.state, "", location.pathname); // so a refresh doesn't open it again
+  if (what === "places") openPlaces();
+  else if (what === "radar") card("c-radar").scrollIntoView({ block: "center" });
+  else if (what === "days" && D) openDays(null);
+}
+
 /* ---------------- only animate what can be seen ---------------- */
 // Each card pauses its CSS animations, and the JS loops tied to it (radar playback, heat shimmer, running
 // condensation beads), while it's scrolled out of view. The margin is generous, so everything is already running
@@ -2045,7 +2074,8 @@ setInterval(renderClock, 1000);
   if (hit) { adopt(hit, cacheKey(place)); try { renderAll(); } catch (e) { console.error(e); } }
   renderNet();
   if (!place) { renderPlace(); place = await guessPlace(); }
-  load(place, { quiet: !!D });
+  const first = load(place, { quiet: !!D });
+  if (D) openFromLink(); else first.then(openFromLink);
   followMe();
 })();
 })();

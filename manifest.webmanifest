@@ -1,16 +1,27 @@
 {
+  "id": "./",
   "name": "Isobar Weather",
   "short_name": "Isobar",
   "description": "Weather with cards that react to the sky.",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["weather"],
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
+  "display_override": ["standalone"],
   "orientation": "portrait",
+  "launch_handler": { "client_mode": "focus-existing" },
   "background_color": "#08080b",
   "theme_color": "#08080b",
   "icons": [
     { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
     { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Places", "short_name": "Places", "url": "./?open=places", "icons": [{ "src": "assets/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Rain radar", "short_name": "Radar", "url": "./?open=radar", "icons": [{ "src": "assets/icon-192.png", "sizes": "192x192" }] },
+    { "name": "14 days", "short_name": "14 days", "url": "./?open=days", "icons": [{ "src": "assets/icon-192.png", "sizes": "192x192" }] }
   ]
 }
