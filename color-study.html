@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Isobar Colour Study</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Urbanist:wght@200;300;400&display=swap">
+<style>
+/* Layout: a long single column of numbered findings, each with its evidence beside it. */
+:root{
+  --bg:#09090b; --ink:#f3f3f5; --ink-2:rgba(243,243,245,.58); --ink-3:rgba(243,243,245,.3);
+  --line:rgba(255,255,255,.08); --signal:#e4ff3c;
+  --f-display:"Geist","Helvetica Neue",Arial,sans-serif;
+  --f-num:"Urbanist","Helvetica Neue",Arial,sans-serif;
+  --f-mono:"Geist Mono",ui-monospace,Menlo,Consolas,monospace;
+  --grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);background-image:radial-gradient(rgba(255,255,255,.06) 1px,transparent 1.5px);background-size:14px 14px;color:var(--ink);font:15px/1.5 var(--f-display);-webkit-font-smoothing:antialiased}
+main{max-width:1160px;margin:0 auto;padding:56px 20px 120px}
+h1{font-size:clamp(40px,6vw,72px);font-weight:700;letter-spacing:-.045em;line-height:.95;margin:0 0 6px}
+h1 span{color:var(--ink-3)}
+.lede{font-size:18px;color:var(--ink-2);max-width:62ch;margin:18px 0 0}
+section{margin-top:84px}
+h2{font-size:26px;font-weight:700;letter-spacing:-.03em;margin:0;display:flex;gap:14px;align-items:baseline}
+h2 .n{font:500 12px var(--f-mono);color:var(--signal);letter-spacing:.08em}
+.intro{color:var(--ink-2);max-width:66ch;margin:8px 0 26px}
+.mono{font:500 11px/1.3 var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2)}
+
+/* references */
+.refs{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px}
+.ref{display:grid;gap:8px;min-width:0}
+.ref img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:18px;display:block;background:#111}
+.ref b{font-weight:600;font-size:14px}
+.sw{display:flex;height:26px;border-radius:9px;overflow:hidden}
+.sw i{display:block;height:100%;position:relative}
+.sw i.out::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(0,0,0,.55) 0 2px,transparent 2px 6px)}
+
+/* families */
+.fams{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.fam{border-radius:22px;padding:16px;background:rgba(255,255,255,.035);box-shadow:inset 0 0 0 1px var(--line);display:grid;gap:12px}
+.fam h3{margin:0;font-size:17px;letter-spacing:-.02em}
+.fam p{margin:0;font-size:13px;color:var(--ink-2)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:flex;align-items:center;gap:6px;font:500 10.5px var(--f-mono);color:var(--ink-2);padding:3px 8px 3px 3px;border-radius:999px;background:rgba(255,255,255,.05)}
+.chip i{width:16px;height:16px;border-radius:50%}
+.fam.out{opacity:.75}
+.fam.out h3::after{content:"Left out";font:500 10px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:#ff8a8a;margin-left:10px}
+
+/* rules */
+.rules{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+.rule{border-radius:22px;padding:18px;background:rgba(255,255,255,.035);box-shadow:inset 0 0 0 1px var(--line);display:grid;gap:12px;align-content:start}
+.rule h3{margin:0;font-size:17px;letter-spacing:-.02em}
+.rule p{margin:0;font-size:13.5px;color:var(--ink-2)}
+.ramp{height:34px;border-radius:12px}
+.pair{display:flex;gap:8px}
+.pair i{flex:1;height:40px;border-radius:12px}
+.ramp-l{display:flex;justify-content:space-between}
+
+/* pigment card, the same recipe as the app */
+.pig{position:relative;isolation:isolate;overflow:hidden;border-radius:28px;color:#fff;background:var(--mid);padding:16px 18px;min-height:170px;display:flex;flex-direction:column;justify-content:space-between}
+@supports (corner-shape:squircle){.pig{border-radius:50px;corner-shape:squircle}}
+.pig::before{content:"";position:absolute;inset:-18%;z-index:-2;filter:blur(18px);
+  background:radial-gradient(42% 38% at 52% 52%,var(--core) 0%,color-mix(in srgb,var(--core) 55%,transparent) 48%,transparent 76%),
+    radial-gradient(40% 36% at 6% 0%,var(--hi),transparent 70%),
+    radial-gradient(46% 42% at 104% 98%,var(--acc),transparent 72%),
+    var(--mid)}
+.pig::after{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;background-image:var(--grain);opacity:.22;mix-blend-mode:soft-light;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.35),inset 0 0 0 1px rgba(255,255,255,.08),inset 0 -24px 40px -28px rgba(255,255,255,.35)}
+.pig h4{margin:0;font-size:16px;letter-spacing:-.02em;line-height:1.15}
+.pig h4 span{display:block;color:rgba(255,255,255,.62)}
+.pig .big{font:300 46px/.9 var(--f-num);letter-spacing:-.04em;text-shadow:0 .1em .22em rgba(255,255,255,.22)}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
+.cards .mono{color:rgba(255,255,255,.6)}
+
+/* temperature scale */
+.scale{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px}
+@media (max-width:760px){.scale{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.scale .pig{min-height:150px}
+
+/* glass over aurora */
+.stage{position:relative;border-radius:30px;overflow:hidden;padding:34px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;min-height:320px;background:#0b0b10}
+.stage .orb{position:absolute;border-radius:50%;filter:blur(40px);opacity:.85}
+.glass{position:relative;border-radius:28px;padding:18px;min-height:200px;color:#fff;
+  background:linear-gradient(155deg,rgba(255,255,255,.16),rgba(255,255,255,.03) 45%,rgba(255,255,255,.08));
+  -webkit-backdrop-filter:blur(26px) saturate(1.9);backdrop-filter:blur(26px) saturate(1.9);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.5),inset 0 0 0 1px rgba(255,255,255,.08),inset 0 18px 36px -24px rgba(255,255,255,.3),0 30px 60px -30px rgba(0,0,0,.6)}
+.glass::after{content:"";position:absolute;inset:0;border-radius:inherit;padding:1.2px;pointer-events:none;
+  background:linear-gradient(135deg,rgba(255,255,255,.75),rgba(255,255,255,0) 32%,rgba(255,255,255,0) 68%,rgba(255,255,255,.4));
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
+.glass.day{background:linear-gradient(155deg,rgba(255,255,255,.7),rgba(255,255,255,.38) 50%,rgba(255,255,255,.55));color:#0e0e12}
+.glass h4{margin:0;font-size:16px}
+.glass p{margin:6px 0 0;font-size:13px;opacity:.7}
+.stage.light{background:#e6e5ec}
+.split{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+.note{font-size:13px;color:var(--ink-2);margin-top:10px}
+</style>
+</head>
+<body>
+<main>
+  <p class="mono">Isobar Weather · design notes</p>
+  <h1>Colour study <span>from your boards</span></h1>
+  <p class="lede">I sampled every reference board pixel by pixel, kept only the saturated colours, and grouped what keeps coming back. Five families carry almost all of it. The khaki, beige and olive tones the first version leaned on mostly came from blurred photos and frosted glass, not from the designed surfaces, so they're out.</p>
+
+  <section>
+    <h2><span class="n">01</span>What the boards are made of</h2>
+    <p class="intro">Top saturated colours per board, widest share first. Striped swatches are the muddy tones I left out.</p>
+    <div class="refs" id="refs"></div>
+  </section>
+
+  <section>
+    <h2><span class="n">02</span>Five families, plus a signal</h2>
+    <p class="intro">Counted across the 17 unique boards. Each family becomes a set of card palettes in the app.</p>
+    <div class="fams" id="fams"></div>
+  </section>
+
+  <section>
+    <h2><span class="n">03</span>How the boards use colour</h2>
+    <p class="intro">Four rules I pulled from looking at the cards themselves, not just the swatches.</p>
+    <div class="rules">
+      <div class="rule"><h3>Bright rim, deep core</h3><p>The Weather, Veri and Glucose cards are fully saturated at the edges and fall to a dark centre where the number sits. That's what keeps them vivid instead of pastel, and why white type reads on them.</p>
+        <div class="cards" style="grid-template-columns:1fr 1fr"><div class="pig" id="r1a"><h4>Rim and core<span>Crimson</span></h4><span class="big">29°</span></div><div class="pig" id="r1b"><h4>Rim and core<span>Cobalt</span></h4><span class="big">07</span></div></div></div>
+      <div class="rule"><h3>Walk the wheel, never cross it</h3><p>Blending blue into orange, or green into red, makes mud. That's where the khaki came from. The temperature scale now runs cold to hot through violet and pink, so every in-between step stays clean.</p>
+        <div><div class="ramp" style="background:linear-gradient(90deg,#2350f5,#ff8412)"></div><div class="ramp-l mono" style="margin:4px 0 10px"><span>Crossing the wheel</span><span>muddy middle</span></div>
+        <div class="ramp" id="goodRamp"></div><div class="ramp-l mono" style="margin-top:4px"><span>Walking around it</span><span>clean all the way</span></div></div></div>
+      <div class="rule"><h3>Pairs the boards already use</h3><p>Every pair here sits side by side on one of your boards. Neighbouring cards in the app are assigned from these pairs.</p>
+        <div style="display:grid;gap:8px">
+          <div class="pair"><i style="background:#2350f5"></i><i style="background:#ff6a4a"></i><span class="mono" style="width:110px">Cobalt + coral</span></div>
+          <div class="pair"><i style="background:#e8307f"></i><i style="background:#ff8412"></i><span class="mono" style="width:110px">Raspberry + amber</span></div>
+          <div class="pair"><i style="background:#b04de0"></i><i style="background:#ff6a4a"></i><span class="mono" style="width:110px">Orchid + coral</span></div>
+          <div class="pair"><i style="background:#0fb38c"></i><i style="background:#2a7bff"></i><span class="mono" style="width:110px">Mint + cobalt</span></div>
+          <div class="pair"><i style="background:#22268a"></i><i style="background:#e4ff3c"></i><span class="mono" style="width:110px">Night + signal</span></div>
+        </div></div>
+      <div class="rule"><h3>Glass is clear, not tinted</h3><p>In GCT Balance and Yeasy Run the glass has almost no colour of its own. It picks up whatever sits behind it. So the app's glass cards are near-clear, and a slow field of colour from the current weather drifts underneath them.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">04</span>Temperature scale</h2>
+    <p class="intro">The hero card and every day in the 14-day stack take their colour from the temperature. Values between stops blend.</p>
+    <div class="scale" id="scale"></div>
+  </section>
+
+  <section>
+    <h2><span class="n">05</span>Weather changes the core, not the hue</h2>
+    <p class="intro">At the same 15°, the rim stays orchid while the conditions change what's underneath. Night pulls everything toward indigo.</p>
+    <div class="cards" id="conds"></div>
+  </section>
+
+  <section>
+    <h2><span class="n">06</span>Where each family lives in the app</h2>
+    <p class="intro">Fixed cards get a family that suits their subject. Cards that report a level (UV, air quality) move through families as the level rises.</p>
+    <div class="cards" id="roles"></div>
+  </section>
+
+  <section>
+    <h2><span class="n">07</span>Liquid glass</h2>
+    <p class="intro">Clear panels with a bright top edge, a light catch on opposite corners and a soft inner glow. The second panel is the day version over the light ground.</p>
+    <div class="split">
+      <div class="stage" id="stageN"><div class="glass"><h4>Next 48 hours</h4><p>Glass over the night ground</p></div></div>
+      <div class="stage light" id="stageD"><div class="glass day"><h4>Next 48 hours</h4><p>Glass over the day ground</p></div></div>
+    </div>
+  </section>
+</main>
+<script src="palette.js"></script>
+<script>
+(() => {
+const P = window.Palette, F = P.FAM;
+const REFS = [
+  ["1", "AI OS · Analytics", "#77013d #5d0346 #b91432 #1a5fc9 #427a03 #be513f #c9125c", "#427a03"],
+  ["6", "AI OS · Main page", "#bd2d70 #640d19 #a24737 #ae222f #04366e #9c724d #a86be0", "#9c724d #a24737"],
+  ["2", "GCT Balance", "#a59966 #ee8c70 #f7b5fd #a78a69 #cb9b78 #eaef8e #fca2f5", "#a59966 #a78a69 #cb9b78 #eaef8e"],
+  ["11", "Vertical oscillation", "#ef8b6f #f8b2fd #faa2f3 #fb8899 #d9946f #fb90c2 #7fb4ea", "#d9946f"],
+  ["3", "Yeasy Run", "#cc4e38 #eaa96d #37497f #e67e36 #9a4d55 #eb8863 #1f3161", "#9a4d55"],
+  ["5", "Yeasy Run · lemon", "#ebe7a0 #efef9b #a8a064 #edd9b4", "#ebe7a0 #a8a064 #edd9b4"],
+  ["9", "Lung activity", "#96acea #4a63b6 #a4c2f7 #17205c #5f579c #978ed3 #934082", ""],
+  ["10", "Widget kit", "#ec82de #3e82af #f474b3 #f8bd81 #f68a22 #f81f75 #e38ce9", ""],
+  ["12", "Glucose cards", "#ab533c #a8666e #2e4899 #d37db2 #c8767b #b5427c #1c2d64", "#ab533c #a8666e"],
+  ["14", "Veri", "#c23b7d #d079af #cd8eb9 #a8563e #58113a #a4656c #334d9f", "#a8563e #a4656c"],
+  ["8", "Health tracker", "#599f5e #f28aa4 #84c388 #f377a2 #236b2c #e9467b #d6eb0a", "#599f5e #84c388"],
+  ["15", "Sold services", "#ea3c2e #e90216 #5d130b #f9a7a2", ""],
+  ["17", "Device insights", "#bbf6e2 #be5a3e #0487ca #fdace4 #a4daf6", ""],
+  ["18", "Orb posters", "#ce5234 #cc8140 #91a4f1 #e9ae7a #7aa6d5 #e78873 #d6c67b", "#cc8140 #d6c67b"],
+  ["19", "Auro", "#f6ca93 #e89923 #7f25e8 #b5e78c #83c3f0 #3c84c2 #a27ecf", ""],
+  ["13", "Health score", "#f3b7d9 #f4db7a #a1b06d #e58a98", "#a1b06d"],
+  ["7", "Neutone", "#efb281 #f27d4d #e75e37", ""]
+];
+document.getElementById("refs").innerHTML = REFS.map(([f, name, hexes, out]) => {
+  const hs = hexes.split(" "), outs = out.split(" ");
+  return `<figure class="ref" style="margin:0"><img src="refs/${f}.jpg" alt="${name} reference board" loading="lazy"><b>${name}</b>
+    <div class="sw">${hs.map((h, i) => `<i class="${outs.includes(h) ? "out" : ""}" style="background:${h};flex:${7 - i}" title="${h}"></i>`).join("")}</div></figure>`;
+}).join("");
+
+const FAMS = [
+  ["Raspberry and magenta", "7 boards · AI OS, Veri, Widget kit, Glucose", ["#c9125c", "#bd2d70", "#c23b7d", "#f81f75", "#77013d"], "Crimson, raspberry. Hottest temperatures, high UV, poor air."],
+  ["Cobalt and navy", "9 boards · AI OS Wind, Lung activity, Glucose", ["#1a5fc9", "#2e4899", "#4a63b6", "#0487ca", "#17205c"], "Ice, cobalt, azure, indigo, night. Cold, wind, the moon."],
+  ["Vermilion, coral and orange", "11 boards · Sold services, Yeasy Run, Neutone", ["#ea3c2e", "#cc4e38", "#ee8c70", "#f68a22", "#e67e36"], "Coral, vermilion, amber, sunset. Warm days, feels-like, the sun."],
+  ["Orchid and lilac", "9 boards · GCT Balance, Vertical oscillation, Veri", ["#d079af", "#ec82de", "#f7b5fd", "#a86be0", "#96acea"], "Violet, orchid, lilac. Mild days, cloud cover, rain totals."],
+  ["Mint and aqua", "3 boards · Device insights, Health tracker, Auro", ["#bbf6e2", "#0fb38c", "#83c3f0"], "Mint, used sparingly. Good air, low UV, humidity."],
+  ["Signal lime", "4 boards · AI OS pill, Health tracker dot, Auro", ["#e4ff3c", "#d6eb0a", "#b5e78c"], "Only for markers, the now-dot and the dock button, plus pollen."],
+  ["Olive, khaki and beige", "5 boards · mostly photo and frosted-glass bleed", ["#a59966", "#a78a69", "#a8a064", "#a1b06d", "#d6c67b"], "These made the first version look dated and clash with the blues."]
+];
+document.getElementById("fams").innerHTML = FAMS.map(([n, c, hs, use], i) => `<div class="fam${i === 6 ? " out" : ""}"><h3>${n}</h3><span class="mono">${c}</span>
+  <div class="chips">${hs.map(h => `<span class="chip"><i style="background:${h}"></i>${h}</span>`).join("")}</div><p>${use}</p></div>`).join("");
+
+P.paint(document.getElementById("r1a"), F.crimson);
+P.paint(document.getElementById("r1b"), F.cobalt);
+document.getElementById("goodRamp").style.background = `linear-gradient(90deg,${P.TEMP.map(([, f]) => F[f].mid).join(",")})`;
+
+const mk = (p, title, sub, big, foot = "") => { const d = document.createElement("div"); d.className = "pig"; P.paint(d, p);
+  d.innerHTML = `<h4>${title}<span>${sub}</span></h4><div><div class="big">${big}</div>${foot ? `<div class="mono" style="margin-top:8px">${foot}</div>` : ""}</div>`; return d; };
+const scale = document.getElementById("scale");
+P.TEMP.forEach(([t, f]) => scale.appendChild(mk(F[f], f[0].toUpperCase() + f.slice(1), "", `${t}°`, F[f].mid)));
+
+const conds = document.getElementById("conds");
+[["clear", "Clear", true], ["partly", "Partly cloudy", true], ["cloudy", "Overcast", true], ["rain", "Rain", true], ["snow", "Snow", true], ["fog", "Fog", true], ["thunder", "Thunderstorm", true], ["clear", "Clear night", false], ["rain", "Rain at night", false]]
+  .forEach(([k, n, day]) => conds.appendChild(mk(P.weatherPal(15, k, day), "Now", n, "15°")));
+
+const roles = document.getElementById("roles");
+[["cobalt", "Wind", "From the west", "17"], ["coral", "Feels like", "Colder", "11°"], ["sunset", "Sun", "11h 00m", "18:58"], ["night", "Moon", "Waxing crescent", "1%"],
+ ["violet", "Rain", "Today", "2.4"], ["lilac", "Cloud cover", "Scattered", "57%"], ["lime", "Pollen", "Grass is low", "4"], ["mint", "Humidity", "Comfortable", "57%"],
+ ["mint", "UV · Low", "0 to 2", "1.2"], ["amber", "UV · Moderate", "3 to 5", "4.0"], ["vermilion", "UV · High", "6 to 7", "6.5"], ["crimson", "UV · Very high", "8 to 10", "9.1"],
+ ["mint", "Air · Good", "AQI 0 to 20", "14"], ["azure", "Air · Fair", "AQI 20 to 40", "31"], ["amber", "Air · Moderate", "AQI 40 to 60", "52"], ["coral", "Air · Poor", "AQI 60 to 80", "71"]]
+  .forEach(([f, t, s, b]) => roles.appendChild(mk(F[f], t, s, b, f)));
+
+const orbs = (id, cols, op) => { const st = document.getElementById(id);
+  cols.forEach(([c, x, y, s]) => { const o = document.createElement("div"); o.className = "orb"; Object.assign(o.style, { background: c, left: x, top: y, width: s, height: s, opacity: op }); st.prepend(o); }); };
+orbs("stageN", [[F.orchid.mid, "-5%", "-20%", "260px"], [F.coral.mid, "55%", "30%", "240px"], [F.cobalt.mid, "20%", "60%", "200px"]], .8);
+orbs("stageD", [[F.orchid.mid, "-5%", "-20%", "260px"], [F.coral.mid, "55%", "30%", "240px"], [F.mint.mid, "20%", "60%", "200px"]], .6);
+})();
+</script>
+</body>
+</html>
