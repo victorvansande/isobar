@@ -458,7 +458,15 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .gauge-v .dm{height:32px;margin:0 auto 4px}
 
 /* ---------- humidity ---------- */
-.hum-arc{width:100%;height:auto;display:block;margin:auto 0 10px;overflow:visible}
+/* humidity as a water level: the card fills like a glass, with a slowly moving surface; the dotted line on top is 100%: saturated air, where water starts to condense out as dew, mist or fog */
+.water{position:absolute;left:0;right:0;bottom:0;height:var(--h);z-index:-1;pointer-events:none;transition:height 1.2s cubic-bezier(.3,.7,.2,1)}
+.water .body{position:absolute;left:0;right:0;top:6px;bottom:0;background:linear-gradient(rgba(175,200,255,.24),rgba(130,165,255,.12))}
+.water svg{position:absolute;left:0;top:0;width:200%;height:12px;animation:wave 11s linear infinite}
+.water svg.w2{opacity:.55;animation-duration:17s;animation-direction:reverse}
+@keyframes wave{to{transform:translateX(-50%)}}
+.sat{position:absolute;left:0;right:0;top:7px;border-top:1px dotted rgba(255,255,255,.4);pointer-events:none}
+.sat span{position:absolute;right:16px;top:4px;font:500 9.5px/1 var(--f-mono);letter-spacing:.05em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.a-humid .num{margin-bottom:auto}
 
 /* ---------- air ---------- */
 .air{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:20px;flex:1}
@@ -514,6 +522,11 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .dial-v{position:absolute;left:0;right:0;top:50%;transform:translateY(-44%);text-align:center}
 .dial-v .dm{height:25px;margin:0 auto 8px}
 .vis{margin:auto -20px -20px;padding-top:12px;color:var(--ink)}
+/* atmospheric depth: near ridges dark, far ones blue-grey under a blue sky; lost ones wash into the haze colour */
+.a-vis{--v-near:#1d1a2a;--v-far:#8f99bd;--v-haze:#e7e4ec;--v-sky:#a9c6ff}
+:root:not([data-mode="day"]) .a-vis{--v-near:#cfcbe4;--v-far:#4d5680;--v-haze:#3b3a52;--v-sky:#24418c}
+.vis-sky{position:absolute;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(180deg,color-mix(in oklab,var(--v-sky) var(--clear),var(--v-haze)) 0%,transparent 70%);opacity:var(--skyA)}
+.vis-fog{position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(180deg,transparent 35%,var(--v-haze) 100%);opacity:var(--fogA)}
 .vis-say{margin:8px 0 0;font-size:13px;color:var(--ink-2);max-width:26ch}
 .vis svg{width:100%;height:84px;display:block}
 .vis path{animation:ridgeflow var(--t) linear var(--dl) infinite,ridgebob var(--b) ease-in-out var(--dl) infinite alternate}
@@ -1876,12 +1889,13 @@ function renderHumid() {
   const { c } = X, el = card("c-humid");
   const h = c.relative_humidity_2m, dp = c.dew_point_2m, dpC = toC(dp);
   const lab = dpC == null ? "–" : dpC < 10 ? "Dry" : dpC < 16 ? "Comfortable" : dpC < 18 ? "A little humid" : dpC < 21 ? "Humid" : "Oppressive";
-  const lit = Math.round((h ?? 0) / 10);
-  let dots = ""; for (let i = 0; i <= 10; i++) { const x = 10 + i * 18, y = 36 - 26 * sin(PI * i / 10); dots += `<circle cx="${x}" cy="${y}" r="${i < lit ? 4 : 2.6}" fill="#fff" opacity="${i < lit ? 1 : .28}"/>`; }
+  // the surface: two periods of a gentle swell in 400 units, so sliding it by half its width loops without a seam
+  const wave = cls => `<svg class="${cls}" viewBox="0 0 400 12" preserveAspectRatio="none" aria-hidden="true"><path d="M0 6 Q50 1 100 6 T200 6 T300 6 T400 6 V12 H0Z" fill="rgba(175,200,255,.24)"/><path d="M0 6 Q50 1 100 6 T200 6 T300 6 T400 6" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1" vector-effect="non-scaling-stroke"/></svg>`;
   const wet = (h ?? 0) >= 85; // condensation beads up on the card on very humid days
-  el.innerHTML = `${wet ? `<canvas class="condense" id="humidCv" aria-hidden="true"></canvas>` : ""}${head("Humidity", lab)}
+  el.innerHTML = `<span class="water" style="--h:${clamp(h ?? 0, 0, 100)}%">${wave("w2")}${wave("w1")}<span class="body"></span></span>
+    <span class="sat" aria-hidden="true"><span>100% · saturated</span></span>
+    ${wet ? `<canvas class="condense" id="humidCv" aria-hidden="true"></canvas>` : ""}${head("Humidity", lab)}
     <div class="num big">${R(h)}<small>%</small></div>
-    <svg class="hum-arc" viewBox="0 0 200 44" aria-hidden="true">${dots}</svg>
     <div class="foot"><span>Dew point <b>${R(dp)}°</b></span></div>`;
   if (wet) startCondensation($("#humidCv")); else condStop();
 }
@@ -2111,7 +2125,7 @@ function renderVis() {
   const lab = km == null ? "–" : km < 1 ? "Fog" : km < 4 ? "Mist or haze" : km < 10 ? "Moderate" : km < 20 ? "Good" : "Very clear";
   // Fading ridges: five hill lines at 1, 3, 8, 20 and 50 km, nearest at the bottom. Ridges within sight are
   // drawn with normal atmospheric depth; the one at the edge of visibility is half-lost, the rest vanish into haze.
-  const RIDGES = [1, 3, 8, 20, 50], depth = [.88, .6, .4, .26, .17], W = 240, Hh = 92;
+  const RIDGES = [1, 3, 8, 20, 50], W = 240, Hh = 92;
   const lg = d => Math.log10(Math.max(d, .1));
   let paths = "", edge = null;
   for (let i = RIDGES.length - 1; i >= 0; i--) {
@@ -2123,11 +2137,17 @@ function renderVis() {
     // Nearer ridges flow faster than distant ones (parallax), and each bobs gently on its own slow rhythm.
     let p = `M0 ${Hh}`;
     for (let x = 0; x <= W * 2; x += 8) p += ` L${x} ${(base - amp * (.8 * sin(x / W * 2 * PI * (1 + (i % 2)) + ph) + .2 * sin(x / W * 6 * PI + ph * 2))).toFixed(1)}`;
-    paths += `<path d="${p} L${W * 2} ${Hh}Z" fill="currentColor" opacity="${(.035 + (depth[i] - .035) * v).toFixed(3)}" style="--t:${(38 + i * 22)}s;--b:${(5 + i * 1.7).toFixed(1)}s;--dl:${(-i * 7.3).toFixed(1)}s"/>`;
+    // colour by distance (dark near, blue-grey far), then washed into the haze by how far out of sight it is
+    const col = `color-mix(in oklab,color-mix(in oklab,var(--v-near),var(--v-far) ${Math.round(i / (RIDGES.length - 1) * 100)}%) ${Math.round(v * 100)}%,var(--v-haze))`;
+    paths += `<path d="${p} L${W * 2} ${Hh}Z" style="fill:${col};--t:${(38 + i * 22)}s;--b:${(5 + i * 1.7).toFixed(1)}s;--dl:${(-i * 7.3).toFixed(1)}s"/>`;
   }
+  // clarity 0 (thick fog, under 0.5 km) to 1 (30 km and more): how blue the sky is and how much haze hangs over it all
+  const clear = km == null ? .5 : clamp((lg(km) - lg(.5)) / (lg(30) - lg(.5)), 0, 1);
   const fmtD = d => imperial ? `${Math.round(d / 1.609 * 10) / 10} mi` : `${d} km`;
   const say = km == null ? "" : edge == null ? "Even nearby hills are lost in fog" : edge === RIDGES.length - 1 ? `Hills ${fmtD(50)} away are in view` : `Clear out to hills ${fmtD(RIDGES[edge])} away, hazy beyond`;
-  el.innerHTML = `${head("Visibility", lab)}
+  el.innerHTML = `<span class="vis-sky" aria-hidden="true" style="--clear:${Math.round(clear * 100)}%;--skyA:${(.35 + .4 * clear).toFixed(2)}"></span>
+    <span class="vis-fog" aria-hidden="true" style="--fogA:${((1 - clear) * .75).toFixed(2)}"></span>
+    ${head("Visibility", lab)}
     <div class="num big">${show}<small>${imperial ? "mi" : "km"}</small></div>
     <p class="vis-say">${esc(say)}</p>
     <div class="vis"><svg viewBox="0 0 ${W} ${Hh}" preserveAspectRatio="none" role="img" aria-label="You can see about ${show} ${imperial ? "miles" : "kilometres"}">${paths}</svg></div>`;
