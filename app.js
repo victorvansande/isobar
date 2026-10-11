@@ -4,6 +4,7 @@
 const $ = (s, r = document) => r.querySelector(s);
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const cap1 = s => s ? s[0].toUpperCase() + s.slice(1) : s;
 const R = v => (v == null || isNaN(v)) ? "–" : Math.round(v);
 const nz = v => v == null || isNaN(v) ? null : v;
 const { FAM, weatherPal, paint } = window.Palette;
@@ -29,7 +30,7 @@ const hour12 = (() => { try { return new Intl.DateTimeFormat(undefined, { hour: 
 const S = Object.assign({ temp: "c", wind: "kmh", precip: "mm", clock: hour12 ? "12" : "24", mode: "auto", model: "best_match" }, store.get("settings", {}));
 let place = store.get("place", null);
 let saved = store.get("saved", []);
-let D = null, AQ = null, TZ = "UTC", OFF = 0, fetchedAt = 0;
+let D = null, AQ = null, U = null, TZ = "UTC", OFF = 0, fetchedAt = 0; // U: how sure the forecast is, per day
 
 const MODELS = [
   ["best_match", "Best match", "Picks the sharpest local model for your spot (KNMI HARMONIE, DWD ICON-D2, Météo-France AROME, UKMO, HRRR…) and hands over to ECMWF for later days."],
@@ -341,6 +342,26 @@ async function getJSON(url) {
   return j;
 }
 const qs = o => Object.entries(o).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&");
+/* How sure the forecast is, per day: four independent models (European, American, Canadian, German) forecast the same
+   days, and the more they disagree, the less certain the day. "high" when their highs lie within 2° and they agree on
+   rain, "low" from 5° apart (or when some bring rain and others none), "medium" in between; ten or more days ahead is
+   never "high". Returns { "2026-10-14": { deg, conf } } with deg the spread in °C, or null. */
+const SPREAD_MODELS = ["ecmwf_ifs025", "gfs_seamless", "gem_seamless", "icon_seamless"];
+function confidence(u) {
+  if (!u || !u.daily || !u.daily.time) return null;
+  const out = {}, d = u.daily;
+  d.time.forEach((day, i) => {
+    const hi = SPREAD_MODELS.map(m => (d[`temperature_2m_max_${m}`] || [])[i]).filter(v => v != null);
+    const mm = SPREAD_MODELS.map(m => (d[`precipitation_sum_${m}`] || [])[i]).filter(v => v != null);
+    if (hi.length < 2) return;
+    const deg = Math.max(...hi) - Math.min(...hi), split = mm.some(v => v >= 1) && mm.some(v => v < .2);
+    let level = deg <= 2 ? 0 : deg <= 4.5 ? 1 : 2;
+    if (split) level = Math.min(2, level + 1);
+    if (i >= 10) level = Math.max(1, level);
+    out[day] = { deg, conf: ["high", "medium", "low"][level] };
+  });
+  return out;
+}
 async function fetchAll(p) {
   const w = getJSON("https://api.open-meteo.com/v1/forecast?" + qs({
     latitude: p.lat, longitude: p.lon, timezone: "auto", forecast_days: 14, past_days: 1,
@@ -355,7 +376,11 @@ async function fetchAll(p) {
     current: "european_aqi,us_aqi,pm10,pm2_5,nitrogen_dioxide,ozone,sulphur_dioxide,alder_pollen,birch_pollen,grass_pollen,mugwort_pollen,olive_pollen,ragweed_pollen",
     hourly: "european_aqi"
   })).catch(() => null);
-  return [await w, await a];
+  // the same days from four independent models, to see how much they agree (see confidence())
+  const u = getJSON("https://api.open-meteo.com/v1/forecast?" + qs({
+    latitude: p.lat, longitude: p.lon, timezone: "auto", forecast_days: 14, daily: "temperature_2m_max,precipitation_sum", models: SPREAD_MODELS.join(",")
+  })).catch(() => null);
+  return [await w, await a, await u];
 }
 async function geocode(q) {
   const j = await getJSON("https://geocoding-api.open-meteo.com/v1/search?" + qs({ name: q, count: 8, language: "en", format: "json" }));
@@ -1038,10 +1063,14 @@ function dayStrip() {
     const lit = pop == null ? 0 : Math.round(pop / 20);
     let pd = ""; for (let q = 0; q < 5; q++) pd += `<circle cx="4" cy="${26 - q * 5.5}" r="${q < lit ? 2.2 : 1.5}" fill="${q < lit ? "var(--rain)" : "currentColor"}" opacity="${q < lit ? 1 : .18}"/>`;
     const now = n === 0 && c.temperature_2m != null ? `<span class="nd" style="bottom:${P(clamp(c.temperature_2m, lo, hi))}%"></span>` : "";
-    return `<button class="dcol" data-n="${n}" aria-label="${n === 0 ? "Today" : wd(key) + " " + dm_(key)}: ${esc(label)}, ${R(mn)} to ${R(mx)} degrees${pop != null ? `, ${pop}% chance of rain` : ""}. Open details.">
+    // an uncertain day: the bar reaches out by how much the models disagree, fading at both ends, so it reads as
+    // "somewhere around here" rather than an exact range
+    const uc = U && U[key], fuzz = uc && uc.conf !== "high" ? uc.deg * (S.temp === "f" ? 1.8 : 1) / 2 : 0;
+    const top = clamp(+P(mx + fuzz), 0, 100), bot = clamp(+P(mn - fuzz), 0, 100), fz = fuzz ? clamp((top - +P(mx) + +P(mn) - bot) / 2 / Math.max(top - bot, 1) * 100 + 8, 8, 45) : 0;
+    return `<button class="dcol${uc && uc.conf === "low" ? " unsure" : ""}" data-n="${n}" aria-label="${n === 0 ? "Today" : wd(key) + " " + dm_(key)}: ${esc(label)}, ${R(mn)} to ${R(mx)} degrees${pop != null ? `, ${pop}% chance of rain` : ""}${uc && uc.conf !== "high" ? `, ${uc.conf} confidence` : ""}. Open details.">
       <span class="htime${n === 0 ? " now" : ""}">${n === 0 ? "Today" : wd(key)}</span>${icon(kind, true)}
       <em class="dhi hiT" style="--tc:${tc(mx)}">${R(mx)}°</em>
-      <span class="dbar"><span class="dfill" style="top:${(100 - P(mx)).toFixed(1)}%;bottom:${P(mn)}%;--lo:${tc(mn)};--hi:${tc(mx)}"></span>${now}</span>
+      <span class="dbar"><span class="dfill${fuzz ? " fuzzy" : ""}" style="top:${(100 - top).toFixed(1)}%;bottom:${bot.toFixed(1)}%;--lo:${tc(mn)};--hi:${tc(mx)};--fz:${fz.toFixed(0)}%"></span>${now}</span>
       <em class="dlo">${R(mn)}°</em>
       <div class="hpop"><svg viewBox="0 0 8 30" aria-hidden="true">${pd}</svg><span>${pop != null && pop >= 10 ? pop + "%" : "&nbsp;"}</span></div></button>`;
   });
@@ -1110,6 +1139,7 @@ function renderDays() {
         ${tile("Sunrise", fmtT(rise))}
         ${tile("Sunset", fmtT(set))}
         ${tile("Sunshine", Dy.sunshine_duration[i] != null ? (Dy.sunshine_duration[i] / 3600).toFixed(1) + " h" : "–")}
+        ${U && U[key] ? tile("Confidence", `${cap1(U[key].conf)} · ${U[key].deg < 1 ? "models agree" : `models differ by up to ${Math.max(1, Math.round(U[key].deg * (S.temp === "f" ? 1.8 : 1)))}°`}`) : ""}
       </div></div></div>
     </article>`;
   }).join("");
@@ -1721,9 +1751,9 @@ async function load(p, { quiet = false } = {}) {
   // a place seen before opens straight from its last forecast while the fresh one loads
   if (dataKey !== key) { const hit = forecasts.get(key); if (hit) { adopt(hit, key); try { renderAll(); } catch (e) { console.error(e); } } }
   try {
-    const [w, a] = await fetchAll(p);
-    adopt({ D: w, AQ: a, at: Date.now() }, key);
-    forecasts.put(key, { D, AQ, at: fetchedAt });
+    const [w, a, u] = await fetchAll(p);
+    adopt({ D: w, AQ: a, U: confidence(u), at: Date.now() }, key);
+    forecasts.put(key, { D, AQ, U, at: fetchedAt });
     netFail = false; loadWarnings(p);
     renderAll();
   } catch (e) {
@@ -1736,7 +1766,7 @@ async function load(p, { quiet = false } = {}) {
     }
   } finally { loading = false; $("#refreshBtn").classList.remove("spin"); $("#netPill").classList.remove("busy"); renderNet(); }
 }
-function adopt(f, key) { D = f.D; AQ = f.AQ; TZ = D.timezone; OFF = D.utc_offset_seconds; fetchedAt = f.at; dataKey = key; }
+function adopt(f, key) { D = f.D; AQ = f.AQ; U = f.U || null; TZ = D.timezone; OFF = D.utc_offset_seconds; fetchedAt = f.at; dataKey = key; }
 const cacheKey = p => [p.lat, p.lon, S.temp, S.wind, S.precip, S.model].join("|");
 /* The last forecast of the six most recent places and settings, so they open offline too. */
 const forecasts = {

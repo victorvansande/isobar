@@ -347,6 +347,9 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .dfill{position:absolute;left:0;right:0;border-radius:6px;background:linear-gradient(0deg,var(--lo),var(--hi))}
 .dcol .dhi,.dcol .dlo{font:400 15px/1 var(--f-num);font-style:normal;font-variant-numeric:tabular-nums;white-space:nowrap}
 .dcol .dlo{color:var(--ink-2)}
+/* an uncertain day: soft, fading ends instead of hard ones; on a low-confidence day the numbers step back a little */
+.dfill.fuzzy{-webkit-mask-image:linear-gradient(to bottom,transparent,#000 var(--fz),#000 calc(100% - var(--fz)),transparent);mask-image:linear-gradient(to bottom,transparent,#000 var(--fz),#000 calc(100% - var(--fz)),transparent)}
+.dcol.unsure .dhi,.dcol.unsure .dlo{opacity:.62}
 .dbar .nd{position:absolute;left:50%;width:10px;height:10px;margin:0 0 -5px -5px;border-radius:50%;background:var(--signal);box-shadow:0 0 0 2px rgba(0,0,0,.25)}
 
 /* ---------- 14-day deck ---------- */
