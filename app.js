@@ -1696,6 +1696,7 @@ function renderPlace() {
   $("#tbName").textContent = place ? place.name : "";
   const t = D ? localDateLabel(new Date()) : ""; // the time itself lives in the dot-matrix clock pill
   $("#placeSub").textContent = place ? [place.sub, t].filter(Boolean).join(" · ") : "Finding your location";
+  renderDots();
 }
 function renderAll() {
   derive(); applyMode(); renderPlace(); renderClock();
@@ -1714,7 +1715,9 @@ async function load(p, { quiet = false } = {}) {
   if (!p || loading) return;
   const prev = place, key = cacheKey(p);
   loading = true; $("#refreshBtn").classList.add("spin"); $("#netPill").classList.add("busy");
-  place = p; store.set("place", p); renderPlace();
+  place = p; store.set("place", p);
+  if (!saved.some(s => samePlace(s, p))) { roamer = p; store.set("roamer", p); } // an unsaved place leads the swipe order
+  renderPlace();
   // a place seen before opens straight from its last forecast while the fresh one loads
   if (dataKey !== key) { const hit = forecasts.get(key); if (hit) { adopt(hit, key); try { renderAll(); } catch (e) { console.error(e); } } }
   try {
@@ -1855,8 +1858,62 @@ function renderSaved() {
   const isSaved = place && saved.some(s => s.lat === place.lat && s.lon === place.lon);
   $("#saveCur").hidden = !place || isSaved;
   if (place) $("#saveCurT").textContent = `Save ${place.name}`;
+  renderDots();
 }
 function openPlaces() { renderSaved(); $("#results").innerHTML = ""; $("#q").value = ""; results = []; dlgP.showModal(); }
+
+/* ---------------- swipe between places ---------------- */
+// You swipe through your saved places, led by the last place you opened that isn't saved (such as the spot your
+// location found). Small dots under "Places" in the dock show how many there are and where you are.
+const samePlace = (a, b) => !!a && !!b && a.lat === b.lat && a.lon === b.lon;
+let roamer = store.get("roamer", null);
+function placeRing() { const r = saved.slice(); if (roamer && !r.some(s => samePlace(s, roamer))) r.unshift(roamer); return r; }
+function renderDots() {
+  const r = placeRing(), i = r.findIndex(s => samePlace(s, place));
+  $("#pdots").innerHTML = r.length > 1 ? r.map((_, k) => `<i class="${k === i ? "on" : ""}"></i>`).join("") : "";
+  $("#searchBtn").setAttribute("aria-label", r.length > 1 && i >= 0 ? `Places, ${i + 1} of ${r.length}` : "Places");
+}
+// Lets go of the page after a swipe (`dir` 1 = next place, -1 = previous, 0 = stay): it slides out, the new place
+// loads (instantly when its forecast was kept), and slides in from the other side. With nowhere to go it springs back.
+let swiping = false;
+async function release(dir) {
+  const app = $(".app"), from = app.style.transform || "translateX(0px)", op = app.style.opacity || "1";
+  app.style.transform = ""; app.style.opacity = "";
+  const r = placeRing(), next = dir ? r[r.findIndex(s => samePlace(s, place)) + dir] : null;
+  if (!next || swiping) { app.animate([{ transform: from, opacity: op }, { transform: "translateX(0)", opacity: 1 }], { duration: 280, easing: "cubic-bezier(.2,.8,.2,1)" }); return; }
+  swiping = true;
+  const out = app.animate([{ transform: from, opacity: op }, { transform: `translateX(${-dir * 32}%)`, opacity: 0 }], { duration: 170, easing: "cubic-bezier(.4,0,1,1)", fill: "forwards" });
+  await out.finished;
+  scrollTo(0, 0); load(next);
+  app.animate([{ transform: `translateX(${dir * 32}%)`, opacity: 0 }, { transform: "translateX(0)", opacity: 1 }], { duration: 320, easing: "cubic-bezier(.2,.8,.2,1)" });
+  out.cancel(); swiping = false;
+}
+{
+  const app = $(".app");
+  // controls that move sideways themselves keep their own gesture
+  const own = t => t.closest(".hscroll,.leaflet-container,[role=slider],.band,#arcIn,#moonCv,.rticks,.zoomer,.rbar,input");
+  let x0 = 0, y0 = 0, dx = 0, mode = "no";
+  app.addEventListener("touchstart", e => {
+    mode = e.touches.length === 1 && !own(e.target) && placeRing().length > 1 && !swiping ? "maybe" : "no";
+    x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; dx = 0;
+  }, { passive: true });
+  app.addEventListener("touchmove", e => {
+    if (mode === "no") return;
+    const t = e.touches[0], mx = t.clientX - x0, my = t.clientY - y0;
+    if (mode === "maybe") { if (Math.hypot(mx, my) < 10) return; mode = Math.abs(mx) > Math.abs(my) * 1.3 ? "swipe" : "no"; if (mode === "no") return; }
+    e.preventDefault(); dx = mx; // a sideways swipe: the page follows the finger instead of scrolling
+    const r = placeRing(), i = r.findIndex(s => samePlace(s, place)), there = r[i + (dx < 0 ? 1 : -1)];
+    const shift = there ? dx * .55 : dx * .18; // with nothing that way it only gives a little
+    app.style.transform = `translateX(${shift.toFixed(1)}px)`; app.style.opacity = (1 - Math.min(Math.abs(shift) / 700, .3)).toFixed(3);
+  }, { passive: false });
+  const end = () => { if (mode !== "swipe") return; mode = "no"; release(Math.abs(dx) > 70 ? (dx < 0 ? 1 : -1) : 0); };
+  app.addEventListener("touchend", end); app.addEventListener("touchcancel", end);
+  // on a computer: the arrow keys
+  document.addEventListener("keydown", e => {
+    if ((e.key !== "ArrowLeft" && e.key !== "ArrowRight") || e.altKey || e.ctrlKey || e.metaKey || document.querySelector("dialog[open]") || (e.target.closest && e.target.closest("input,[role=slider],.hscroll,.leaflet-container,.band,.rticks"))) return;
+    if (placeRing().length > 1) release(e.key === "ArrowRight" ? 1 : -1);
+  });
+}
 let qT;
 $("#q").addEventListener("input", e => {
   clearTimeout(qT); const q = e.target.value.trim();

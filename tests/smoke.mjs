@@ -126,13 +126,24 @@ async function run(engine, name, viewport, variant = "normal") {
     await tap(page, "#setBtn"); check("settings open", await page.evaluate(() => document.querySelector("#dlgSet").open)); await page.keyboard.press("Escape");
     await tap(page, "#infoBtn"); check("about the data opens", await page.evaluate(() => document.querySelector("#dlgInfo").open)); await page.keyboard.press("Escape");
     await tap(page, "#humidInfo"); check("humidity explainer opens", await page.evaluate(() => document.querySelector("#dlgLearn").open)); await page.keyboard.press("Escape");
-    // scrub the sun on the main card
+    // scrub the sun on the main card (closing a sheet can scroll the page, so bring the arc into view first)
+    await page.evaluate(() => scrollTo(0, 0));
+    await page.locator("#arcIn").scrollIntoViewIfNeeded(); await page.waitForTimeout(300);
     const arc = await page.locator("#arcIn").boundingBox();
     if (arc) {
       await page.mouse.move(arc.x + arc.width * .3, arc.y + arc.height * .5); await page.mouse.down();
-      await page.mouse.move(arc.x + arc.width * .7, arc.y + arc.height * .5, { steps: 6 }); await page.mouse.up();
-      check("scrubbing the sun shows another hour", (await page.textContent("#heroWhen")) !== "Now");
+      await page.mouse.move(arc.x + arc.width * .7, arc.y + arc.height * .5, { steps: 6 }); await page.waitForTimeout(100); await page.mouse.up();
+      await page.waitForTimeout(100);
+      const when = await page.textContent("#heroWhen");
+      check("scrubbing the sun shows another hour", when !== "Now", `still "${when}"; arc at ${Math.round(arc.x)},${Math.round(arc.y)} ${Math.round(arc.width)}×${Math.round(arc.height)}`);
     }
+    // swipe between the two saved places (here with the arrow keys)
+    check("two place dots", (await page.locator("#pdots i").count()) === 2);
+    await page.evaluate(() => document.activeElement && document.activeElement.blur()); // the sun slider uses the arrow keys itself
+    await page.keyboard.press("ArrowRight"); await page.waitForTimeout(1500);
+    check("next place with the arrow key", (await page.textContent("#placeName")) === "Antwerp", await page.textContent("#placeName"));
+    await page.keyboard.press("ArrowLeft"); await page.waitForTimeout(1500);
+    check("and back", (await page.textContent("#placeName")) === "Herentals", await page.textContent("#placeName"));
     // the radar: zoom in and out (this once ran Safari out of memory)
     await page.locator("#c-radar").scrollIntoViewIfNeeded();
     for (let i = 0; i < 4; i++) { await tap(page, "#zIn"); await page.waitForTimeout(250); }

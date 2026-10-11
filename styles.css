@@ -139,10 +139,10 @@ html.standalone[data-mode="day"] body::before{content:"";position:fixed;left:0;r
    "hero hero wind feels"
    "hourly hourly hourly hourly"
    "uv humid air air"
-   "moon moon radar radar"
-   "sun sun radar radar"
-   "press vis radar radar"
-   "rain clouds pollen pollen"
+   "moon moon sun sun"
+   "radar radar press vis"
+   "radar radar rain clouds"
+   "pollen pollen pollen pollen"
    "src src src src";}
 @media (max-width:1000px){
   .board{grid-template-columns:repeat(2,minmax(0,1fr));
@@ -523,6 +523,8 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 
 /* ---------- pollen ---------- */
 .pgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:4px}
+/* on wide screens pollen spans the full width, its six types in one line */
+@media (min-width:1001px){.a-pollen .pgrid{grid-template-columns:repeat(6,minmax(0,1fr))}}
 .pgrid .tile{gap:5px}
 .pgrid b{font:400 22px/1 var(--f-num);letter-spacing:-.02em}
 .dots{display:flex;gap:4px}
@@ -575,6 +577,12 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .pill{height:48px;min-width:128px;padding:0 22px;border-radius:999px;display:flex;align-items:center;justify-content:center;gap:9px;font-weight:650;font-size:14px;letter-spacing:-.01em;color:var(--signal-ink);
   background:radial-gradient(rgba(255,255,255,.16) 1px,transparent 1.6px) 0 0/5px 5px,var(--signal)}
 .pill svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2.1;stroke-linecap:round}
+/* page dots under "Places" when there are several places to swipe between */
+.pill .pl{display:grid;justify-items:center;gap:4px}
+.pdots{display:flex;gap:4px}
+.pdots:empty{display:none}
+.pdots i{width:4px;height:4px;border-radius:50%;background:currentColor;opacity:.4;transition:opacity .2s,transform .2s}
+.pdots i.on{opacity:1;transform:scale(1.25)}
 .topbar{position:fixed;left:50%;top:calc(12px + env(safe-area-inset-top,0px));z-index:1000;display:flex;align-items:center;gap:10px;padding:8px 16px 8px 10px;border-radius:999px;
   transform:translate(-50%,-160%);transition:transform .45s cubic-bezier(.3,.8,.2,1);color:#fff;max-width:calc(100% - 32px)}
 .topbar.show{transform:translate(-50%,0)}
