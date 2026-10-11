@@ -1901,7 +1901,10 @@ function renderUV() {
 function renderHumid() {
   const { c } = X, el = card("c-humid");
   const h = c.relative_humidity_2m, dp = c.dew_point_2m, dpC = toC(dp);
-  const lab = dpC == null ? "–" : dpC < 10 ? "Dry" : dpC < 16 ? "Comfortable" : dpC < 18 ? "A little humid" : dpC < 21 ? "Humid" : "Oppressive";
+  // muggy air is described by its dew point (how much water it really holds); otherwise by how full the air is,
+  // so cool air at 82% reads as damp rather than "dry"
+  const lab = dpC == null || h == null ? "–" : dpC >= 21 ? "Oppressive" : dpC >= 18 ? "Humid" : dpC >= 16 ? "A little humid"
+    : h >= 90 ? "Very damp" : h >= 75 ? "Damp" : h >= 45 ? "Comfortable" : h >= 25 ? "Dry" : "Very dry";
   // the surface: two periods of a gentle swell in 400 units, so sliding it by half its width loops without a seam
   const wave = cls => `<svg class="${cls}" viewBox="0 0 400 12" preserveAspectRatio="none" aria-hidden="true"><path d="M0 6 Q50 1 100 6 T200 6 T300 6 T400 6 V12 H0Z" fill="rgba(175,200,255,.24)"/><path d="M0 6 Q50 1 100 6 T200 6 T300 6 T400 6" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1" vector-effect="non-scaling-stroke"/></svg>`;
   const wet = (h ?? 0) >= 85; // condensation beads up on the card on very humid days
