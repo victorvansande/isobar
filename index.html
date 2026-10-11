@@ -225,6 +225,13 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .num small{font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;font-weight:400;margin-left:6px;color:var(--ink-2);text-shadow:none;vertical-align:.25em}
 .big{font-size:clamp(44px,5vw,62px)}
 .foot{margin-top:auto;display:flex;justify-content:space-between;gap:10px;align-items:flex-end;font-size:13px;color:var(--ink-2)}
+/* a small, quiet "i" that opens an explainer */
+.info-i{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;color:var(--ink-2);box-shadow:inset 0 0 0 1px var(--ink-3);flex:none}
+.info-i svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.info-i:hover{color:var(--ink)}
+.learn h3{margin:18px 0 4px;font-size:15px;font-weight:650;letter-spacing:-.01em}
+.learn p{margin:0;font-size:14px;line-height:1.55;color:var(--ink-2)}
+.learn .now{padding:12px 14px;border-radius:16px;background:rgba(255,255,255,.07);color:var(--ink)}
 .foot b{color:var(--ink);font-weight:550}
 .muted{color:var(--ink-2)}
 .empty{margin:auto 0;color:var(--ink-2);font-size:14px;max-width:34ch}
@@ -460,9 +467,8 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 /* ---------- humidity ---------- */
 /* humidity as a water level: the card fills like a glass, with a slowly moving surface; the dotted line on top is 100%: saturated air, where water starts to condense out as dew, mist or fog */
 .water{position:absolute;left:0;right:0;bottom:0;height:var(--h);z-index:-1;pointer-events:none;transition:height 1.2s cubic-bezier(.3,.7,.2,1)}
-.water .body{position:absolute;left:0;right:0;top:6px;bottom:0;background:linear-gradient(rgba(175,200,255,.24),rgba(130,165,255,.12))}
+.water .body{position:absolute;left:0;right:0;top:12px;bottom:0;background:linear-gradient(rgba(175,200,255,.24),rgba(130,165,255,.12))}
 .water svg{position:absolute;left:0;top:0;width:200%;height:12px;animation:wave 11s linear infinite}
-.water svg.w2{opacity:.55;animation-duration:17s;animation-direction:reverse}
 @keyframes wave{to{transform:translateX(-50%)}}
 .sat{position:absolute;left:0;right:0;top:7px;border-top:1px dotted rgba(255,255,255,.4);pointer-events:none}
 .sat span{position:absolute;right:16px;top:4px;font:500 9.5px/1 var(--f-mono);letter-spacing:.05em;text-transform:uppercase;color:rgba(255,255,255,.55)}
@@ -789,6 +795,13 @@ body.net-off .toast{bottom:calc(140px + env(safe-area-inset-bottom,0px))}
   <div class="sheet days-sheet">
     <div class="sheet-h"><div><h2>14 days</h2><p id="daysRange"></p></div><button class="round lens" data-close aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
     <section class="a-days" id="c-days"></section>
+  </div>
+</dialog>
+
+<dialog id="dlgLearn" aria-label="Humidity, dew and fog">
+  <div class="sheet learn">
+    <div class="sheet-h"><h2>Humidity, dew and fog</h2><button class="round lens" data-close aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div id="learnBody"></div>
   </div>
 </dialog>
 
@@ -1892,12 +1905,29 @@ function renderHumid() {
   // the surface: two periods of a gentle swell in 400 units, so sliding it by half its width loops without a seam
   const wave = cls => `<svg class="${cls}" viewBox="0 0 400 12" preserveAspectRatio="none" aria-hidden="true"><path d="M0 6 Q50 1 100 6 T200 6 T300 6 T400 6 V12 H0Z" fill="rgba(175,200,255,.24)"/><path d="M0 6 Q50 1 100 6 T200 6 T300 6 T400 6" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1" vector-effect="non-scaling-stroke"/></svg>`;
   const wet = (h ?? 0) >= 85; // condensation beads up on the card on very humid days
-  el.innerHTML = `<span class="water" style="--h:${clamp(h ?? 0, 0, 100)}%">${wave("w2")}${wave("w1")}<span class="body"></span></span>
-    <span class="sat" aria-hidden="true"><span>100% · saturated</span></span>
+  el.innerHTML = `<span class="water" style="--h:${clamp(h ?? 0, 0, 100)}%">${wave("w1")}<span class="body"></span></span>
+    <span class="sat" aria-hidden="true"><span>100%</span></span>
     ${wet ? `<canvas class="condense" id="humidCv" aria-hidden="true"></canvas>` : ""}${head("Humidity", lab)}
     <div class="num big">${R(h)}<small>%</small></div>
-    <div class="foot"><span>Dew point <b>${R(dp)}°</b></span></div>`;
+    <div class="foot"><span>Dew point <b>${R(dp)}°</b></span><button class="info-i" id="humidInfo" aria-label="How humidity, dew and fog work"><svg viewBox="0 0 12 12"><path d="M6 5.4v3.6"/><path d="M6 3h.01"/></svg></button></div>`;
+  $("#humidInfo").onclick = () => openLearn(c.temperature_2m, dp, h);
   if (wet) startCondensation($("#humidCv")); else condStop();
+}
+
+/* A plain-language explainer of humidity, dew point, dew, frost and fog, starting from today's numbers. */
+function openLearn(t, dp, h) {
+  const gap = t != null && dp != null ? R(t) - R(dp) : null, F = S.temp === "f", mi = F || S.precip === "inch";
+  const frz = F ? 32 : 0, dry = F ? 50 : 10, sticky = F ? 64 : 18;
+  const now = gap == null ? "" : gap <= 1
+    ? `Right now the air is ${R(t)}° and the dew point ${R(dp)}°. They're almost the same, so the air is close to full: dew, mist or fog are likely.`
+    : `Right now the air is ${R(t)}° and the dew point ${R(dp)}°. A surface has to cool ${gap}° below the air before dew forms on it${R(dp) <= frz ? ", and since that's below freezing it would be frost" : ""}.`;
+  $("#learnBody").innerHTML = `${now ? `<p class="now">${esc(now)}</p>` : ""}
+    <h3>Humidity</h3><p>Air always carries some water as invisible vapour. Warm air can hold much more than cold air. Humidity (${R(h)}% now) says how full the air is compared with the most it can hold at its current temperature.</p>
+    <h3>Dew point</h3><p>The temperature the air would have to cool to before it's completely full (100%). It tells you how much water is really in the air: the higher it is, the muggier it feels. Under ${dry}° feels dry, above ${sticky}° sticky.</p>
+    <h3>Dew</h3><p>On clear, calm nights, grass, leaves and car roofs lose heat to the open sky and get colder than the air around them. Once a surface is colder than the dew point, water condenses on it, just like drops on a cold glass of water. If the surface is below ${frz}°, it becomes frost instead.</p>
+    <h3>Mist and fog</h3><p>When the air itself cools down to its dew point, the water condenses into tiny floating droplets. You call it mist if you can still see over ${mi ? "half a mile" : "1 km"}, and fog below that. It mostly forms on still, clear nights, or when damp air moves over cold ground or water.</p>
+    <h3>Why humidity peaks at night</h3><p>The amount of water in the air hardly changes over a day, but cooler night air can hold less of it. So humidity climbs towards 100% at night and drops again as the sun warms the air.</p>`;
+  $("#dlgLearn").showModal();
 }
 
 /* ---------------- air ---------------- */
@@ -2509,7 +2539,7 @@ $("#c-days").addEventListener("click", e => {
 /* ---------------- places ---------------- */
 const dlgP = $("#dlgPlaces"), dlgS = $("#dlgSet");
 document.querySelectorAll("[data-close]").forEach(b => b.onclick = () => b.closest("dialog").close());
-[dlgP, dlgS, $("#dlgDays"), $("#dlgInfo")].forEach(d => d.addEventListener("click", e => { if (e.target === d) d.close(); }));
+[dlgP, dlgS, $("#dlgDays"), $("#dlgInfo"), $("#dlgLearn")].forEach(d => d.addEventListener("click", e => { if (e.target === d) d.close(); }));
 const placeRow = (p, i, kind) => `<div class="row" role="button" tabindex="0" data-kind="${kind}" data-i="${i}"><span><b>${esc(p.name)}</b><span>${esc(p.sub || `${p.lat}, ${p.lon}`)}</span></span>${kind === "saved" ? `<button class="x" data-del="${i}" aria-label="Remove ${esc(p.name)}">✕</button>` : ""}</div>`;
 let results = [];
 function renderSaved() {
