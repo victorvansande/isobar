@@ -102,10 +102,17 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulati
 html,body{overflow-x:clip}
 body{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 button,[role="button"],[role="slider"],a,input,label{touch-action:manipulation}
-/* Opened from the home screen: no rubber-band bounce, no text selection or long-press menus on the interface */
+/* Like an app: no text selection, long-press menus or image dragging on the interface (typing in fields still works) */
+body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+input,textarea{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+img,svg,canvas{-webkit-user-drag:none}
+/* opened from the home screen: no rubber-band bounce either */
 html.standalone,html.standalone body{overscroll-behavior:none}
-html.standalone body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
-html.standalone input{-webkit-user-select:text;user-select:text}
+/* pressed controls give way a little, as native buttons do */
+.round,.pill,.chip,.btn,.hero-now,.netpill,.seg button,.models button,.row,.day-h,.place{transition:transform .16s cubic-bezier(.2,.8,.2,1),opacity .16s}
+.round:active,.pill:active,.chip:active,.btn:active,.hero-now:active{transform:scale(.93)}
+.netpill.on:active{transform:translate(-50%,0) scale(.96)}
+.seg button:active,.models button:active,.row:active,.day-h:active,.place:active{opacity:.6}
 /* the status bar sits over the page in full screen; a soft scrim keeps its white text readable on the light look */
 html.standalone[data-mode="day"] body::before{content:"";position:fixed;left:0;right:0;top:0;height:calc(env(safe-area-inset-top,0px) + 14px);z-index:1001;pointer-events:none;
   background:linear-gradient(rgba(24,18,52,.32),rgba(24,18,52,0))}
@@ -468,7 +475,6 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 /* ---------- sun ---------- */
 .band{position:relative;margin:18px 0 6px;cursor:grab;touch-action:pan-y;border-radius:15px}
 .band.grab{cursor:grabbing}
-.band,.arc-in,.strip,.moon canvas{-webkit-user-select:none;user-select:none}
 .band .tri{transition:left .12s linear}
 .a-sun{transition:background-color .5s}
 .band svg{width:100%;height:30px;display:block;border-radius:15px}
@@ -519,7 +525,8 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .rbar{position:absolute;z-index:500;left:16px;right:16px;bottom:24px;display:flex;align-items:center;gap:12px;padding:7px 14px 7px 7px;border-radius:999px}
 .rbar .round{width:34px;height:34px}
 .rbar .round svg{fill:#fff;stroke:none}
-.rticks{flex:1;display:flex;gap:3px;align-items:center;height:20px}
+.rticks{flex:1;display:flex;gap:3px;align-items:center;height:34px;margin:-7px 0;cursor:grab;touch-action:pan-y}
+.rticks.grab{cursor:grabbing}
 .rticks button{flex:1;height:14px;border-radius:3px;background:rgba(255,255,255,.26)}
 .rticks button.cur{background:var(--signal);height:20px}
 .rticks button.fut{background:rgba(143,176,255,.45)}
@@ -774,6 +781,7 @@ if (navigator.userAgentData && navigator.userAgentData.brands.some(b => /Chromiu
 /* ---------------- app shell ---------------- */
 // Opened from the home screen: switch on the native-app behaviour in CSS (no bounce, no selection, status bar scrim)
 if (navigator.standalone || matchMedia("(display-mode: standalone)").matches) document.documentElement.classList.add("standalone");
+document.addEventListener("touchstart", () => {}, { passive: true }); // iOS only shows :active press states when the page listens for touches
 // Safari ignores user-scalable=no, so block its pinch gestures directly; the radar map handles its own pinch zoom
 for (const ev of ["gesturestart", "gesturechange"]) document.addEventListener(ev, e => { if (!e.target.closest || !e.target.closest(".leaflet-container")) e.preventDefault(); }, { passive: false });
 // Offline support and instant launch (see sw.js)
@@ -1783,6 +1791,8 @@ function updateMoon(off) {
   $("#moonWhen").textContent = day === 0 ? "Moon" : dlab(new Date(base.valueOf() + day * dayMs));
   $("#moonNow").hidden = Math.abs(off) < .5;
   if (X.moonDay !== day) {
+    // a tick per day while scrubbing, a firmer one landing on a full or new moon
+    if (X.moonDay != null) haptic(/^(Full|New)/.test(phaseName(moonIllum(new Date(base.valueOf() + day * dayMs)).phase)));
     // rise, set and the next full and new moon only change per day, so work them out once per day
     X.moonDay = day;
     const t0 = new Date(T(X.todayKey + "T00:00").valueOf() + day * dayMs);
@@ -1889,6 +1899,10 @@ function updateSun(t) {
   paint(card("c-sun"), window.Palette.skyPal(alt));
   $("#sunTri").style.left = `${(f * 100).toFixed(2)}%`;
   const state = alt > 6 ? `Sun ${Math.round(alt)}° high` : alt > -.8 ? "Golden hour" : alt > -6 ? "Twilight" : "Night";
+  // a tick per hour while scrubbing, a firmer one when the light changes (golden hour, twilight, night)
+  const phase = alt > 6 ? "day" : state, hour = Math.floor((at - s.mid0) / 36e5);
+  if (!live && s.hour != null && (phase !== s.phase || hour !== s.hour)) haptic(phase !== s.phase);
+  s.hour = live ? null : hour; s.phase = phase;
   $("#sunWhen").textContent = live ? "Sun" : fmtT(at);
   $("#sunSub").textContent = live ? s.daylight : state;
   $("#sunChange").hidden = !live; $("#sunNow").hidden = live;
@@ -2128,6 +2142,14 @@ async function initRadar() {
     map.on("moveend zoomend resize", placeCities);
     $("#zIn").onclick = () => map.zoomIn(); $("#zOut").onclick = () => map.zoomOut();
     $("#rPlay").onclick = () => timer ? stopLoop() : startLoop();
+    // drag along the timeline to move through the frames, like scrubbing a video
+    const rt = $("#rTicks");
+    const frameAt = x => { const r = rt.getBoundingClientRect(); return clamp(Math.floor((x - r.left) / r.width * frames.length), 0, frames.length - 1); };
+    const scrubTo = i => { if (i !== fi) { show(i); haptic(); } };
+    rt.addEventListener("pointerdown", e => { if (!frames.length || e.button !== 0) return; stopLoop(); rt.setPointerCapture(e.pointerId); rt.classList.add("grab"); scrubTo(frameAt(e.clientX)); });
+    rt.addEventListener("pointermove", e => { if (rt.hasPointerCapture(e.pointerId)) scrubTo(frameAt(e.clientX)); });
+    for (const ev of ["pointerup", "pointercancel"]) rt.addEventListener(ev, () => rt.classList.remove("grab"));
+    rt.addEventListener("keydown", e => { const d = { ArrowRight: 1, ArrowLeft: -1 }[e.key]; if (d && frames.length) { e.preventDefault(); stopLoop(); show(fi + d); rt.children[fi].focus(); } });
   } else { map.setView(ll, map.getZoom()); marker.setLatLng(ll); base.setUrl(esri("Base")); }
   placeCities();
   setTimeout(() => map.invalidateSize(), 50);
@@ -2366,9 +2388,12 @@ async function followMe() {
   } catch {}
 }
 
-/* A light tick from the iPhone's haptic engine (Safari 17.4+ ticks when a switch toggles), or a short buzz on Android. */
-function haptic() {
-  if (navigator.vibrate) { navigator.vibrate(8); return; }
+/* A light tick from the iPhone's haptic engine (Safari 17.4+ ticks when a switch toggles), or a short buzz on Android
+   (a longer one when `strong`). Ticks closer together than 40 ms are dropped, so a fast scrub stays crisp instead of buzzing. */
+let lastTick = 0;
+function haptic(strong) {
+  const now = performance.now(); if (now - lastTick < 40) return; lastTick = now;
+  if (navigator.vibrate) { navigator.vibrate(strong ? 18 : 7); return; }
   try {
     const l = document.createElement("label"), i = document.createElement("input");
     i.type = "checkbox"; i.setAttribute("switch", ""); l.setAttribute("aria-hidden", "true"); l.style.display = "none";
