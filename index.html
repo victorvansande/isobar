@@ -440,8 +440,6 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 @keyframes raysway{from{transform:rotate(-3.5deg);opacity:.7}to{transform:rotate(3deg);opacity:1}}
 /* frost on the main card */
 .frost{position:absolute;inset:0;width:100%;height:100%;z-index:3;pointer-events:none}
-.frost.grow{animation:frostin 2.6s ease-out both}
-@keyframes frostin{from{opacity:0}}
 .glint{position:absolute;z-index:3;width:var(--s);height:var(--s);margin:calc(var(--s) / -2) 0 0 calc(var(--s) / -2);pointer-events:none;opacity:0;animation:glint var(--t) ease-in-out var(--w) infinite}
 .glint::before,.glint::after{content:"";position:absolute;left:50%;top:0;width:1px;height:100%;background:linear-gradient(transparent,#f2f9ff,transparent);transform:translateX(-50%)}
 .glint::after{transform:translateX(-50%) rotate(90deg)}
@@ -1381,39 +1379,58 @@ function patchNoise(rnd, cell) {
 /* Frosted rim: frost creeping in from the card's edges in uneven patches. A soft matte haze gives the frosted-glass
    look; over it, fine ice needles and grains catch the light, densest at the rim and thinning toward the middle.
    Drawn once; a few glints twinkle on top in CSS. */
-function frostRim(cv, seed = 17) {
+let frostRAF = 0;
+function frostRim(cv, seed = 17, creep = false) {
+  cancelAnimationFrame(frostRAF);
   const s = sizeCanvas(cv); if (!s) return;
-  const { ctx, w, h } = s, rnd = prng(seed), patch = patchNoise(prng(seed + 7), 54), reach = Math.min(w, h) * .34;
+  const { ctx, w, h } = s, dpr = cv.width / w, rnd = prng(seed), patch = patchNoise(prng(seed + 7), 54), reach = Math.min(w, h) * .34;
   const edge = (side, u, d) => side === 0 ? [u * w, d] : side === 1 ? [w - d, u * h] : side === 2 ? [u * w, h - d] : [d, u * h];
-  ctx.clearRect(0, 0, w, h);
   // how far the frost creeps in varies along the edge (big, slow swells plus finer wobble), so its inner edge is
   // ragged and uneven rather than a neat shape
   const big = patchNoise(prng(seed + 3), 80), fine = patchNoise(prng(seed + 5), 24);
   const reachAt = (x, y) => reach * (.7 + .95 * big(x, y) + .3 * fine(x, y));
   const frostAt = (x, y) => clamp(1 - Math.min(x, y, w - x, h - y) / reachAt(x, y), 0, 1);
-  // matte frost: worked out on a coarse grid and scaled up smoothly, which keeps it soft and cheap
+  // matte frost, worked out on a coarse grid and scaled up smoothly (soft and cheap); K holds how deep in the frost each cell is
   const sc = 4, lw = Math.ceil(w / sc) + 1, lh = Math.ceil(h / sc) + 1, low = document.createElement("canvas");
   low.width = lw; low.height = lh;
-  const lc = low.getContext("2d"), im = lc.createImageData(lw, lh);
+  const lc = low.getContext("2d"), im = lc.createImageData(lw, lh), K = new Float32Array(lw * lh);
   for (let j = 0; j < lh; j++) for (let i = 0; i < lw; i++) {
-    const o = (j * lw + i) * 4, a = Math.pow(frostAt(i * sc, j * sc), 1.5) * .7;
-    im.data[o] = 232; im.data[o + 1] = 243; im.data[o + 2] = 255; im.data[o + 3] = Math.round(a * 255);
+    const n = j * lw + i; K[n] = frostAt(i * sc, j * sc);
+    im.data[n * 4] = 232; im.data[n * 4 + 1] = 243; im.data[n * 4 + 2] = 255;
   }
-  lc.putImageData(im, 0, 0);
-  ctx.imageSmoothingEnabled = true; ctx.drawImage(low, 0, 0, lw * sc, lh * sc);
-  // crystals: short needles at random angles and fine grains, densest where the frost is thickest
-  ctx.lineCap = "round";
+  // crystals: short needles at random angles and fine grains, densest where the frost is thickest; sorted from the rim
+  // inward so they can appear in the order the frost reaches them
+  const xs = [];
   for (let i = 0; i < (w + h) * 16; i++) {
-    const d = Math.pow(rnd(), 1.5) * reach * 1.9, [x, y] = edge(Math.floor(rnd() * 4), rnd(), d);
-    const k = frostAt(x, y) * (.4 + .6 * patch(x, y));
+    const d = Math.pow(rnd(), 1.5) * reach * 1.9, [x, y] = edge(Math.floor(rnd() * 4), rnd(), d), f = frostAt(x, y);
+    const k = f * (.4 + .6 * patch(x, y));
     if (rnd() > k) continue;
     const a = ((.1 + .4 * rnd()) * k).toFixed(3);
-    if (rnd() < .6) {
-      const ang = rnd() * PI, len = .7 + rnd() * 2.4, dx = cos(ang) * len, dy = sin(ang) * len;
-      ctx.strokeStyle = `rgba(238,247,255,${a})`; ctx.lineWidth = .45 + rnd() * .45;
-      ctx.beginPath(); ctx.moveTo(x - dx, y - dy); ctx.lineTo(x + dx, y + dy); ctx.stroke();
-    } else { ctx.fillStyle = `rgba(238,247,255,${a})`; ctx.beginPath(); ctx.arc(x, y, .3 + rnd() * .5, 0, PI * 2); ctx.fill(); }
+    xs.push(rnd() < .6 ? { f, x, y, a, ang: rnd() * PI, len: .7 + rnd() * 2.4, lw: .45 + rnd() * .45 } : { f, x, y, a, r: .3 + rnd() * .5 });
   }
+  xs.sort((p, q) => q.f - p.f);
+  const cr = document.createElement("canvas"); cr.width = cv.width; cr.height = cv.height;
+  const cc = cr.getContext("2d"); cc.setTransform(dpr, 0, 0, dpr, 0, 0); cc.lineCap = "round";
+  let drawn = 0;
+  // paints the frost at stage p (0 = clear glass, 1 = fully frosted): the frozen front moves in from the rim, following
+  // the same ragged contour, with a soft leading edge; crystals appear just behind it
+  const paint = p => {
+    const front = 1 - p * 1.25;
+    for (let n = 0; n < K.length; n++) im.data[n * 4 + 3] = Math.round(Math.pow(K[n], 1.5) * .7 * clamp((K[n] - front) / .2, 0, 1) * 255);
+    lc.putImageData(im, 0, 0);
+    for (; drawn < xs.length && xs[drawn].f > front + .1; drawn++) {
+      const c = xs[drawn];
+      if (c.r) { cc.fillStyle = `rgba(238,247,255,${c.a})`; cc.beginPath(); cc.arc(c.x, c.y, c.r, 0, PI * 2); cc.fill(); }
+      else { const dx = cos(c.ang) * c.len, dy = sin(c.ang) * c.len; cc.strokeStyle = `rgba(238,247,255,${c.a})`; cc.lineWidth = c.lw; cc.beginPath(); cc.moveTo(c.x - dx, c.y - dy); cc.lineTo(c.x + dx, c.y + dy); cc.stroke(); }
+    }
+    ctx.clearRect(0, 0, w, h); ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(low, 0, 0, lw * sc, lh * sc); ctx.drawImage(cr, 0, 0, w, h);
+  };
+  if (!creep || calmMotion.matches) { paint(1); return; }
+  // the first time the card turns cold, it freezes over before your eyes
+  const t0 = performance.now(), dur = 6500; // slow and fairly even, so you see it creep
+  const step = now => { const k = Math.min(1, (now - t0) / dur); paint(1 - Math.pow(1 - k, 1.4)); if (k < 1) frostRAF = requestAnimationFrame(step); };
+  paint(0); frostRAF = requestAnimationFrame(step);
 }
 function frostGlints(seed, n) {
   const rnd = fxRand(seed); let out = "";
@@ -1547,8 +1564,7 @@ function renderHero() {
   L.push(gustStreaks(c.wind_direction_10m ?? 0, gK, 50));                                                                            // wind storm from 50 km/h gusts
   const sky = L.join("");
   const cold = tC < 0;
-  const grow = cold && !heroFrostGrown ? " grow" : ""; // fade the frost in the first time only
-  el.innerHTML = `${sky}${cold ? `<canvas class="frost${grow}" id="heroFrost"></canvas>${frostGlints(41, 14)}` : ""}
+  el.innerHTML = `${sky}${cold ? `<canvas class="frost" id="heroFrost"></canvas>${frostGlints(41, 14)}` : ""}
     <header class="ch"><h3 id="heroWhen">Now</h3><p id="heroSub">${esc(label)}</p></header>
     <span class="hero-upd mono" id="heroUpd">Updated ${updLabel(fetchedAt)}</span>
     <button class="hero-now" id="heroNow" hidden>Back to now</button>
@@ -1564,7 +1580,7 @@ function renderHero() {
   $("#tbTemp").textContent = `${R(c.temperature_2m)}°`;
   if (scrub) bindSunScrub();
   // below 0° the card frosts over at the rim (fades in the first time only); from 28° it shimmers
-  if (cold) frostRim($("#heroFrost"));
+  if (cold) frostRim($("#heroFrost"), 17, !heroFrostGrown);
   heroFrostGrown = cold;
   setHaze("hero", tC >= 28 ? clamp(4 + (tC - 28) * 1.5, 4, 14) : 0);
 }
