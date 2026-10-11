@@ -1428,8 +1428,8 @@ function frostRim(cv, seed = 17, creep = false) {
   };
   if (!creep || calmMotion.matches) { paint(1); return; }
   // the first time the card turns cold, it freezes over before your eyes
-  const t0 = performance.now(), dur = 6500; // slow and fairly even, so you see it creep
-  const step = now => { const k = Math.min(1, (now - t0) / dur); paint(1 - Math.pow(1 - k, 1.4)); if (k < 1) frostRAF = requestAnimationFrame(step); };
+  const t0 = performance.now(), dur = 12000; // slow and nearly even, so you watch it creep
+  const step = now => { const k = Math.min(1, (now - t0) / dur); paint(1 - Math.pow(1 - k, 1.15)); if (k < 1) frostRAF = requestAnimationFrame(step); };
   paint(0); frostRAF = requestAnimationFrame(step);
 }
 function frostGlints(seed, n) {
