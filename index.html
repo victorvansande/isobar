@@ -566,7 +566,27 @@ dialog::backdrop{background:rgba(6,4,20,.4);-webkit-backdrop-filter:blur(8px);ba
 .models button span{font-size:12.5px;color:var(--ink-2)}
 .models button[aria-pressed="true"]{background:rgba(228,255,60,.12);box-shadow:inset 0 0 0 1px rgba(228,255,60,.5)}
 .models button:hover{background:rgba(255,255,255,.06)}
-.toast{position:fixed;left:50%;bottom:calc(94px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:1100;padding:11px 18px;border-radius:999px;font-weight:600;font-size:13.5px;max-width:calc(100% - 32px);text-align:center;color:#fff}
+.toast{position:fixed;left:50%;bottom:calc(94px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:1100;padding:11px 18px;border-radius:999px;font-weight:600;font-size:13.5px;max-width:calc(100% - 32px);text-align:center;color:#fff;transition:bottom .35s cubic-bezier(.2,.8,.2,1)}
+body.net-off .toast{bottom:calc(140px + env(safe-area-inset-bottom,0px))}
+/* offline: the last forecast stays up and this pill says how old it is (tap to try again) */
+.netpill{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom,0px));z-index:1050;display:flex;align-items:center;gap:9px;padding:10px 16px 10px 14px;border-radius:999px;font-size:13px;color:#fff;white-space:nowrap;max-width:calc(100% - 32px);
+  opacity:0;transform:translate(-50%,14px) scale(.96);pointer-events:none;transition:opacity .35s,transform .45s cubic-bezier(.2,.8,.2,1)}
+.netpill.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.netpill i{width:7px;height:7px;border-radius:50%;background:#ffcf5c;box-shadow:0 0 0 3px rgba(255,207,92,.2);flex:none}
+.netpill b{font-weight:600}
+.netpill span{color:rgba(255,255,255,.62);overflow:hidden;text-overflow:ellipsis}
+.netpill.busy i{animation:netpulse .9s ease-in-out infinite}
+@keyframes netpulse{50%{opacity:.25;transform:scale(.7)}}
+.roff{position:absolute;z-index:500;left:50%;top:50%;transform:translate(-50%,-50%);margin:0;padding:10px 16px;border-radius:999px;font-size:13px;font-weight:600;white-space:nowrap;display:none}
+#c-radar.offline .roff{display:block}
+#c-radar.offline .rbar{opacity:.45;pointer-events:none}
+/* pull to refresh (home-screen app only) */
+.ptr{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 10px);z-index:1001;width:40px;height:40px;margin-left:-20px;border-radius:50%;display:grid;place-items:center;color:#fff;
+  opacity:0;transform:translateY(-56px);pointer-events:none}
+.ptr svg{width:18px;height:18px}
+.ptr.ready{box-shadow:inset 0 0 0 1.5px rgba(228,255,60,.75)}
+.ptr.snap{transition:transform .3s cubic-bezier(.2,.8,.2,1),opacity .3s}
+.ptr.go svg{animation:spin 1s linear infinite}
 
 @media (max-width:600px){
   .app{padding-left:14px;padding-right:14px}
@@ -668,6 +688,7 @@ dialog::backdrop{background:rgba(6,4,20,.4);-webkit-backdrop-filter:blur(8px);ba
         <div class="rticks" id="rTicks"></div>
         <span class="rtime" id="rTime">--:--</span>
       </div>
+      <p class="roff lens dark">Radar needs a connection</p>
     </section>
     <section class="card pig a-sun" id="c-sun" data-fam="sunset"><div class="sk"></div></section>
     <section class="card glass a-press" id="c-press"><div class="sk"></div></section>
@@ -715,6 +736,8 @@ dialog::backdrop{background:rgba(6,4,20,.4);-webkit-backdrop-filter:blur(8px);ba
 </dialog>
 
 <div class="toast lens dark" id="toast" hidden></div>
+<button class="netpill lens dark" id="netPill" aria-hidden="true" tabindex="-1"><i></i><b id="netT">No connection</b><span id="netS"></span></button>
+<div class="ptr lens dark" id="ptr" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20.5 12a8.5 8.5 0 1 1-2.5-6.01L20.5 8.5"/><path d="M20.5 3.5v5h-5"/></svg></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="palette.js"></script>
@@ -1063,7 +1086,7 @@ async function fetchAll(p) {
     latitude: p.lat, longitude: p.lon, timezone: "auto", forecast_days: 14, past_days: 1,
     current: "temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,cloud_cover,pressure_msl,wind_speed_10m,wind_direction_10m,wind_gusts_10m,visibility,uv_index,dew_point_2m",
     minutely_15: "precipitation", forecast_minutely_15: 24, past_minutely_15: 0,
-    hourly: "temperature_2m,apparent_temperature,precipitation_probability,precipitation,weather_code,wind_speed_10m,wind_gusts_10m,uv_index,is_day,pressure_msl,visibility,cloud_cover",
+    hourly: "temperature_2m,apparent_temperature,precipitation_probability,precipitation,weather_code,wind_speed_10m,wind_gusts_10m,wind_direction_10m,uv_index,is_day,pressure_msl,visibility,cloud_cover,relative_humidity_2m,dew_point_2m",
     daily: "weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,sunrise,sunset,daylight_duration,sunshine_duration,uv_index_max,precipitation_sum,precipitation_probability_max,precipitation_hours,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant",
     temperature_unit: S.temp === "f" ? "fahrenheit" : "celsius", wind_speed_unit: S.wind, precipitation_unit: S.precip, models: S.model
   }));
@@ -1108,7 +1131,20 @@ const head = (t, s) => `<header class="ch"><h3>${esc(t)}</h3><p>${esc(s)}</p></h
 const tile = (k, v) => `<div class="tile"><span class="mono">${k}</span><b>${v}</b></div>`;
 const card = id => document.getElementById(id);
 let X = {};
+/* A forecast kept from earlier (offline, or the app reopened later) still describes "now" as it was back then.
+   Move "now" up to the present hour, taken from the hourly forecast. */
+function rollForward() {
+  const c = D.current, H = D.hourly;
+  const key = new Date(Date.now() + OFF * 1000).toISOString().slice(0, 13) + ":00";
+  if (!c || c.time >= key) return;
+  const h = H.time.indexOf(key); if (h < 0) return;
+  const next = { ...c, time: key };
+  for (const k of ["temperature_2m", "apparent_temperature", "weather_code", "wind_speed_10m", "wind_gusts_10m", "wind_direction_10m", "uv_index", "is_day", "pressure_msl", "visibility", "cloud_cover", "precipitation", "relative_humidity_2m", "dew_point_2m"])
+    if (H[k] && H[k][h] != null) next[k] = H[k][h];
+  D.current = next;
+}
 function derive() {
+  rollForward();
   const c = D.current, H = D.hourly, Dy = D.daily;
   let hi = H.time.indexOf(c.time.slice(0, 13) + ":00"); if (hi < 0) hi = 0;
   let di = Dy.time.indexOf(c.time.slice(0, 10)); if (di < 0) di = 0;
@@ -1375,7 +1411,7 @@ function renderHero() {
   const grow = cold && !heroFrostGrown ? " grow" : ""; // fade the frost in the first time only
   el.innerHTML = `${sky}${cold ? `<span class="frost-veil${grow}"></span><canvas class="frost${grow}" id="heroFrost"></canvas>${frostGlints(41, 14)}` : ""}
     <header class="ch"><h3 id="heroWhen">Now</h3><p id="heroSub">${esc(label)}</p></header>
-    <span class="hero-upd mono" id="heroUpd">Updated ${fmtT(new Date(fetchedAt))}</span>
+    <span class="hero-upd mono" id="heroUpd">Updated ${updLabel(fetchedAt)}</span>
     <button class="hero-now" id="heroNow" hidden>Back to now</button>
     <div class="hero-temp" id="heroTemp" data-v="${R(c.temperature_2m)}" role="img" aria-label="${R(c.temperature_2m)} degrees">${dm(String(R(c.temperature_2m)), { deg: true })}</div>
     <div class="hero-meta"><span id="heroFeels">Feels like ${R(c.apparent_temperature)}°</span><span>High ${R(Dy.temperature_2m_max[di])}° · Low ${R(Dy.temperature_2m_min[di])}°</span></div>
@@ -1416,7 +1452,7 @@ function scrubSun(f) {
   const drop = $("#arcDrop"); drop.setAttribute("x1", px); drop.setAttribute("x2", px); drop.setAttribute("y1", py);
   const dot = $("#sunDot"); dot.setAttribute("transform", `translate(${px} ${py})`); dot.setAttribute("opacity", "1");
   const h = hourAt(t), [label, kind] = wmo(h.code), v = R(h.temp), box = $("#heroTemp");
-  if (box.dataset.v !== String(v)) { box.dataset.v = v; box.innerHTML = dm(String(v), { deg: true }); box.setAttribute("aria-label", `${v} degrees`); }
+  if (box.dataset.v !== String(v)) { if (box.dataset.v != null) haptic(); box.dataset.v = v; box.innerHTML = dm(String(v), { deg: true }); box.setAttribute("aria-label", `${v} degrees`); }
   $("#heroWhen").textContent = fmtT(t);
   $("#heroSub").textContent = label;
   $("#heroFeels").textContent = `Feels like ${R(h.feels)}°`;
@@ -1448,8 +1484,9 @@ function bindSunScrub() {
 function renderNow() {
   const el = card("c-now"), M = D.minutely_15;
   let times = [], vals = [];
-  if (M && M.precipitation && M.precipitation.some(v => v != null)) { times = M.time.map(T); vals = M.precipitation.map(v => v ?? 0); }
-  else { for (let i = 0; i < 6; i++) { const t = X.H.time[X.hi + i]; if (!t) break; for (let q = 0; q < 4; q++) { times.push(new Date(T(t).valueOf() + q * 9e5)); vals.push((X.H.precipitation[X.hi + i] ?? 0) / 4); } } }
+  // skip quarter-hours that already passed (a kept forecast can be hours old); with too few left the hourly takes over
+  if (M && M.precipitation && M.precipitation.some(v => v != null)) M.time.forEach((s, i) => { const t = T(s); if (t >= Date.now() - 9e5) { times.push(t); vals.push(M.precipitation[i] ?? 0); } });
+  if (times.length < 8) { times = []; vals = []; for (let i = 0; i < 6; i++) { const t = X.H.time[X.hi + i]; if (!t) break; for (let q = 0; q < 4; q++) { times.push(new Date(T(t).valueOf() + q * 9e5)); vals.push((X.H.precipitation[X.hi + i] ?? 0) / 4); } } }
   const rate = vals.map(v => toMm(v) * 4);
   const thr = 0.1, first = rate.findIndex(v => v >= thr), peak = Math.max(0, ...rate);
   const inten = r => r < 2.5 ? "Light" : r < 7.6 ? "Moderate" : r < 50 ? "Heavy" : "Violent";
@@ -2090,7 +2127,7 @@ async function initRadar() {
     $("#rTicks").onclick = e => { const b = e.target.closest("button"); if (b) { stopLoop(); show(+b.dataset.i); } };
     $("#radarSub").textContent = fut.length ? "Last 2 hours and next 30 min" : "Last 2 hours";
     show(past.length - 1);
-  } catch { $("#radarSub").textContent = "Radar is unavailable right now"; }
+  } catch { $("#radarSub").textContent = navigator.onLine ? "Radar is unavailable right now" : "Offline"; }
 }
 function show(i) {
   if (!frames.length) return;
@@ -2138,22 +2175,73 @@ function showError(msg) {
   el.innerHTML = `${head("No forecast", "Something went wrong")}<div class="err"><p>${esc(msg)}</p><button class="btn" id="retry">Try again</button></div>`;
   $("#retry").onclick = () => load(place);
 }
-let loading = false;
+let loading = false, dataKey = "";
 async function load(p, { quiet = false } = {}) {
   if (!p || loading) return;
-  loading = true; $("#refreshBtn").classList.add("spin");
+  const prev = place, key = cacheKey(p);
+  loading = true; $("#refreshBtn").classList.add("spin"); $("#netPill").classList.add("busy");
   place = p; store.set("place", p); renderPlace();
+  // a place seen before opens straight from its last forecast while the fresh one loads
+  if (dataKey !== key) { const hit = forecasts.get(key); if (hit) { adopt(hit, key); try { renderAll(); } catch (e) { console.error(e); } } }
   try {
     const [w, a] = await fetchAll(p);
-    D = w; AQ = a; TZ = w.timezone; OFF = w.utc_offset_seconds; fetchedAt = Date.now();
-    store.set("cache", { key: cacheKey(p), D, AQ, at: fetchedAt });
+    adopt({ D: w, AQ: a, at: Date.now() }, key);
+    forecasts.put(key, { D, AQ, at: fetchedAt });
+    netFail = false;
     renderAll();
   } catch (e) {
-    if (!D) showError(`Couldn't load the forecast: ${e.message}. Check your connection and try again.`);
-    else if (!quiet) toast("Couldn't refresh. Showing the last forecast.");
-  } finally { loading = false; $("#refreshBtn").classList.remove("spin"); }
+    netFail = true;
+    if (dataKey === key) { if (!quiet && navigator.onLine) toast("Couldn't reach the forecast. Showing the last one."); }
+    else if (!D) showError(navigator.onLine ? `Couldn't load the forecast: ${e.message}. Try again in a moment.` : "You're offline. Connect to the internet to load the forecast.");
+    else { // nothing kept for this place: stay on the one that is showing
+      place = prev; store.set("place", prev); renderPlace();
+      toast(navigator.onLine ? `Couldn't load ${p.name}. Try again in a moment.` : `${p.name} loads once you're back online.`);
+    }
+  } finally { loading = false; $("#refreshBtn").classList.remove("spin"); $("#netPill").classList.remove("busy"); renderNet(); }
 }
+function adopt(f, key) { D = f.D; AQ = f.AQ; TZ = D.timezone; OFF = D.utc_offset_seconds; fetchedAt = f.at; dataKey = key; }
 const cacheKey = p => [p.lat, p.lon, S.temp, S.wind, S.precip, S.model].join("|");
+/* The last forecast of the six most recent places and settings, so they open offline too. */
+const forecasts = {
+  all() {
+    const c = store.get("forecasts", null); if (c) return c;
+    const old = store.get("cache", null); // the single-place cache of earlier versions
+    return old && old.key ? { [old.key]: { D: old.D, AQ: old.AQ, at: old.at } } : {};
+  },
+  get(key) { return this.all()[key] || null; },
+  put(key, f) {
+    const c = this.all(); c[key] = f;
+    const keys = Object.keys(c).sort((a, b) => c[b].at - c[a].at);
+    // a full storage keeps fewer places rather than none
+    for (let n = Math.min(6, keys.length); n > 0; n--) {
+      try { localStorage.setItem("isobar:forecasts", JSON.stringify(Object.fromEntries(keys.slice(0, n).map(k => [k, c[k]])))); break; } catch {}
+    }
+    try { localStorage.removeItem("isobar:cache"); } catch {}
+  }
+};
+
+/* ---------------- connection ---------------- */
+// like a native app: without a connection the last forecast stays up, with a pill saying how old it is
+let netFail = false;
+const ago = t => {
+  const m = (Date.now() - t) / 6e4;
+  return m < 1 ? "just now" : m < 60 ? `${Math.floor(m)} min ago` : m < 24 * 60 ? `${Math.floor(m / 60)} h ago` : updLabel(t);
+};
+const updLabel = t => (Date.now() - t > 20 * 36e5 ? wd(new Date(t + OFF * 1000).toISOString().slice(0, 10)) + " " : "") + fmtT(new Date(t));
+function renderNet() {
+  const offline = !navigator.onLine, on = (offline || netFail) && !!D, pill = $("#netPill");
+  pill.classList.toggle("on", on); pill.setAttribute("aria-hidden", String(!on)); pill.tabIndex = on ? 0 : -1;
+  document.body.classList.toggle("net-off", on);
+  if (on) {
+    $("#netT").textContent = offline ? "Offline" : "Can't reach the forecast";
+    $("#netS").textContent = `Updated ${ago(fetchedAt)}`;
+    pill.setAttribute("aria-label", `${offline ? "Offline" : "Can't reach the forecast"}. Updated ${ago(fetchedAt)}. Tap to try again.`);
+  }
+  $("#c-radar").classList.toggle("offline", offline);
+}
+$("#netPill").onclick = () => load(place);
+addEventListener("online", () => { netFail = false; renderNet(); if (place) load(place, { quiet: true }); });
+addEventListener("offline", renderNet);
 
 let toastT;
 function toast(msg) { const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 3600); }
@@ -2215,8 +2303,12 @@ function renderSettings() {
 }
 function setSetting(k, v) {
   if (S[k] === v) return;
-  S[k] = v; store.set("settings", S); renderSettings();
-  if (["temp", "wind", "precip", "model"].includes(k)) load(place);
+  const old = S[k], refetch = ["temp", "wind", "precip", "model"].includes(k);
+  S[k] = v;
+  // units and models come from the server: offline that only works if this combination was kept before
+  if (refetch && !navigator.onLine && place && !forecasts.get(cacheKey(place))) { S[k] = old; renderSettings(); return toast("That needs a connection. Try again once you're online."); }
+  store.set("settings", S); renderSettings();
+  if (refetch) load(place);
   else if (D) renderAll(); else applyMode();
 }
 dlgS.addEventListener("click", e => {
@@ -2242,22 +2334,70 @@ window.addEventListener("resize", () => {
 });
 const tb = $("#topbar");
 window.addEventListener("scroll", () => { const on = scrollY > 160 && !!D; tb.classList.toggle("show", on); tb.setAttribute("aria-hidden", String(!on)); }, { passive: true });
-document.addEventListener("visibilitychange", () => { if (!document.hidden && place && Date.now() - fetchedAt > 10 * 6e4) load(place, { quiet: true }); });
+document.addEventListener("visibilitychange", () => { if (!document.hidden && place && Date.now() - fetchedAt > 10 * 6e4) { load(place, { quiet: true }); followMe(); } });
+
+/* A place found by location follows you: on launch and on coming back to the app, if location is already allowed,
+   check where you are now and move along when you're more than 3 km away. Never asks for permission by itself. */
+async function followMe() {
+  if (!place || !place.gps || !navigator.onLine || !navigator.permissions) return;
+  try { if ((await navigator.permissions.query({ name: "geolocation" })).state !== "granted") return; } catch { return; }
+  try {
+    const c = await geolocate();
+    const km = Math.hypot((c.latitude - place.lat) * 111, (c.longitude - place.lon) * 111 * cos(c.latitude * rad));
+    if (km < 3) return;
+    while (loading) await new Promise(r => setTimeout(r, 200));
+    load(await reverse(c.latitude, c.longitude), { quiet: true });
+  } catch {}
+}
+
+/* A light tick from the iPhone's haptic engine (Safari 17.4+ ticks when a switch toggles), or a short buzz on Android. */
+function haptic() {
+  if (navigator.vibrate) { navigator.vibrate(8); return; }
+  try {
+    const l = document.createElement("label"), i = document.createElement("input");
+    i.type = "checkbox"; i.setAttribute("switch", ""); l.setAttribute("aria-hidden", "true"); l.style.display = "none";
+    l.append(i); document.head.append(l); l.click(); l.remove();
+  } catch {}
+}
+
+/* Pull to refresh in the home-screen app (Safari has its own). */
+if (document.documentElement.classList.contains("standalone")) {
+  const el = $("#ptr"), ic = el.querySelector("svg"), need = 110;
+  let y0 = null, pull = 0;
+  const set = p => { el.style.transform = `translateY(${-56 + Math.min(p, 170) * .5}px)`; el.style.opacity = Math.min(1, p / 70); ic.style.transform = `rotate(${p * 2.2}deg)`; };
+  const reset = () => { el.classList.add("snap"); el.classList.remove("ready"); el.style.transform = ""; el.style.opacity = ""; setTimeout(() => el.classList.remove("snap", "go"), 320); };
+  addEventListener("touchstart", e => {
+    pull = 0;
+    y0 = scrollY <= 0 && e.touches.length === 1 && !el.classList.contains("go") && !e.target.closest(".leaflet-container,dialog,#arcIn,[role=slider]") ? e.touches[0].clientY : null;
+  }, { passive: true });
+  addEventListener("touchmove", e => {
+    if (y0 == null) return;
+    if (scrollY > 0) { y0 = null; pull = 0; return reset(); }
+    pull = Math.max(0, e.touches[0].clientY - y0); set(pull);
+    const ready = pull >= need;
+    if (ready !== el.classList.contains("ready")) { el.classList.toggle("ready", ready); if (ready) haptic(); }
+  }, { passive: true });
+  addEventListener("touchend", async () => {
+    if (y0 == null) return; y0 = null;
+    if (pull < need || !place) return reset();
+    el.classList.add("snap", "go"); el.classList.remove("ready"); el.style.transform = "translateY(8px)"; ic.style.transform = "";
+    await load(place); reset();
+  });
+}
 setInterval(() => { if (place && !document.hidden) load(place, { quiet: true }); }, 10 * 6e4);
-setInterval(() => { if (D) renderPlace(); }, 30e3);
+setInterval(() => { if (D) { renderPlace(); renderNet(); } }, 30e3);
 setInterval(renderClock, 1000);
 
 (async function boot() {
   applyMode();
   // once the real lunar map is read, redraw the moon from it (until then the painted fallback shows)
   loadMoonMap().then(m => { if (m) { moonTex = null; drawMoons(); } });
-  const cache = store.get("cache", null);
-  if (place && cache && cache.key === cacheKey(place)) {
-    D = cache.D; AQ = cache.AQ; TZ = D.timezone; OFF = D.utc_offset_seconds; fetchedAt = cache.at;
-    try { renderAll(); } catch (e) { console.error(e); }
-  }
+  const hit = place && forecasts.get(cacheKey(place));
+  if (hit) { adopt(hit, cacheKey(place)); try { renderAll(); } catch (e) { console.error(e); } }
+  renderNet();
   if (!place) { renderPlace(); place = await guessPlace(); }
   load(place, { quiet: !!D });
+  followMe();
 })();
 })();
 </script>
