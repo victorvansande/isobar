@@ -2214,7 +2214,7 @@ function showError(msg) {
   $("#retry").onclick = () => load(place);
 }
 let loading = false, dataKey = "";
-async function load(p, { quiet = false } = {}) {
+async function load(p, { quiet = false, tactile = false } = {}) {
   if (!p || loading) return;
   const prev = place, key = cacheKey(p);
   loading = true; $("#refreshBtn").classList.add("spin"); $("#netPill").classList.add("busy");
@@ -2225,7 +2225,7 @@ async function load(p, { quiet = false } = {}) {
     const [w, a] = await fetchAll(p);
     adopt({ D: w, AQ: a, at: Date.now() }, key);
     forecasts.put(key, { D, AQ, at: fetchedAt });
-    netFail = false;
+    netFail = false; if (tactile) haptic(); // a manual refresh lands with a tick
     renderAll();
   } catch (e) {
     netFail = true;
@@ -2277,7 +2277,7 @@ function renderNet() {
   }
   $("#c-radar").classList.toggle("offline", offline);
 }
-$("#netPill").onclick = () => load(place);
+$("#netPill").onclick = () => load(place, { tactile: true });
 addEventListener("online", () => { netFail = false; renderNet(); if (place) load(place, { quiet: true }); });
 addEventListener("offline", renderNet);
 
@@ -2323,15 +2323,15 @@ dlgP.addEventListener("click", e => {
   dlgP.close(); load(p);
 });
 dlgP.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.matches(".row[data-kind]")) { e.preventDefault(); e.target.click(); } });
-$("#saveCur").onclick = () => { if (!place) return; saved.push({ name: place.name, sub: place.sub, lat: place.lat, lon: place.lon }); store.set("saved", saved); renderSaved(); toast(`Saved ${place.name}`); };
+$("#saveCur").onclick = () => { if (!place) return; saved.push({ name: place.name, sub: place.sub, lat: place.lat, lon: place.lon }); store.set("saved", saved); renderSaved(); haptic(); toast(`Saved ${place.name}`); };
 $("#placeBtn").onclick = openPlaces; $("#searchBtn").onclick = openPlaces;
 $("#locBtn").onclick = async () => {
   $("#locBtn").classList.add("spin");
-  try { const c = await geolocate(); await load(await reverse(c.latitude, c.longitude)); }
+  try { const c = await geolocate(); haptic(); await load(await reverse(c.latitude, c.longitude)); }
   catch (e) { toast(e.message); }
   finally { $("#locBtn").classList.remove("spin"); }
 };
-$("#refreshBtn").onclick = () => load(place);
+$("#refreshBtn").onclick = () => load(place, { tactile: true });
 $("#topbar").onclick = () => scrollTo({ top: 0, behavior: "smooth" });
 
 /* ---------------- settings ---------------- */
@@ -2345,7 +2345,7 @@ function setSetting(k, v) {
   S[k] = v;
   // units and models come from the server: offline that only works if this combination was kept before
   if (refetch && !navigator.onLine && place && !forecasts.get(cacheKey(place))) { S[k] = old; renderSettings(); return toast("That needs a connection. Try again once you're online."); }
-  store.set("settings", S); renderSettings();
+  store.set("settings", S); renderSettings(); haptic();
   if (refetch) load(place);
   else if (D) renderAll(); else applyMode();
 }
@@ -2422,7 +2422,7 @@ if (document.documentElement.classList.contains("standalone")) {
     if (y0 == null) return; y0 = null;
     if (pull < need || !place) return reset();
     el.classList.add("snap", "go"); el.classList.remove("ready"); el.style.transform = "translateY(8px)"; ic.style.transform = "";
-    await load(place); reset();
+    await load(place, { tactile: true }); reset();
   });
 }
 setInterval(() => { if (place && !document.hidden) load(place, { quiet: true }); }, 10 * 6e4);
