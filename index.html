@@ -440,8 +440,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 @keyframes raysway{from{transform:rotate(-3.5deg);opacity:.7}to{transform:rotate(3deg);opacity:1}}
 /* frost on the main card */
 .frost{position:absolute;inset:0;width:100%;height:100%;z-index:3;pointer-events:none}
-.frost-veil{position:absolute;inset:0;z-index:3;pointer-events:none;background:radial-gradient(farthest-side,transparent 56%,rgba(230,244,255,.42))}
-.frost.grow,.frost-veil.grow{animation:frostin 2.6s ease-out both}
+.frost.grow{animation:frostin 2.6s ease-out both}
 @keyframes frostin{from{opacity:0}}
 .glint{position:absolute;z-index:3;width:var(--s);height:var(--s);margin:calc(var(--s) / -2) 0 0 calc(var(--s) / -2);pointer-events:none;opacity:0;animation:glint var(--t) ease-in-out var(--w) infinite}
 .glint::before,.glint::after{content:"";position:absolute;left:50%;top:0;width:1px;height:100%;background:linear-gradient(transparent,#f2f9ff,transparent);transform:translateX(-50%)}
@@ -1387,21 +1386,28 @@ function frostRim(cv, seed = 17) {
   const { ctx, w, h } = s, rnd = prng(seed), patch = patchNoise(prng(seed + 7), 54), reach = Math.min(w, h) * .34;
   const edge = (side, u, d) => side === 0 ? [u * w, d] : side === 1 ? [w - d, u * h] : side === 2 ? [u * w, h - d] : [d, u * h];
   ctx.clearRect(0, 0, w, h);
-  // matte haze: overlapping soft blobs along the edges
-  for (let i = 0; i < (w + h) / 9; i++) {
-    const d = Math.pow(rnd(), 1.6) * reach * .8, [x, y] = edge(Math.floor(rnd() * 4), rnd(), d), r = 18 + rnd() * 42;
-    const a = .07 * (1 - d / reach) * (.3 + patch(x, y));
-    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-    g.addColorStop(0, `rgba(232,244,255,${a.toFixed(3)})`); g.addColorStop(1, "rgba(232,244,255,0)");
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, PI * 2); ctx.fill();
+  // how far the frost creeps in varies along the edge (big, slow swells plus finer wobble), so its inner edge is
+  // ragged and uneven rather than a neat shape
+  const big = patchNoise(prng(seed + 3), 80), fine = patchNoise(prng(seed + 5), 24);
+  const reachAt = (x, y) => reach * (.7 + .95 * big(x, y) + .3 * fine(x, y));
+  const frostAt = (x, y) => clamp(1 - Math.min(x, y, w - x, h - y) / reachAt(x, y), 0, 1);
+  // matte frost: worked out on a coarse grid and scaled up smoothly, which keeps it soft and cheap
+  const sc = 4, lw = Math.ceil(w / sc) + 1, lh = Math.ceil(h / sc) + 1, low = document.createElement("canvas");
+  low.width = lw; low.height = lh;
+  const lc = low.getContext("2d"), im = lc.createImageData(lw, lh);
+  for (let j = 0; j < lh; j++) for (let i = 0; i < lw; i++) {
+    const o = (j * lw + i) * 4, a = Math.pow(frostAt(i * sc, j * sc), 1.5) * .7;
+    im.data[o] = 232; im.data[o + 1] = 243; im.data[o + 2] = 255; im.data[o + 3] = Math.round(a * 255);
   }
-  // crystals: short needles at random angles and fine grains, kept or skipped by the patch pattern
+  lc.putImageData(im, 0, 0);
+  ctx.imageSmoothingEnabled = true; ctx.drawImage(low, 0, 0, lw * sc, lh * sc);
+  // crystals: short needles at random angles and fine grains, densest where the frost is thickest
   ctx.lineCap = "round";
-  for (let i = 0; i < (w + h) * 10; i++) {
-    const d = Math.pow(rnd(), 1.9) * reach, [x, y] = edge(Math.floor(rnd() * 4), rnd(), d);
-    const k = (1 - d / reach) * (.25 + .75 * patch(x, y));
+  for (let i = 0; i < (w + h) * 16; i++) {
+    const d = Math.pow(rnd(), 1.5) * reach * 1.9, [x, y] = edge(Math.floor(rnd() * 4), rnd(), d);
+    const k = frostAt(x, y) * (.4 + .6 * patch(x, y));
     if (rnd() > k) continue;
-    const a = ((.07 + .32 * rnd()) * k).toFixed(3);
+    const a = ((.1 + .4 * rnd()) * k).toFixed(3);
     if (rnd() < .6) {
       const ang = rnd() * PI, len = .7 + rnd() * 2.4, dx = cos(ang) * len, dy = sin(ang) * len;
       ctx.strokeStyle = `rgba(238,247,255,${a})`; ctx.lineWidth = .45 + rnd() * .45;
@@ -1542,7 +1548,7 @@ function renderHero() {
   const sky = L.join("");
   const cold = tC < 0;
   const grow = cold && !heroFrostGrown ? " grow" : ""; // fade the frost in the first time only
-  el.innerHTML = `${sky}${cold ? `<span class="frost-veil${grow}"></span><canvas class="frost${grow}" id="heroFrost"></canvas>${frostGlints(41, 14)}` : ""}
+  el.innerHTML = `${sky}${cold ? `<canvas class="frost${grow}" id="heroFrost"></canvas>${frostGlints(41, 14)}` : ""}
     <header class="ch"><h3 id="heroWhen">Now</h3><p id="heroSub">${esc(label)}</p></header>
     <span class="hero-upd mono" id="heroUpd">Updated ${updLabel(fetchedAt)}</span>
     <button class="hero-now" id="heroNow" hidden>Back to now</button>
