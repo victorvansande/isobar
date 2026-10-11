@@ -1280,14 +1280,15 @@ function windLines(dir, n, dur, o, seed) {
    brighter ones. When gusts run well above the average wind, two quick extra lines blow through. */
 function windFlow(dir, kmh, gustKmh) {
   if (kmh < 2) return "";
-  const n = Math.round(clamp(2 + kmh / 9, 2, 7)), dur = clamp(4.6 - kmh / 14, 1.3, 4.6), o = clamp(.35 + kmh / 60, .35, .9);
+  // seconds per crossing: a lazy drift in a light breeze (about 6 s at 5 km/h), brisk in a gale (about 1 s at 60 km/h)
+  const n = Math.round(clamp(2 + kmh / 9, 2, 7)), dur = clamp(9 / (1 + kmh / 8), .7, 7), o = clamp(.35 + kmh / 60, .35, .9);
   return windLines(dir, n, dur, o, Math.round(dir) + 7) + (gustKmh - kmh >= 15 ? windLines(dir, 2, dur * .55, .5, Math.round(dir) + 11) : "");
 }
 
 /* The main card in a wind storm (gusts from `from` km/h): more and faster lines the stronger the gusts. */
 function gustStreaks(dir, gKmh, from) {
   if (gKmh < from) return "";
-  return windLines(dir, Math.round(clamp(4 + (gKmh - from) / 8, 4, 9)), clamp(2 - (gKmh - from) / 60, .9, 2), .6, Math.round(dir) + 3);
+  return windLines(dir, Math.round(clamp(4 + (gKmh - from) / 8, 4, 9)), clamp(9 / (1 + gKmh / 8), .6, 2), .6, Math.round(dir) + 3);
 }
 
 /* Soft fog banks lying low and wide across the main card. */
