@@ -7,7 +7,7 @@ const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "
 const cap1 = s => s ? s[0].toUpperCase() + s.slice(1) : s;
 const R = v => (v == null || isNaN(v)) ? "–" : Math.round(v);
 const nz = v => v == null || isNaN(v) ? null : v;
-const { FAM, weatherPal, paint } = window.Palette;
+const { FAM, weatherPal, heroPal, paint } = window.Palette;
 
 /* The dock's refraction uses an SVG filter inside backdrop-filter, which only Chromium renders. */
 if (navigator.userAgentData && navigator.userAgentData.brands.some(b => /Chromium/.test(b.brand))) document.documentElement.classList.add("lq");
@@ -792,7 +792,8 @@ function startCondensation(cv) {
 /* ---------------- hero ---------------- */
 function renderHero() {
   const { c, Dy, di, kind, isDay } = X, el = card("c-hero");
-  const tC = toC(c.temperature_2m), pal = weatherPal(tC, kind, isDay);
+  // the sky outside right now: the sun's height and the weather set the colour, the temperature tints it
+  const tC = toC(c.temperature_2m), pal = heroPal(Math.round(sunAlt(new Date(), X.lat, X.lon) / rad * 2) / 2, kind, tC);
   paint(el, pal);
   const au = $("#aurora"); paint(au, pal);
   au.style.setProperty("--x", (tC < 13 ? FAM.coral : FAM.cobalt).mid);
@@ -971,7 +972,7 @@ function scrubSun(f) {
   $("#heroFeels").textContent = `Feels like ${R(h.feels)}°`;
   const moon = s.body === "moon";
   $("#heroMid").textContent = `${moon ? "Moon" : "Sun"} ${Math.max(0, Math.round((moon ? moonAlt : sunAlt)(t, X.lat, X.lon) / rad))}° above the horizon`;
-  paint(card("c-hero"), weatherPal(Math.round(toC(h.temp) * 2) / 2, kind, sunAlt(t, X.lat, X.lon) > 0)); // the moon is often up by day too
+  paint(card("c-hero"), heroPal(Math.round(sunAlt(t, X.lat, X.lon) / rad * 2) / 2, kind, Math.round(toC(h.temp) * 2) / 2)); // the sky at that hour; half steps keep repaints rare
   glowAt(f);
   $("#heroUpd").hidden = true; $("#heroNow").hidden = false;
   const box2 = $("#arcIn"); box2.setAttribute("aria-valuenow", Math.round(f * 100)); box2.setAttribute("aria-valuetext", `${fmtT(t)}, ${v} degrees, ${label}`);

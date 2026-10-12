@@ -69,6 +69,41 @@
     if (!isDay) p = shift(p, NIGHT);
     return p;
   }
+  /* The main card is the sky outside: its colour follows the sun's height (deep night blue, violet twilight, a golden
+     low sun, soft morning blue, clear noon blue), the weather greys or darkens it, and the temperature tints it:
+     the glows warm towards orange on a hot day and cool towards ice on a cold one. */
+  const HSKY = {
+    night:  { core: "#060a26", mid: "#1b2468", hi: "#5d6ad6", acc: "#3b2a9a" },
+    dusk:   { core: "#170b40", mid: "#5338c8", hi: "#ff8fc8", acc: "#2a55f0" },
+    golden: { core: "#2f0f45", mid: "#c2436a", hi: "#ffb35a", acc: "#6a3fd8" },
+    soft:   { core: "#2a3d8a", mid: "#6f8fe0", hi: "#ffd1a8", acc: "#e98aa6" },
+    noon:   { core: "#0a3a8a", mid: "#2f7fe6", hi: "#bfe8ff", acc: "#ffb36a" }
+  };
+  const HSTOPS = [[-12, "night"], [-5, "dusk"], [1, "golden"], [12, "soft"], [30, "noon"]];
+  const HCOND = {
+    partly:  { mid: ["#7c8aa8", .14], hi: ["#ffffff", .12] },
+    cloudy:  { core: ["#1c2638", .5], mid: ["#6a7690", .58], hi: ["#c6cfdc", .5], acc: ["#7a8ab0", .45] },
+    fog:     { core: ["#363c4c", .55], mid: ["#9aa3b5", .62], hi: ["#eef1f6", .6], acc: ["#b0b6c8", .5] },
+    drizzle: { core: ["#18202f", .5], mid: ["#5e6c86", .55], hi: ["#b0bdd0", .45], acc: ["#7896d6", .45] },
+    rain:    { core: ["#121a2a", .6], mid: ["#56657e", .66], hi: ["#a9b7cc", .5], acc: ["#6f8fd0", .5] },
+    snow:    { core: ["#22325a", .45], mid: ["#8fa3c8", .55], hi: ["#ffffff", .6], acc: ["#bfe0ff", .5] },
+    sleet:   { core: ["#1c2a4a", .5], mid: ["#7486a8", .58], hi: ["#e0e8f4", .55], acc: ["#9fc8f0", .45] },
+    thunder: { core: ["#0e0228", .62], mid: ["#3b2f6e", .55], hi: ["#ff5fd0", .3], acc: [SIGNAL, .7] }
+  };
+  function heroPal(altDeg, kind, tC) {
+    let p;
+    if (altDeg <= HSTOPS[0][0]) p = { ...HSKY.night };
+    else if (altDeg >= HSTOPS.at(-1)[0]) p = { ...HSKY.noon };
+    else for (let i = 1; i < HSTOPS.length; i++) if (altDeg <= HSTOPS[i][0]) {
+      p = blend(HSKY[HSTOPS[i - 1][1]], HSKY[HSTOPS[i][1]], (altDeg - HSTOPS[i - 1][0]) / (HSTOPS[i][0] - HSTOPS[i - 1][0])); break;
+    }
+    if (HCOND[kind]) p = shift(p, HCOND[kind]);
+    if (tC != null && !isNaN(tC)) { // the temperature's own colour bleeds into the glows, a little into the body
+      const t = tempFam(tC);
+      p = shift(p, { mid: [t.mid, .12], hi: [t.hi, .22], acc: [t.mid, .42] });
+    }
+    return p;
+  }
   function skyPal(altDeg) {
     if (altDeg <= SKY[0][0]) return { ...FAM[SKY[0][1]] };
     for (let i = 1; i < SKY.length; i++) if (altDeg <= SKY[i][0])
@@ -78,5 +113,5 @@
   // skips the work when the colours are unchanged (scrubbers call this on every frame; a repaint of a blurred card is costly)
   function paint(el, p) { const key = ROLES.map(k => p[k]).join(); if (el._pal === key) return; el._pal = key; for (const k of ROLES) el.style.setProperty("--" + k, p[k]); }
 
-  window.Palette = { FAM, TEMP, ROLES, SIGNAL, mix, tempFam, weatherPal, skyPal, paint };
+  window.Palette = { FAM, TEMP, ROLES, SIGNAL, mix, tempFam, weatherPal, skyPal, heroPal, paint };
 })();
