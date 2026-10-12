@@ -830,3 +830,22 @@ html.wall .a-moon .strip canvas{height:46px}
 
 /* on a wide screen the dock sits in the bottom-right corner, clear of the cards */
 @media (min-width:900px){.dock{left:auto;right:24px;transform:none}}
+
+/* ---------- the 14-day sheet, in step with the board ---------- */
+/* No overlapping deck any more: separate rows with a small gap, in the board's own glass. */
+.deck{gap:8px}
+.day + .day{margin-top:0}
+.day:not(.open){flex:0 0 auto;min-height:0} /* a closed row is just as tall as its line */
+.day{border-radius:22px;background:linear-gradient(155deg,#26253a,#1a1928);box-shadow:inset 0 1px 0 rgba(255,255,255,.09),inset 0 0 0 1px rgba(255,255,255,.05)}
+.day-h{padding:16px 18px}
+.day-b{margin-top:-6px}
+.day-grid{padding:4px 14px 16px}
+/* by day: bright cards like the board's white glass (opaque enough not to turn grey over the panel) */
+:root[data-mode="day"] .day{background:linear-gradient(155deg,rgba(255,255,255,.95),rgba(255,255,255,.82));-webkit-backdrop-filter:none;backdrop-filter:none;
+  box-shadow:inset 0 1px 0 #fff,0 1px 2px rgba(30,20,60,.06),0 10px 24px -16px rgba(30,20,60,.28)}
+/* the panel itself: light frosted glass with dark text by day, the dark glass at night */
+:root[data-mode="day"] .sheet.days-sheet{--ink:#100f18;--ink-2:rgba(16,15,24,.64);--ink-3:rgba(16,15,24,.3);color:var(--ink);background:rgba(236,234,244,.84);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.9),inset 0 0 0 1px rgba(255,255,255,.55),0 30px 60px -30px rgba(30,20,60,.35)}
+/* sheets scroll without a system scrollbar, like the rest of the app */
+.sheet{scrollbar-width:none}
+.sheet::-webkit-scrollbar{display:none}
