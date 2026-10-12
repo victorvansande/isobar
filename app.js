@@ -823,6 +823,31 @@ function rainbowChance() {
   if (!showers && !(rain && cloud < 50)) return null;
   return { alt, o: showers && cloud < 50 ? 1 : .75 }; // brightest with showers and the sun well out
 }
+/* The weather behind the main card for one hour, painted back to front so combined weather stacks naturally:
+   sun glow or stars, then clouds and fog, then whatever is falling, then wind on top. Dragging along the arc repaints
+   it for the hour you land on, so snow at 01:00 shows as snow. */
+function heroSky({ kind, code, mm, cloud, windKmh, gustKmh, dir, isDay }) {
+  const fair = kind === "clear" || kind === "partly";
+  const falling = ["snow", "sleet", "thunder", "drizzle", "rain"].includes(kind) || mm > 0;
+  const cover = cloud ?? (kind === "cloudy" ? 95 : kind === "partly" ? 50 : falling ? 90 : 5);
+  const L = [];
+  if (fair && isDay) L.push(`<span class="sunglow" aria-hidden="true"><i></i></span>`);
+  // stars every night: a full sky when it's clear, a few peeking through cloud or fog, none while rain or snow falls
+  if (!isDay && !falling) L.push(starField(907, fair ? 26 : 9, (x, y) => x > 16 && x < 84 && y > 20 && y < 66));
+  L.push(cloudLayer(33, kind === "fog" ? Math.min(cover, 40) : cover, { night: !isDay, wet: falling, windKmh }));
+  if (kind === "fog") L.push(mistLayer(21, "fog"));
+  if (kind === "snow") L.push(fallDrops(99, "snow", code === 75 || code === 86 ? 62 : code === 71 ? 26 : 40, .9));                // snow, heavier codes more flakes
+  else if (kind === "sleet") L.push(fallDrops(99, "rain", 22, .8), fallDrops(98, "snow", 20, .9));                                   // freezing rain and drizzle
+  else if (code === 96 || code === 99) L.push(fallDrops(99, "thunder", 34, .85), fallDrops(97, "hail", code === 99 ? 34 : 22, 1), bolts(5)); // thunder with hail
+  else if (kind === "thunder") L.push(fallDrops(99, "thunder", mm < 2 ? 34 : 48, .85), bolts(5));
+  else if (kind === "drizzle") L.push(fallDrops(99, "drizzle", code === 55 ? 40 : 28, .7));
+  else if (kind === "rain" || mm > 0) L.push(fallDrops(99, "rain", code === 65 || code === 82 || mm >= 4 ? 52 : code === 61 || code === 80 ? 26 : 38, .85));
+  L.push(gustStreaks(dir, gustKmh, 50));                                                                                              // wind storm from 50 km/h gusts
+  return L.join("");
+}
+// what the sky looks like, coarsely: the sky is only repainted while dragging when this changes
+const skyKey = w => [w.kind, w.code, Math.round(w.mm * 2), Math.round((w.cloud ?? -10) / 10), w.isDay, Math.round(w.windKmh / 10), w.gustKmh >= 50].join();
+let heroSkyKey = "";
 function renderHero() {
   const { c, Dy, di, kind, isDay } = X, el = card("c-hero");
   // the sky outside right now: the sun's height and the weather set the colour, the temperature tints it
@@ -885,27 +910,12 @@ function renderHero() {
     ${dot}
   </svg>`;
   const [label] = wmo(c.weather_code);
-  // The sky behind the card, painted back to front so combined weather stacks naturally:
-  // sun glow or stars, then clouds and fog, then whatever is falling, then wind on top.
-  const code = c.weather_code, mm = toMm(c.precipitation ?? 0), gK = toMs(c.wind_gusts_10m ?? 0) * 3.6, fair = kind === "clear" || kind === "partly";
-  const falling = ["snow", "sleet", "thunder", "drizzle", "rain"].includes(kind) || mm > 0;
-  const cover = c.cloud_cover ?? (kind === "cloudy" ? 95 : kind === "partly" ? 50 : falling ? 90 : 5);
+  const w = { kind, code: c.weather_code, mm: toMm(c.precipitation ?? 0), cloud: c.cloud_cover, windKmh: toMs(c.wind_speed_10m ?? 0) * 3.6, gustKmh: toMs(c.wind_gusts_10m ?? 0) * 3.6, dir: c.wind_direction_10m ?? 0, isDay };
+  heroSkyKey = skyKey(w);
   const L = [];
-  if (fair && isDay) L.push(`<span class="sunglow" aria-hidden="true"><i></i></span>`);
   // a rainbow when the physics allow one: it stands opposite the sun, as high as 42° minus the sun's height
   if (rb) L.push(`<span class="rainbow" aria-hidden="true" style="--rb-x:${clamp(100 - arcPoint(f)[0] / 3, 18, 82).toFixed(1)}%;--rb-alt:${rb.alt.toFixed(1)};--rb-o:${rb.o};--rb-hy:82%"><i></i></span>`);
-  // stars every night: a full sky when it's clear, a few peeking through cloud or fog, none while rain or snow falls
-  if (!isDay && !falling) L.push(starField(907, fair ? 26 : 9, (x, y) => x > 16 && x < 84 && y > 20 && y < 66));
-  L.push(cloudLayer(33, kind === "fog" ? Math.min(cover, 40) : cover, { night: !isDay, wet: falling, windKmh: toMs(c.wind_speed_10m ?? 0) * 3.6 }));
-  if (kind === "fog") L.push(mistLayer(21, "fog"));
-  if (kind === "snow") L.push(fallDrops(99, "snow", code === 75 || code === 86 ? 62 : code === 71 ? 26 : 40, .9));                // snow, heavier codes more flakes
-  else if (kind === "sleet") L.push(fallDrops(99, "rain", 22, .8), fallDrops(98, "snow", 20, .9));                                   // freezing rain and drizzle
-  else if (code === 96 || code === 99) L.push(fallDrops(99, "thunder", 34, .85), fallDrops(97, "hail", code === 99 ? 34 : 22, 1), bolts(5)); // thunder with hail
-  else if (kind === "thunder") L.push(fallDrops(99, "thunder", mm < 2 ? 34 : 48, .85), bolts(5));
-  else if (kind === "drizzle") L.push(fallDrops(99, "drizzle", code === 55 ? 40 : 28, .7));
-  else if (kind === "rain" || mm > 0) L.push(fallDrops(99, "rain", code === 65 || code === 82 || mm >= 4 ? 52 : code === 61 || code === 80 ? 26 : 38, .85));
-  L.push(gustStreaks(c.wind_direction_10m ?? 0, gK, 50));                                                                            // wind storm from 50 km/h gusts
-  const sky = L.join("");
+  const sky = `<div id="heroSky" style="display:contents">${heroSky(w)}</div>${L.join("")}`;
   const cold = tC < 0;
   el.innerHTML = `${sky}${cold ? `<canvas class="frost" id="heroFrost"></canvas>${frostGlints(41, 14)}` : ""}
     <header class="ch"><h3 id="heroWhen">Now</h3><p id="heroSub">${esc(label)}</p></header>
@@ -1005,7 +1015,7 @@ function hourAt(t) {
   if (k < 0) k = H.time.length - 1;
   const k2 = Math.min(k + 1, H.time.length - 1), u = clamp((t - T(H.time[k])) / 36e5, 0, 1), near = u < .5 ? k : k2;
   const L = a => a[k] == null ? a[k2] : a[k2] == null ? a[k] : a[k] + (a[k2] - a[k]) * u;
-  return { temp: L(H.temperature_2m), feels: L(H.apparent_temperature), code: H.weather_code[near] };
+  return { temp: L(H.temperature_2m), feels: L(H.apparent_temperature), code: H.weather_code[near], k: near };
 }
 /* Redraws only what changed; the dot-matrix number is rebuilt when the whole degree changes, which replays its dot animation. */
 function scrubSun(f) {
@@ -1018,6 +1028,9 @@ function scrubSun(f) {
   const drop = $("#arcDrop"); drop.setAttribute("x1", px); drop.setAttribute("x2", px); drop.setAttribute("y1", py);
   const dot = $("#sunDot"); dot.setAttribute("transform", `translate(${px} ${py})`); dot.setAttribute("opacity", "1");
   const h = hourAt(t), [label, kind] = wmo(h.code), v = R(h.temp), box = $("#heroTemp");
+  // the weather on the card follows the hour too: snow, rain, fog, cloud, stars or sun
+  const H = X.H, k = h.k, w = { kind, code: h.code, mm: toMm(H.precipitation[k] ?? 0), cloud: H.cloud_cover[k], windKmh: toMs(H.wind_speed_10m[k] ?? 0) * 3.6, gustKmh: toMs(H.wind_gusts_10m[k] ?? 0) * 3.6, dir: H.wind_direction_10m[k] ?? 0, isDay: !!H.is_day[k] };
+  const sk = skyKey(w); if (sk !== heroSkyKey && $("#heroSky")) { heroSkyKey = sk; $("#heroSky").innerHTML = heroSky(w); }
   if (box.dataset.v !== String(v)) { box.dataset.v = v; box.innerHTML = dm(String(v), { deg: true }); box.setAttribute("aria-label", `${v} degrees`); }
   $("#heroWhen").textContent = fmtT(t);
   $("#heroSub").textContent = label;
