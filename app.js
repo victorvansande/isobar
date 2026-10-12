@@ -790,6 +790,24 @@ function startCondensation(cv) {
 }
 
 /* ---------------- hero ---------------- */
+/* Could there be a rainbow right now? It takes three things together:
+   - a low enough sun: the bow lies 42° around the point straight opposite the sun, so with the sun above 42° it is
+     wholly below the horizon (and at the horizon itself the light is too weak);
+   - sunshine: the sky not closed (under 85% cloud), or showers, which come with bright gaps;
+   - rain close by: falling now, in the hour just gone or the hour to come, as rain, drizzle, showers or thunder (not snow).
+   Returns the sun's height and how bright to draw it, or null. */
+function rainbowChance() {
+  const { c, H, hi, kind } = X;
+  if (!c.is_day || kind === "snow" || kind === "sleet") return null;
+  const alt = sunAlt(new Date(), X.lat, X.lon) / rad;
+  if (alt < 2 || alt > 41) return null;
+  const rainy = k => k >= 0 && k < H.time.length && (toMm(H.precipitation[k] ?? 0) >= .1 || [51, 53, 55, 61, 63, 65, 80, 81, 82, 95].includes(H.weather_code[k]));
+  const wet = toMm(c.precipitation ?? 0) > 0 || ["rain", "drizzle", "thunder"].includes(kind) || rainy(hi - 1) || rainy(hi) || rainy(hi + 1);
+  const showers = [80, 81, 82].includes(c.weather_code) || [hi - 1, hi, hi + 1].some(k => [80, 81, 82].includes(H.weather_code[k]));
+  const sun = (c.cloud_cover ?? 100) < 85 || showers;
+  if (!wet || !sun) return null;
+  return { alt, o: showers && (c.cloud_cover ?? 100) < 70 ? 1 : .7 }; // brightest with showers and the sun well out
+}
 function renderHero() {
   const { c, Dy, di, kind, isDay } = X, el = card("c-hero");
   // the sky outside right now: the sun's height and the weather set the colour, the temperature tints it
@@ -826,6 +844,8 @@ function renderHero() {
     const next = cur && wet(cur) ? segs.find(g => g.t0 >= cur.t1 && !wet(g)) : segs.find(g => g.t0 > now && wet(g));
     if (next) mid = cur && wet(cur) ? `Dry from ${fmtT(next.h)}` : `${next.type === "snow" ? "Snow" : "Rain"} from ${fmtT(next.h)}`;
   }
+  const rb = body === "sun" ? rainbowChance() : null;
+  if (rb) mid = `Rainbow possible to the ${now < st.noon ? "west" : "east"}`; // always opposite the sun
   X.sun = scrub ? { rise: a0, set: a1, f, cur: f, body } : null;
   const mi = mp && moonIllum(new Date(now));
   const dot = mp
@@ -848,6 +868,8 @@ function renderHero() {
   const cover = c.cloud_cover ?? (kind === "cloudy" ? 95 : kind === "partly" ? 50 : falling ? 90 : 5);
   const L = [];
   if (fair && isDay) L.push(`<span class="sunglow" aria-hidden="true"><i></i></span>`);
+  // a rainbow when the physics allow one: it stands opposite the sun, as high as 42° minus the sun's height
+  if (rb) L.push(`<span class="rainbow" aria-hidden="true" style="--cx:${clamp(100 - arcPoint(f)[0] / 3, 18, 82).toFixed(1)}%;--alt:${rb.alt.toFixed(1)};--o:${rb.o};--hy:82%"><i></i></span>`);
   // stars every night: a full sky when it's clear, a few peeking through cloud or fog, none while rain or snow falls
   if (!isDay && !falling) L.push(starField(907, fair ? 26 : 9, (x, y) => x > 16 && x < 84 && y > 20 && y < 66));
   L.push(cloudLayer(33, kind === "fog" ? Math.min(cover, 40) : cover, { night: !isDay, wet: falling, windKmh: toMs(c.wind_speed_10m ?? 0) * 3.6 }));
@@ -874,6 +896,8 @@ function renderHero() {
       <div class="r"><b>${fmtT(a1)}</b><span>${mp ? "Moonset" : "Sunset"}</span></div>
     </div>`;
   glowAt(f);
+  // the rainbow stands on the horizon line of the arc below
+  if (rb) whenMeasured(() => { const b = el.querySelector(".rainbow"), s = el.querySelector(".arc svg"); if (!b || !s) return; const cr = el.getBoundingClientRect(), sr = s.getBoundingClientRect(); b.style.setProperty("--hy", `${((sr.top + sr.height * 95 / 108 - cr.top) / cr.height * 100).toFixed(1)}%`); });
   $("#tbIc").innerHTML = icon(kind, isDay);
   const tbT = $("#tbTemp"); tbT.innerHTML = dm(String(R(c.temperature_2m)), { deg: true }); tbT.setAttribute("aria-label", `${R(c.temperature_2m)} degrees`);
   if (scrub) bindSunScrub();

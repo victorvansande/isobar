@@ -812,3 +812,13 @@ html.wall .a-moon .strip canvas{height:46px}
 .hero.light .fx i{background:linear-gradient(to bottom,rgba(60,75,110,0),rgba(60,75,110,.6))}
 .hero.light .fx.snow i,.hero.light .fx.hail i{background:#7f90b8}
 .hero.light .stars i{background:#4a5a80}
+
+/* ---------- rainbow on the main card ---------- */
+/* A bow of 42° around the point opposite the sun, standing on the horizon of the sun's path: centred --alt degrees
+   below the horizon (the sun's height), so it is a tall arch with a low sun and a low one as the sun climbs. Fades in. */
+.rainbow{position:absolute;inset:0;z-index:-1;pointer-events:none;overflow:hidden;container-type:size;opacity:0;animation:rbIn 5s ease .8s forwards;
+  -webkit-mask-image:linear-gradient(to bottom,#000 calc(var(--hy) - 18%),transparent var(--hy));mask-image:linear-gradient(to bottom,#000 calc(var(--hy) - 18%),transparent var(--hy))}
+.rainbow i{position:absolute;width:100cqw;aspect-ratio:1;left:calc(var(--cx) - 50cqw);top:calc(var(--hy) + 50cqw * var(--alt) / 42 - 50cqw);border-radius:50%;opacity:calc(var(--o) * .55);filter:blur(2.5px);
+  background:radial-gradient(closest-side,transparent 87%,rgba(150,80,255,.6) 88.5%,rgba(70,120,255,.65) 90.5%,rgba(60,210,150,.65) 92.5%,rgba(255,232,80,.7) 94.5%,rgba(255,150,60,.7) 96.5%,rgba(255,70,70,.65) 98.3%,transparent 99.6%)}
+@keyframes rbIn{to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.rainbow{animation:none;opacity:1}}
