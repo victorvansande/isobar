@@ -2043,9 +2043,14 @@ document.querySelectorAll("[data-fam]").forEach(el => paint(el, FAM[el.dataset.f
 // stagger the slow inflow so the cards don't pulse in unison
 document.querySelectorAll(".pig").forEach((el, i) => el.style.setProperty("--delay", `${(-(i * 7.3) % 34).toFixed(1)}s`));
 let rT;
+// Phones fire "resize" whenever the address bar slides in or out while scrolling; only a real change of width (turning
+// the phone, resizing a window) needs the canvases redrawn, and redrawing clears them for a moment.
+let lastW = innerWidth;
 window.addEventListener("resize", () => {
   clearTimeout(rT);
   rT = setTimeout(() => {
+    if (innerWidth === lastW) { if (map) map.invalidateSize(); return; }
+    lastW = innerWidth;
     drawMoons(); if (map) map.invalidateSize();
     // canvas effects are drawn at a fixed pixel size, so redraw them (instantly) at the new size
     const hf = $("#heroFrost"); if (hf) frostRim(hf);
