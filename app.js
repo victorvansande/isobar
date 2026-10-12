@@ -892,9 +892,9 @@ function renderHero() {
   const rb = body === "sun" ? rainbowChance() : null;
   if (rb) mid = `Rainbow possible to the ${now < st.noon ? "west" : "east"}`; // always opposite the sun
   X.sun = scrub ? { rise: a0, set: a1, f, cur: f, body } : null;
-  // the moon, while it is up after dark: small, with tonight's phase, apart from the arc
-  const mAlt = up ? -1 : moonAlt(new Date(now), X.lat, X.lon) / rad, mi = mAlt > 0 && moonIllum(new Date(now));
-  const moon = mi ? `<span class="hero-moon" id="heroMoon" role="img" aria-label="Moon up, ${Math.round(mi.fraction * 100)}% lit"><svg viewBox="-12 -12 24 24"><circle r="8" fill="currentColor" fill-opacity=".16"/><path d="${moonSvg(mi.phase, 8)}" fill="currentColor"${X.lat < 0 ? ' transform="scale(-1 1)"' : ""}/></svg></span>` : "";
+  // the moon after dark, always: small, with tonight's phase, apart from the arc; a thin rim keeps a new moon visible
+  const mAlt = up ? -1 : moonAlt(new Date(now), X.lat, X.lon) / rad, mi = !up && moonIllum(new Date(now));
+  const moon = mi ? `<span class="hero-moon" id="heroMoon" role="img" aria-label="Moon ${mAlt > 0 ? "up" : "below the horizon"}, ${Math.round(mi.fraction * 100)}% lit"><svg viewBox="-12 -12 24 24"><circle r="8" fill="currentColor" fill-opacity=".14" stroke="currentColor" stroke-opacity=".45" stroke-width=".7"/><path d="${moonSvg(mi.phase, 8)}" fill="currentColor"${X.lat < 0 ? ' transform="scale(-1 1)"' : ""}/></svg></span>` : "";
   const dot = night
     ? `<g id="sunDot" class="sun-dot" transform="translate(${px} ${py})"><circle r="9" fill="none" stroke="currentColor" stroke-opacity=".6" stroke-width="1"/><circle r="2.8" fill="currentColor"/></g>`
     : `<g id="sunDot" class="sun-dot" transform="translate(${px} ${py})" opacity="${up ? 1 : .5}"><circle r="9" fill="none" stroke="currentColor" stroke-opacity=".6" stroke-width="1"/><circle r="4" fill="currentColor"/></g>`;
