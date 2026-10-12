@@ -344,8 +344,10 @@ async function getJSON(url) {
 const qs = o => Object.entries(o).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&");
 /* How sure the forecast is, per day: four independent models (European, American, Canadian, German) forecast the same
    days, and the more they disagree, the less certain the day. "high" when their highs lie within 2° and they agree on
-   rain, "low" from 5° apart (or when some bring rain and others none), "medium" in between; ten or more days ahead is
-   never "high". Returns { "2026-10-14": { deg, conf } } with deg the spread in °C, or null. */
+   rain, "low" from 5° apart (or when some bring rain and others none), "medium" in between. Distance counts too: the
+   further ahead the less anyone can know, even when the models happen to agree, so from 6 days out a day is never
+   "high", and its softness (fz) grows with distance. Returns { "2026-10-14": { deg, fz, lead, conf } } with deg the
+   models' spread in °C, or null. */
 const SPREAD_MODELS = ["ecmwf_ifs025", "gfs_seamless", "gem_seamless", "icon_seamless"];
 function confidence(u) {
   if (!u || !u.daily || !u.daily.time) return null;
@@ -357,8 +359,8 @@ function confidence(u) {
     const deg = Math.max(...hi) - Math.min(...hi), split = mm.some(v => v >= 1) && mm.some(v => v < .2);
     let level = deg <= 2 ? 0 : deg <= 4.5 ? 1 : 2;
     if (split) level = Math.min(2, level + 1);
-    if (i >= 10) level = Math.max(1, level);
-    out[day] = { deg, conf: ["high", "medium", "low"][level] };
+    if (i >= 6) level = Math.max(1, level);
+    out[day] = { deg, fz: Math.max(deg, i * .45), lead: i, conf: ["high", "medium", "low"][level] };
   });
   return out;
 }
@@ -780,7 +782,7 @@ function renderHero() {
     else if (now > set) { const nr = Dy.sunrise[di + 1] ? T(Dy.sunrise[di + 1]) : null; mid = nr ? `Sunrise in ${inMins((nr - now) / 6e4)}` : "After sunset"; }
     else mid = `Solar noon ${fmtT(st.noon)}`;
   } else mid = sunAlt(new Date(), X.lat, X.lon) > 0 ? "Midnight sun" : "Polar night";
-  arcDay = rise && set && !isNaN(rise) ? { rise, set } : null;
+  arcDay = rise && set && !isNaN(rise) ? { rise, set, peak: Math.max(0, sunAlt(st.noon, X.lat, X.lon)) } : null; // peak: the sun's highest point today
   const [px, py] = arcPoint(f).map(v => v.toFixed(1));
   const up = rise && set && now >= rise && now <= set;
   const scrub = !!(rise && set && !isNaN(rise));
@@ -816,7 +818,7 @@ function renderHero() {
   const cold = tC < 0;
   el.innerHTML = `${sky}${cold ? `<canvas class="frost" id="heroFrost"></canvas>${frostGlints(41, 14)}` : ""}
     <header class="ch"><h3 id="heroWhen">Now</h3><p id="heroSub">${esc(label)}</p></header>
-    <span class="hero-upd mono" id="heroUpd">Updated ${updLabel(fetchedAt)}</span>
+    <span class="hero-upd mono" id="heroUpd"${Date.now() - fetchedAt < 30 * 6e4 ? " hidden" : ""}>Updated ${updLabel(fetchedAt)}</span>
     <button class="hero-now" id="heroNow" hidden>Back to now</button>
     <div class="hero-temp" id="heroTemp" data-v="${R(c.temperature_2m)}" role="img" aria-label="${R(c.temperature_2m)} degrees">${dm(String(R(c.temperature_2m)), { deg: true })}</div>
     <div class="hero-meta"><span id="heroFeels">Feels like ${R(c.apparent_temperature)}°</span><span>High ${R(Dy.temperature_2m_max[di])}° · Low ${R(Dy.temperature_2m_min[di])}°</span></div>
@@ -840,13 +842,14 @@ let heroFrostGrown = false;
 /* Runs `fn` with the latest event at most once per screen refresh. Touch screens report moves faster than the screen
    redraws, so updating on every event queues work up and the indicator trails the finger. */
 function perFrame(fn) { let last = null, id = 0; return e => { last = e; if (!id) id = requestAnimationFrame(() => { id = 0; fn(last); }); }; }
-/* Where the sun sits on the main card's arc: across is the time from sunrise to sunset, up is the sun's real height in
-   the sky (90° would reach the top). So the arc is low and flat in winter and tall in summer, as it is outside. */
+/* Where the sun sits on the main card's arc: a smooth half-ellipse from sunrise to sunset, as tall as the sun really
+   climbs that day (90° would reach the top). So the arc is low and flat in a northern winter, tall in summer, and
+   almost a full half-circle near the equator; the dot moves along it with the time of day. */
 let arcDay = null;
 const arcPoint = f => {
-  if (!arcDay) { const th = PI * (1 - f); return [150 + 120 * cos(th), 95 - 78 * sin(th)]; } // midnight sun or polar night
-  const t = new Date(arcDay.rise.valueOf() + f * (arcDay.set - arcDay.rise));
-  return [30 + 240 * f, 95 - 82 * Math.max(0, sunAlt(t, X.lat, X.lon)) / (PI / 2)];
+  const h = arcDay ? clamp(arcDay.peak / (PI / 2), .12, 1) * 82 : 78; // midnight sun or polar night: a plain arc
+  const th = PI * (1 - f);
+  return [150 + 120 * cos(th), 95 - h * sin(th)];
 };
 const arcPath = (f0, f1) => {
   const n = Math.max(2, Math.ceil(Math.abs(f1 - f0) * 48)); let d = "";
@@ -940,7 +943,7 @@ function renderNow() {
   });
   const dots = `${grid}<g filter="url(#bloom)">${wet}</g>`;
   const axis = Array.from({ length: 6 }, (_, k) => times[k * 4] ? `<span class="mono">${k ? fmtT(times[k * 4]) : "Now"}</span>` : "<span></span>").join("");
-  el.innerHTML = `<div class="ch-row">${head("Precipitation", sub)}<span class="mono">${fmtP(total)} ${PU()} total</span></div>
+  el.innerHTML = `<div class="ch-row">${head("Precipitation", sub)}${total > 0 ? `<span class="mono">${fmtP(total)} ${PU()} total</span>` : ""}</div>
     <div class="now-say">${esc(say)}</div>
     <div class="now-chart"><svg viewBox="0 0 ${n * sp} ${rows * sp}" role="img" aria-label="Precipitation per 15 minutes"><defs><filter id="bloom" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.3" result="b"/><feComponentTransfer in="b" result="s"><feFuncA type="linear" slope=".55"/></feComponentTransfer><feMerge><feMergeNode in="s"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>${dots}</svg></div>
     <div class="now-axis">${axis}</div>`;
@@ -957,7 +960,7 @@ function renderWind() {
     const r1 = 92, r2 = major ? 80 : mid ? 84 : 87;
     ticks += `<line x1="${100 + r1 * sin(a)}" y1="${100 - r1 * cos(a)}" x2="${100 + r2 * sin(a)}" y2="${100 - r2 * cos(a)}" stroke="currentColor" stroke-opacity="${major ? .95 : mid ? .6 : .32}" stroke-width="${major ? 1.8 : 1}" stroke-linecap="round"/>`;
   }
-  const lab = ["N", "E", "S", "W"].map((t, i) => { const a = i * 90 * rad; return `<text x="${100 + 68 * sin(a)}" y="${100 - 68 * cos(a) + 3.5}" text-anchor="middle" font-family="Geist Mono, monospace" font-size="10" fill="currentColor" fill-opacity=".75">${t}</text>`; }).join("");
+  const lab = ["N", "E", "S", "W"].map((t, i) => { const a = i * 90 * rad; return `<text x="${100 + 68 * sin(a)}" y="${100 - 68 * cos(a) + 3.5}" text-anchor="middle" font-family="Geist Mono, monospace" font-size="14" fill="currentColor" fill-opacity=".75">${t}</text>`; }).join("");
   const a = dir * rad, tip = 78, base = 97, w = 6 * rad;
   const tri = `<path d="M${100 + tip * sin(a)} ${100 - tip * cos(a)} L${100 + base * sin(a - w)} ${100 - base * cos(a - w)} L${100 + base * sin(a + w)} ${100 - base * cos(a + w)}Z" fill="var(--signal)"/>`;
 
@@ -1065,7 +1068,7 @@ function dayStrip() {
     const now = n === 0 && c.temperature_2m != null ? `<span class="nd" style="bottom:${P(clamp(c.temperature_2m, lo, hi))}%"></span>` : "";
     // an uncertain day: the bar reaches out by how much the models disagree, fading at both ends, so it reads as
     // "somewhere around here" rather than an exact range
-    const uc = U && U[key], fuzz = uc && uc.conf !== "high" ? uc.deg * (S.temp === "f" ? 1.8 : 1) / 2 : 0;
+    const uc = U && U[key], fuzz = uc && uc.conf !== "high" ? (uc.fz ?? uc.deg) * (S.temp === "f" ? 1.8 : 1) / 2 : 0;
     const top = clamp(+P(mx + fuzz), 0, 100), bot = clamp(+P(mn - fuzz), 0, 100), fz = fuzz ? clamp((top - +P(mx) + +P(mn) - bot) / 2 / Math.max(top - bot, 1) * 100 + 8, 8, 45) : 0;
     return `<button class="dcol${uc && uc.conf === "low" ? " unsure" : ""}" data-n="${n}" aria-label="${n === 0 ? "Today" : wd(key) + " " + dm_(key)}: ${esc(label)}, ${R(mn)} to ${R(mx)} degrees${pop != null ? `, ${pop}% chance of rain` : ""}${uc && uc.conf !== "high" ? `, ${uc.conf} confidence` : ""}. Open details.">
       <span class="htime${n === 0 ? " now" : ""}">${n === 0 ? "Today" : wd(key)}</span>${icon(kind, true)}
@@ -1139,7 +1142,7 @@ function renderDays() {
         ${tile("Sunrise", fmtT(rise))}
         ${tile("Sunset", fmtT(set))}
         ${tile("Sunshine", Dy.sunshine_duration[i] != null ? (Dy.sunshine_duration[i] / 3600).toFixed(1) + " h" : "–")}
-        ${U && U[key] ? tile("Confidence", `${cap1(U[key].conf)} · ${U[key].deg < 1 ? "models agree" : `models differ by up to ${Math.max(1, Math.round(U[key].deg * (S.temp === "f" ? 1.8 : 1)))}°`}`) : ""}
+        ${U && U[key] ? tile("Confidence", `${cap1(U[key].conf)} · ${U[key].deg < 1 ? "models agree" : `models differ by up to ${Math.max(1, Math.round(U[key].deg * (S.temp === "f" ? 1.8 : 1)))}°`}${U[key].lead >= 6 ? " · far ahead" : ""}`) : ""}
       </div></div></div>
     </article>`;
   }).join("");
@@ -1418,9 +1421,7 @@ function renderPress() {
     <div class="dial"><svg viewBox="0 0 200 188" aria-hidden="true">${ticks}
       <path d="M${s1x} ${s1y} A94 94 0 1 1 ${s2x} ${s2y}" fill="none" stroke="currentColor" stroke-opacity=".16" stroke-width="1"/>
       <path${fast ? ` class="tremble"` : ""} d="M${tx} ${ty} L${b1x} ${b1y} L${b2x} ${b2y}Z" fill="var(--signal)" stroke="rgba(0,0,0,.35)" stroke-width=".8"/>
-      <circle cx="${pt(A(1013.25), 94)[0].toFixed(1)}" cy="${pt(A(1013.25), 94)[1].toFixed(1)}" r="2.6" fill="currentColor"><title>Standard pressure, 1013 hPa</title></circle>
-      <text x="${s1x + 6}" y="${s1y + 14}" font-family="Geist Mono, monospace" font-size="9" fill="currentColor" fill-opacity=".6">LOW</text>
-      <text x="${s2x - 6}" y="${s2y + 14}" text-anchor="end" font-family="Geist Mono, monospace" font-size="9" fill="currentColor" fill-opacity=".6">HIGH</text></svg>
+      <circle cx="${pt(A(1013.25), 94)[0].toFixed(1)}" cy="${pt(A(1013.25), 94)[1].toFixed(1)}" r="2.6" fill="currentColor"><title>Standard pressure, 1013 hPa</title></circle></svg>
       <div class="dial-v" role="img" aria-label="${val} ${inHg ? "inches of mercury" : "hectopascals"}">${dm(String(val))}<span class="mono">${inHg ? "inHg" : "hPa"}</span></div></div>
     <div class="foot"><span>Last 3 hours</span><b>${dp == null ? "–" : `${dp >= 0 ? "+" : "−"}${Math.abs(inHg ? dp * 0.02953 : dp).toFixed(inHg ? 2 : 1)}`}</b></div>`;
 }
@@ -1502,7 +1503,7 @@ function renderPollen() {
   const items = POLLEN.filter(([k]) => a[k] != null).map(([k, n, t]) => { const v = a[k], [l, ln] = lvl(v, t); return { n, v, l, ln }; });
   const top = items.reduce((m, i) => i.l > m.l ? i : m, items[0]);
   el.innerHTML = `<div class="ch-row">${head("Pollen", top.l === 0 ? "Nothing in the air" : `${top.n} is ${top.ln.toLowerCase()}`)}<span class="mono">grains/m³</span></div>
-    <div class="pgrid">${items.map(i => `<div class="tile"><span class="mono">${i.n}</span><b>${i.v < 10 ? i.v.toFixed(1) : Math.round(i.v)}</b><span class="dots">${[1, 2, 3, 4].map(q => `<i class="${q <= i.l ? "on" : ""}"></i>`).join("")}</span><span class="mono" style="font-size:10px">${i.ln}</span></div>`).join("")}</div>`;
+    <div class="pgrid">${items.map(i => `<div class="tile"><span class="mono">${i.n}</span><b>${i.v < 10 ? i.v.toFixed(1) : Math.round(i.v)}</b><span class="dots" role="img" aria-label="${i.ln}">${[1, 2, 3, 4].map(q => `<i class="${q <= i.l ? "on" : ""}"></i>`).join("")}</span></div>`).join("")}</div>`;
 }
 
 /* ---------------- source ---------------- */
