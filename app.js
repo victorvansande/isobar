@@ -790,23 +790,25 @@ function startCondensation(cv) {
 }
 
 /* ---------------- hero ---------------- */
-/* Could there be a rainbow right now? It takes three things together:
-   - a low enough sun: the bow lies 42° around the point straight opposite the sun, so with the sun above 42° it is
-     wholly below the horizon (and at the horizon itself the light is too weak);
-   - sunshine: the sky not closed (under 85% cloud), or showers, which come with bright gaps;
-   - rain close by: falling now, in the hour just gone or the hour to come, as rain, drizzle, showers or thunder (not snow).
-   Returns the sun's height and how bright to draw it, or null. */
+/* Could there be a rainbow right now? Kept rare: only when one is genuinely likely. It takes, all together:
+   - a low enough sun: the bow lies 42° around the point straight opposite the sun, so with the sun above about 40° it
+     is (almost) wholly below the horizon, and right at the horizon the light is too weak;
+   - real sunshine: an open sky (under 70% cloud) and no heavy rain falling here now;
+   - rain close by: showers (or thunder showers) likely (50%+) now or within the hour, or plain rain likely with a sky
+     broken open (under 50% cloud): the classic showery afternoon with the sun out between the showers.
+   Returns the sun's height and how bright to draw the bow, or null. */
 function rainbowChance() {
   const { c, H, hi, kind } = X;
   if (!c.is_day || kind === "snow" || kind === "sleet") return null;
   const alt = sunAlt(new Date(), X.lat, X.lon) / rad;
-  if (alt < 2 || alt > 41) return null;
-  const rainy = k => k >= 0 && k < H.time.length && (toMm(H.precipitation[k] ?? 0) >= .1 || [51, 53, 55, 61, 63, 65, 80, 81, 82, 95].includes(H.weather_code[k]));
-  const wet = toMm(c.precipitation ?? 0) > 0 || ["rain", "drizzle", "thunder"].includes(kind) || rainy(hi - 1) || rainy(hi) || rainy(hi + 1);
-  const showers = [80, 81, 82].includes(c.weather_code) || [hi - 1, hi, hi + 1].some(k => [80, 81, 82].includes(H.weather_code[k]));
-  const sun = (c.cloud_cover ?? 100) < 85 || showers;
-  if (!wet || !sun) return null;
-  return { alt, o: showers && (c.cloud_cover ?? 100) < 70 ? 1 : .7 }; // brightest with showers and the sun well out
+  if (alt < 3 || alt > 40) return null;
+  const cloud = c.cloud_cover ?? 100;
+  if (cloud >= 70 || toMm(c.precipitation ?? 0) >= 2.5) return null;
+  const near = [hi - 1, hi, hi + 1].filter(k => k >= 0 && k < H.time.length), likely = k => (H.precipitation_probability[k] ?? 100) >= 50;
+  const showers = near.some(k => [80, 81, 82, 95].includes(H.weather_code[k]) && likely(k));
+  const rain = near.some(k => toMm(H.precipitation[k] ?? 0) >= .2 && likely(k));
+  if (!showers && !(rain && cloud < 50)) return null;
+  return { alt, o: showers && cloud < 50 ? 1 : .75 }; // brightest with showers and the sun well out
 }
 function renderHero() {
   const { c, Dy, di, kind, isDay } = X, el = card("c-hero");
