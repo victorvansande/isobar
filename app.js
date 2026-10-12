@@ -120,7 +120,8 @@ function dm(str, { deg = false, ghost = true } = {}) {
   if (deg) { [".#.", "#.#", ".#."].forEach((row, y) => [...row].forEach((v, cx) => { if (v === "#") on.push([x + cx, y, 1]); })); x += 3; }
   else x -= 1;
   // --dshift: how far to slide the number so its digits, not digits plus degree sign, sit on the centre line
-  let s = `<svg class="dm" viewBox="-0.5 -0.5 ${x} 7" aria-hidden="true"${deg ? ` style="--dshift:${(200 / x).toFixed(2)}%"` : ""}>`;
+  // (only for up to two digits: a long number such as −47° needs the whole width and is simply centred)
+  let s = `<svg class="dm" viewBox="-0.5 -0.5 ${x} 7" aria-hidden="true"${deg && x <= 15 ? ` style="--dshift:${(200 / x).toFixed(2)}%"` : ""}>`;
   if (ghost) for (const [a, b] of off) s += `<circle class="g" cx="${a}" cy="${b}" r=".33"/>`;
   for (const [a, b, small] of on) s += `<circle class="o" cx="${a}" cy="${b}" r="${small ? .3 : .4}" style="--d:${(((a * 7 + b * 13) % 17) / 17 * .55).toFixed(2)}s"/>`;
   return s + "</svg>";
@@ -894,7 +895,7 @@ function renderHero() {
   X.sun = scrub ? { rise: a0, set: a1, f, cur: f, body } : null;
   // the moon after dark, always: small, with tonight's phase, apart from the arc; a thin rim keeps a new moon visible
   const mAlt = up ? -1 : moonAlt(new Date(now), X.lat, X.lon) / rad, mi = !up && moonIllum(new Date(now));
-  const moon = mi ? `<span class="hero-moon" id="heroMoon" role="img" aria-label="Moon ${mAlt > 0 ? "up" : "below the horizon"}, ${Math.round(mi.fraction * 100)}% lit"><svg viewBox="-12 -12 24 24"><circle r="8" fill="currentColor" fill-opacity=".14" stroke="currentColor" stroke-opacity=".45" stroke-width=".7"/><path d="${moonSvg(mi.phase, 8)}" fill="currentColor"${X.lat < 0 ? ' transform="scale(-1 1)"' : ""}/></svg><svg class="hm-ind" viewBox="0 0 12 10"><path d="M1 8.5h10"/><path d="${mAlt > 0 ? "M6 6.5V1.5M3.9 3.6L6 1.5l2.1 2.1" : "M6 1.5v5M3.9 4.4L6 6.5l2.1-2.1"}"/></svg></span>` : "";
+  const moon = mi ? `<span class="hero-moon" id="heroMoon" role="img" aria-label="Moon ${mAlt > 0 ? "up" : "below the horizon"}, ${Math.round(mi.fraction * 100)}% lit" title="Moon ${mAlt > 0 ? "up" : "below the horizon"}, ${Math.round(mi.fraction * 100)}% lit"><svg viewBox="-12 -12 24 24"><circle r="8" fill="currentColor" fill-opacity=".14" stroke="currentColor" stroke-opacity=".45" stroke-width=".7"/><path d="${moonSvg(mi.phase, 8)}" fill="currentColor"${X.lat < 0 ? ' transform="scale(-1 1)"' : ""}/></svg><svg class="hm-ind" viewBox="0 0 12 10"><path d="M1 8.5h10"/><path d="${mAlt > 0 ? "M6 6.5V1.5M3.9 3.6L6 1.5l2.1 2.1" : "M6 1.5v5M3.9 4.4L6 6.5l2.1-2.1"}"/></svg></span>` : "";
   const dot = night
     ? `<g id="sunDot" class="sun-dot" transform="translate(${px} ${py})"><circle r="9" fill="none" stroke="currentColor" stroke-opacity=".6" stroke-width="1"/><circle r="2.8" fill="currentColor"/></g>`
     : `<g id="sunDot" class="sun-dot" transform="translate(${px} ${py})" opacity="${up ? 1 : .5}"><circle r="9" fill="none" stroke="currentColor" stroke-opacity=".6" stroke-width="1"/><circle r="4" fill="currentColor"/></g>`;
@@ -1139,7 +1140,7 @@ function renderWind() {
   const kmh = toMs(sp ?? 0) * 3.6, gusts = windFlow(dir, kmh, toMs(gust ?? 0) * 3.6);
   el.innerHTML = `${gusts}${head("Wind", sp == null ? "–" : `From the ${pt8(dir)}`)}
     <div class="compass"><svg viewBox="0 0 200 200" role="img" aria-label="Wind from ${pt16(dir)}">${ticks}${lab}${tri}</svg>
-      <div class="compass-c">${dm(spTxt)}<span class="mono u">${WU[S.wind]}</span></div></div>
+      <div class="compass-c" role="img" aria-label="${sp == null ? "No wind data" : `${spTxt} ${WU[S.wind]}`}">${dm(spTxt)}<span class="mono u">${WU[S.wind]}</span></div></div>
     <div class="foot"><span>Gusts <b>${R(gust)}</b> ${WU[S.wind]}</span><span>Bft <b>${b}</b> · ${esc(bname)}</span></div>`;
 }
 
@@ -1583,7 +1584,7 @@ function renderAir() {
   // the pollutant figures are for the curious: folded away behind a small toggle, which remembers its state
   const open = store.get("airOpen", false);
   el.innerHTML = `${v >= 60 ? `<span class="smog" aria-hidden="true"></span>` : ""}<div class="air${open ? " open" : ""}"><div class="air-l">${head("Air quality", L[1])}
-      ${dm(String(Math.round(v)))}
+      <span class="air-v" role="img" aria-label="European AQI ${Math.round(v)}, ${L[1].toLowerCase()}">${dm(String(Math.round(v)))}</span>
       <span class="mono">European AQI</span>
       <div class="scale" aria-hidden="true">${scale}<span class="tri" style="left:calc(2.5px + (100% - 5px) * ${clamp(v / 115, 0, 1).toFixed(3)})"></span></div>
       <div class="air-foot"><span class="mono">${peakT ? `Worst around ${fmtT(peakT)}` : "Steady over the next 24 h"}</span>
