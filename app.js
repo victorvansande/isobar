@@ -871,7 +871,7 @@ function renderHero() {
   const L = [];
   if (fair && isDay) L.push(`<span class="sunglow" aria-hidden="true"><i></i></span>`);
   // a rainbow when the physics allow one: it stands opposite the sun, as high as 42° minus the sun's height
-  if (rb) L.push(`<span class="rainbow" aria-hidden="true" style="--cx:${clamp(100 - arcPoint(f)[0] / 3, 18, 82).toFixed(1)}%;--alt:${rb.alt.toFixed(1)};--o:${rb.o};--hy:82%"><i></i></span>`);
+  if (rb) L.push(`<span class="rainbow" aria-hidden="true" style="--rb-x:${clamp(100 - arcPoint(f)[0] / 3, 18, 82).toFixed(1)}%;--rb-alt:${rb.alt.toFixed(1)};--rb-o:${rb.o};--rb-hy:82%"><i></i></span>`);
   // stars every night: a full sky when it's clear, a few peeking through cloud or fog, none while rain or snow falls
   if (!isDay && !falling) L.push(starField(907, fair ? 26 : 9, (x, y) => x > 16 && x < 84 && y > 20 && y < 66));
   L.push(cloudLayer(33, kind === "fog" ? Math.min(cover, 40) : cover, { night: !isDay, wet: falling, windKmh: toMs(c.wind_speed_10m ?? 0) * 3.6 }));
@@ -899,7 +899,7 @@ function renderHero() {
     </div>`;
   glowAt(f);
   // the rainbow stands on the horizon line of the arc below
-  if (rb) whenMeasured(() => { const b = el.querySelector(".rainbow"), s = el.querySelector(".arc svg"); if (!b || !s) return; const cr = el.getBoundingClientRect(), sr = s.getBoundingClientRect(); b.style.setProperty("--hy", `${((sr.top + sr.height * 95 / 108 - cr.top) / cr.height * 100).toFixed(1)}%`); });
+  if (rb) whenMeasured(() => { const b = el.querySelector(".rainbow"), s = el.querySelector(".arc svg"); if (!b || !s) return; const cr = el.getBoundingClientRect(), sr = s.getBoundingClientRect(); b.style.setProperty("--rb-hy", `${((sr.top + sr.height * 95 / 108 - cr.top) / cr.height * 100).toFixed(1)}%`); });
   $("#tbIc").innerHTML = icon(kind, isDay);
   const tbT = $("#tbTemp"); tbT.innerHTML = dm(String(R(c.temperature_2m)), { deg: true }); tbT.setAttribute("aria-label", `${R(c.temperature_2m)} degrees`);
   if (scrub) bindSunScrub();
