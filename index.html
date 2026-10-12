@@ -166,6 +166,17 @@
   </div>
 </dialog>
 
+<dialog id="dlgSpread" aria-label="How sure is this?">
+  <div class="sheet spread-sheet">
+    <div class="sheet-h"><h2>How sure is this?</h2><button class="round lens" data-close aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="seg" id="spSeg"><button data-v="t" aria-pressed="true">Temperature</button><button data-v="r" aria-pressed="false">Rain</button></div>
+    <p class="sp-say" id="spSay"></p>
+    <div class="sp-chart" id="spChart" role="slider" tabindex="0" aria-label="Day. Drag or use the arrow keys to read another day."><canvas id="spCv"></canvas></div>
+    <div class="sp-read" id="spRead" aria-live="polite"></div>
+    <p class="sp-note">The European model (ECMWF) run 51 times, each from a slightly different start. Where the runs stay together the forecast is solid; where they fan out, the weather is still open.<span id="spRed"> The red line is the forecast shown in the app.</span></p>
+  </div>
+</dialog>
+
 <dialog id="dlgInfo" aria-label="About the data">
   <div class="sheet">
     <div class="sheet-h"><h2>About the data</h2><button class="round lens" data-close aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>

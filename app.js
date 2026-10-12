@@ -1121,7 +1121,7 @@ function renderHourly() {
   el.dataset.view = view;
   el.innerHTML = `<div class="ch-row"><header class="ch"><h3 id="hTitle">${view === "d" ? "Next 14 days" : "Next 48 hours"}</h3>
       <p class="hv-h">${R(mn)}° to ${R(mx)}°</p>
-      <button class="hall hv-d" id="hAll">Full forecast<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4.5 2.5L8 6l-3.5 3.5"/></svg></button></header>
+      <span class="hv-d hlinks"><button class="hall" id="hAll">Full forecast<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4.5 2.5L8 6l-3.5 3.5"/></svg></button><button class="hall" id="hSure">How sure?<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4.5 2.5L8 6l-3.5 3.5"/></svg></button></span></header>
       <div class="hseg" role="tablist" aria-label="Forecast range"><button role="tab" data-v="h" aria-selected="${view === "h"}">48 h</button><button role="tab" data-v="d" aria-selected="${view === "d"}">14 days</button></div></div>
     <div class="hscroll hv-h" tabindex="0" aria-label="Hourly forecast, scroll sideways"><div class="hin" style="grid-template-columns:repeat(${n},${colW}px);width:${W}px">${track}${cols.join("")}${svg}</div></div>
     <div class="hscroll hv-d" tabindex="0" aria-label="Daily forecast, scroll sideways">${dayStrip()}</div>`;
@@ -1164,6 +1164,7 @@ $("#c-hourly").addEventListener("click", e => {
   }
   const col = e.target.closest(".dcol"); if (col) return openDays(+col.dataset.n);
   if (e.target.closest("#hAll")) openDays(null);
+  if (e.target.closest("#hSure")) openSpread(0);
 });
 /* Pops the full 14-day stack out in a sheet; with a day number, that day comes up unfolded. */
 function openDays(n) {
@@ -1174,6 +1175,134 @@ function openDays(n) {
   sheet.scrollTop = 0;
   if (n != null && n > 0) requestAnimationFrame(() => { const d = $("#deck .day.open"); if (d) sheet.scrollTop = d.offsetTop - 70; });
 }
+
+/* ---------------- how sure: the ECMWF ensemble ---------------- */
+/* The European model run 51 times from slightly different starts. Fetched only when someone opens the sheet, kept
+   for three hours, and boiled down per run to each day's high, low and rain. */
+let ENS = null, spView = "t", spSel = 0;
+async function openSpread(day) {
+  spSel = day || 0;
+  $("#dlgSpread").showModal();
+  const key = `${X.lat},${X.lon},${S.temp},${S.precip}`;
+  if (!ENS || ENS.key !== key || Date.now() - ENS.at > 3 * 36e5) {
+    ENS = null; $("#spRead").textContent = ""; $("#spChart").hidden = true;
+    $("#spSay").textContent = "Fetching the 51 runs…";
+    try { ENS = await fetchEns(key); }
+    catch { $("#spSay").textContent = "The ensemble isn't available right now. Try again in a moment."; return; }
+  }
+  $("#spChart").hidden = false;
+  drawSpread();
+}
+async function fetchEns(key) {
+  const j = await getJSON("https://ensemble-api.open-meteo.com/v1/ensemble?" + qs({
+    latitude: X.lat, longitude: X.lon, timezone: "auto", forecast_days: 15, hourly: "temperature_2m,precipitation", models: "ecmwf_ifs025",
+    temperature_unit: S.temp === "f" ? "fahrenheit" : "celsius", precipitation_unit: S.precip
+  }));
+  const H = j.hourly, days = [...new Set(H.time.map(t => t.slice(0, 10)))].filter(d => d >= X.todayKey);
+  const at = Object.fromEntries(days.map((d, i) => [d, i]));
+  const runs = Object.keys(H).filter(k => /^temperature_2m(_member\d+)?$/.test(k)).map(k => k.slice(14));
+  const hi = [], lo = [], mm = [];
+  for (const s of runs) {
+    const t = H["temperature_2m" + s], p = H["precipitation" + s] || [];
+    const h = days.map(() => -Infinity), l = days.map(() => Infinity), r = days.map(() => 0), n = days.map(() => 0);
+    H.time.forEach((tm, k) => { const i = at[tm.slice(0, 10)]; if (i == null || t[k] == null) return; h[i] = Math.max(h[i], t[k]); l[i] = Math.min(l[i], t[k]); r[i] += p[k] ?? 0; n[i]++; });
+    hi.push(h.map((v, i) => n[i] >= 20 ? v : null)); lo.push(l.map((v, i) => n[i] >= 20 ? v : null)); mm.push(r.map((v, i) => n[i] >= 20 ? v : null));
+  }
+  const keep = days.map((_, i) => hi.filter(m => m[i] != null).length >= 20); // a day needs most of the runs
+  const n = keep.indexOf(false) < 0 ? days.length : keep.indexOf(false);
+  return { key, at: Date.now(), days: days.slice(0, n), hi: hi.map(m => m.slice(0, n)), lo: lo.map(m => m.slice(0, n)), mm: mm.map(m => m.slice(0, n)), runs: runs.length };
+}
+const quant = (a, p) => { const s = a.filter(v => v != null).sort((x, y) => x - y); return s.length ? s[Math.min(s.length - 1, Math.max(0, Math.round(p * (s.length - 1))))] : null; };
+const longDay = (key, i) => i === 0 ? "today" : i === 1 ? "tomorrow" : i < 7 ? dayOf(key).toLocaleDateString("en-GB", { weekday: "long", timeZone: "UTC" }) : `${wd(key)} ${dm_(key)}`;
+function spreadStats() {
+  const E = ENS, col = (A, i) => A.map(m => m[i]);
+  const wet = S.precip === "inch" ? .04 : 1;
+  return E.days.map((key, i) => {
+    const h = col(E.hi, i), l = col(E.lo, i), r = col(E.mm, i).filter(v => v != null);
+    const fi = X.Dy.time.indexOf(key);
+    return { key, h10: quant(h, .1), h50: quant(h, .5), h90: quant(h, .9), l10: quant(l, .1), l90: quant(l, .9),
+      wet: r.filter(v => v >= wet).length, n: r.length, mean: r.reduce((a, b) => a + b, 0) / (r.length || 1), r90: quant(r, .9),
+      app: fi >= 0 ? X.Dy.temperature_2m_max[fi] : null };
+  });
+}
+function drawSpread() {
+  const E = ENS; if (!E) return;
+  const st = spreadStats(), n = st.length; spSel = clamp(spSel, 0, n - 1);
+  $("#spSeg").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === spView)));
+  $("#spRed").hidden = spView !== "t";
+  // one plain sentence first
+  if (spView === "t") {
+    const thr = S.temp === "f" ? 5.4 : 3, w = st.map(s => s.h90 - s.h10);
+    let k = w.findIndex(v => v > thr); if (k < 0) k = n;
+    const rest = st.slice(k), mx = Math.max(...w.slice(0, Math.max(k, 1)));
+    $("#spSay").textContent = k === n ? `The runs agree all the way: highs within ${Math.max(1, R(mx))}° for the next ${n} days.`
+      : k === 0 ? `The runs already differ today: a high anywhere from ${R(st[0].h10)}° to ${R(st[0].h90)}°.`
+      : `${k === 1 ? "Today" : `Through ${longDay(st[k - 1].key, k - 1)}`} the runs agree within ${Math.max(1, R(mx))}°. After that, highs could be anywhere from ${R(Math.min(...rest.map(s => s.h10)))}° to ${R(Math.max(...rest.map(s => s.h90)))}°.`;
+  } else {
+    const best = st.reduce((m, s, i) => s.wet / (s.n || 1) > st[m].wet / (st[m].n || 1) ? i : m, 0), b = st[best];
+    const many = st.filter(s => s.wet / (s.n || 1) >= .5).length;
+    $("#spSay").textContent = b.wet / (b.n || 1) < .2 ? `Dry in almost every run for the next ${n} days.`
+      : `Rain is likeliest ${longDay(b.key, best)}: wet in ${b.wet} of ${b.n} runs.${many > 1 ? ` ${many} days are wet in more than half the runs.` : ""}`;
+  }
+  // the chart
+  const cv = $("#spCv"), sz = sizeCanvas(cv); if (!sz) return;
+  const { ctx, w, h } = sz, padL = 30, padR = 6, top = 10, bot = 24, cw = (w - padL - padR) / n;
+  const X0 = i => padL + (i + .5) * cw;
+  ctx.font = "500 10px 'Geist Mono', ui-monospace, monospace"; ctx.textBaseline = "middle";
+  const grid = (vals, Y, fmt) => { ctx.strokeStyle = "rgba(255,255,255,.08)"; ctx.lineWidth = 1; ctx.fillStyle = "rgba(255,255,255,.5)"; ctx.textAlign = "right";
+    for (const v of vals) { const y = Math.round(Y(v)) + .5; ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke(); ctx.fillText(fmt(v), padL - 6, y); } };
+  // day labels along the bottom
+  ctx.textAlign = "center"; ctx.fillStyle = "rgba(255,255,255,.5)";
+  st.forEach((s, i) => { if (i % 2 === 0 || cw > 34) ctx.fillText(i === 0 ? "Now" : wd(s.key).slice(0, 2), X0(i), h - 8); });
+  // the selected day
+  ctx.fillStyle = "rgba(255,255,255,.07)"; ctx.fillRect(padL + spSel * cw, top - 4, cw, h - top - bot + 8);
+  if (spView === "t") {
+    const all = E.hi.flat().filter(v => v != null).concat(st.map(s => s.app).filter(v => v != null));
+    const step = S.temp === "f" ? 10 : 5, lo = Math.floor(Math.min(...all) / step) * step, hi = Math.ceil(Math.max(...all) / step) * step;
+    const Y = v => top + (hi - v) / ((hi - lo) || 1) * (h - top - bot);
+    const ticks = []; for (let v = lo; v <= hi; v += step) ticks.push(v);
+    grid(ticks, Y, v => `${v}°`);
+    // the band that holds 8 in 10 runs
+    ctx.beginPath(); st.forEach((s, i) => ctx[i ? "lineTo" : "moveTo"](X0(i), Y(s.h90))); for (let i = n - 1; i >= 0; i--) ctx.lineTo(X0(i), Y(st[i].h10));
+    ctx.closePath(); ctx.fillStyle = "rgba(138,150,255,.3)"; ctx.fill();
+    // every run as a thin line
+    ctx.strokeStyle = "rgba(255,255,255,.13)"; ctx.lineWidth = 1; ctx.lineJoin = "round";
+    for (const m of E.hi) { ctx.beginPath(); let on = false; m.forEach((v, i) => { if (v == null) return; ctx[on ? "lineTo" : "moveTo"](X0(i), Y(v)); on = true; }); ctx.stroke(); }
+    // the middle run, then the app's own forecast in the accent
+    ctx.strokeStyle = "#fff"; ctx.lineWidth = 2.2; ctx.beginPath(); st.forEach((s, i) => ctx[i ? "lineTo" : "moveTo"](X0(i), Y(s.h50))); ctx.stroke();
+    ctx.strokeStyle = Palette.SIGNAL; ctx.fillStyle = Palette.SIGNAL; ctx.lineWidth = 1.6; ctx.setLineDash([3, 3]); ctx.beginPath();
+    let on = false; st.forEach((s, i) => { if (s.app == null) return; ctx[on ? "lineTo" : "moveTo"](X0(i), Y(s.app)); on = true; }); ctx.stroke(); ctx.setLineDash([]);
+    st.forEach((s, i) => { if (s.app == null) return; ctx.beginPath(); ctx.arc(X0(i), Y(s.app), i === spSel ? 4 : 2.6, 0, PI * 2); ctx.fill(); });
+  } else {
+    const Y = v => top + (1 - v) * (h - top - bot);
+    grid([0, .5, 1], Y, v => `${Math.round(v * 100)}%`);
+    st.forEach((s, i) => {
+      const f = s.wet / (s.n || 1), bw = Math.min(cw * .62, 22), x = X0(i) - bw / 2, y = Y(f);
+      ctx.fillStyle = `rgba(127,192,255,${(.35 + f * .5).toFixed(2)})`;
+      ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x, y, bw, Y(0) - y, [4, 4, 1, 1]) : ctx.rect(x, y, bw, Y(0) - y); ctx.fill();
+      if (f >= .3 && cw > 20) { ctx.fillStyle = "rgba(255,255,255,.75)"; ctx.textAlign = "center"; ctx.fillText(`${Math.round(f * 100)}`, X0(i), y - 8); }
+    });
+  }
+  // what the selected day holds
+  const s = st[spSel], name = spSel === 0 ? "Today" : `${wd(s.key)} ${dm_(s.key)}`;
+  $("#spRead").innerHTML = spView === "t"
+    ? `<b>${esc(name)}</b><span>High <b>${R(s.h10)}–${R(s.h90)}°</b>, most likely ${R(s.h50)}°</span><span>Low ${R(s.l10)}–${R(s.l90)}°${s.app != null ? ` · app ${R(s.app)}°` : ""}</span>`
+    : `<b>${esc(name)}</b><span>Wet in <b>${s.wet} of ${s.n}</b> runs</span><span>${fmtP(s.mean)} ${PU()} on average, up to ${fmtP(s.r90)} ${PU()} in the wettest runs</span>`;
+  const box = $("#spChart"); box.setAttribute("aria-valuemin", 0); box.setAttribute("aria-valuemax", n - 1); box.setAttribute("aria-valuenow", spSel);
+  box.setAttribute("aria-valuetext", $("#spRead").textContent);
+}
+(() => {
+  const box = $("#spChart");
+  const pick = perFrame(e => { if (!ENS) return; const r = box.getBoundingClientRect(), n = ENS.days.length, i = Math.floor((e.clientX - r.left - 30) / ((r.width - 36) / n)); if (clamp(i, 0, n - 1) !== spSel) { spSel = clamp(i, 0, n - 1); drawSpread(); } });
+  const end = () => { box.classList.remove("grab"); removeEventListener("pointermove", pick); removeEventListener("pointerup", end); removeEventListener("pointercancel", end); };
+  box.addEventListener("pointerdown", e => { if (e.button !== 0) return; box.classList.add("grab"); pick(e); addEventListener("pointermove", pick); addEventListener("pointerup", end); addEventListener("pointercancel", end); });
+  box.addEventListener("keydown", e => {
+    const d = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1 }[e.key]; if (!d || !ENS) return;
+    e.preventDefault(); spSel = clamp(spSel + d, 0, ENS.days.length - 1); drawSpread();
+  });
+  $("#spSeg").addEventListener("click", e => { const b = e.target.closest("button"); if (b) { spView = b.dataset.v; drawSpread(); } });
+  addEventListener("resize", () => { if ($("#dlgSpread").open) drawSpread(); });
+})();
 
 /* ---------------- 14 days ---------------- */
 /* Rain (or snow) falls in a day card once rain is likely (40%+) or measurable (0.5 mm+).
@@ -1221,7 +1350,7 @@ function renderDays() {
         ${cl[n] ? tile("Normal", `${R(fromC(cl[n].lo))}° / ${R(fromC(cl[n].hi))}°`) : ""}
         ${cl[n] && cl[n].rh ? tile("Record high", `${R(fromC(cl[n].rh[0]))}° <small>${cl[n].rh[1]}</small>`) : ""}
         ${cl[n] && cl[n].rl ? tile("Record low", `${R(fromC(cl[n].rl[0]))}° <small>${cl[n].rl[1]}</small>`) : ""}
-        ${U && U[key] ? tile("Confidence", `${cap1(U[key].conf)} · ${U[key].deg < 1 ? "models agree" : `models differ by up to ${Math.max(1, Math.round(U[key].deg * (S.temp === "f" ? 1.8 : 1)))}°`}${U[key].lead >= 6 ? " · far ahead" : ""}`) : ""}
+        ${U && U[key] ? `<button class="tile tile-go" data-spread="${n}"><span class="mono">Confidence</span><b>${cap1(U[key].conf)} · ${U[key].deg < 1 ? "models agree" : `models differ by up to ${Math.max(1, Math.round(U[key].deg * (S.temp === "f" ? 1.8 : 1)))}°`}${U[key].lead >= 6 ? " · far ahead" : ""}</b><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4.5 2.5L8 6l-3.5 3.5"/></svg></button>` : ""}
       </div></div></div>
     </article>`;
   }).join("");
@@ -2119,6 +2248,7 @@ function toast(msg) { const t = $("#toast"); t.textContent = msg; t.hidden = fal
 
 /* ---------------- deck ---------------- */
 $("#c-days").addEventListener("click", e => {
+  const go = e.target.closest("[data-spread]"); if (go) return openSpread(+go.dataset.spread);
   const b = e.target.closest(".day-h"); if (!b) return;
   const art = b.parentElement, was = art.classList.contains("open");
   document.querySelectorAll(".day.open").forEach(d => { d.classList.remove("open"); d.querySelector(".day-h").setAttribute("aria-expanded", "false"); });
@@ -2128,7 +2258,7 @@ $("#c-days").addEventListener("click", e => {
 /* ---------------- places ---------------- */
 const dlgP = $("#dlgPlaces"), dlgS = $("#dlgSet");
 document.querySelectorAll("[data-close]").forEach(b => b.onclick = () => b.closest("dialog").close());
-[dlgP, dlgS, $("#dlgDays"), $("#dlgInfo"), $("#dlgLearn"), $("#dlgWarn")].forEach(d => d.addEventListener("click", e => { if (e.target === d) d.close(); }));
+[dlgP, dlgS, $("#dlgDays"), $("#dlgInfo"), $("#dlgLearn"), $("#dlgWarn"), $("#dlgSpread")].forEach(d => d.addEventListener("click", e => { if (e.target === d) d.close(); }));
 const placeRow = (p, i, kind) => `<div class="row" role="button" tabindex="0" data-kind="${kind}" data-i="${i}"><span><b>${esc(p.name)}</b><span>${esc(p.sub || `${p.lat}, ${p.lon}`)}</span></span>${kind === "saved" ? `<button class="x" data-del="${i}" aria-label="Remove ${esc(p.name)}">✕</button>` : ""}</div>`;
 let results = [];
 function renderSaved() {
