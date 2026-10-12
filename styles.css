@@ -142,14 +142,14 @@ html.standalone[data-mode="day"] body::before{content:"";position:fixed;left:0;r
    "hourly hourly hourly hourly"
    "uv humid air air"
    "moon moon sun sun"
-   "year year year year"
    "radar radar press vis"
    "radar radar rain clouds"
    "pollen pollen pollen pollen"
+   "year year year year"
    "src src src src";}
 @media (max-width:1000px){
   .board{grid-template-columns:repeat(2,minmax(0,1fr));
-   grid-template-areas:"hero hero" "now now" "wind feels" "hourly hourly" "uv humid" "air air" "moon moon" "sun sun" "year year" "press vis" "rain clouds" "pollen pollen" "radar radar" "src src";}
+   grid-template-areas:"hero hero" "now now" "wind feels" "hourly hourly" "uv humid" "air air" "moon moon" "sun sun" "press vis" "rain clouds" "pollen pollen" "radar radar" "year year" "src src";}
 }
 .a-hero{grid-area:hero}.a-now{grid-area:now}.a-wind{grid-area:wind}.a-feels{grid-area:feels}.a-hourly{grid-area:hourly}
 .a-days{grid-area:days}.a-uv{grid-area:uv}.a-humid{grid-area:humid}.a-air{grid-area:air}.a-moon{grid-area:moon}
