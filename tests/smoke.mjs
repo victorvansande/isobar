@@ -108,7 +108,7 @@ async function run(engine, name, viewport, variant = "normal") {
     warn: !document.querySelector("#warn").hidden && document.querySelector("#warnT").textContent
   }));
   check("main card renders", s.hero);
-  check("all 17 cards present", s.cards === 17, `${s.cards}`);
+  check("all 16 cards present", s.cards === 16, `${s.cards}`);
   check("no card left loading", s.skeletons === 0, `${s.skeletons} placeholders`);
   check("summary written", s.summary.length > 10, s.summary);
   check("nothing sticks out sideways", s.overflow <= 0, `${s.overflow}px too wide`);

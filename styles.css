@@ -5,7 +5,7 @@
 /* the round Urbanist figures for small labels, from the same font file the big numbers already load */
 @font-face{font-family:"Isobar Digits";src:url(https://fonts.gstatic.com/s/urbanist/v18/L0x-DF02iFML4hGCyMqlbS0.woff2) format("woff2");font-weight:100 900;font-display:swap;unicode-range:U+0030-0039,U+0025,U+002B,U+002E,U+00B0,U+2212}
 :root{
-  --bg:#08080b;
+  --bg:#0b1120;
   --ink:#f4f4f7;
   --ink-2:rgba(244,244,247,.6);
   --ink-3:rgba(244,244,247,.3);
@@ -17,7 +17,7 @@
   --g-rim:rgba(255,255,255,.2);
   --g-line:rgba(255,255,255,.08);
   --g-drop:rgba(0,0,0,.6);
-  --aurora:.5;
+  --aurora:.3;
   --rain:#8fb0ff;
   --day-track:#ffc24a;
   --twilight-track:#8a6bff;
@@ -26,8 +26,8 @@
   --signal-ink:#fff;
   --f-display:"Geist","Helvetica Neue",Helvetica,Arial,sans-serif;
   --f-num:"Urbanist","Helvetica Neue",Helvetica,Arial,sans-serif;
-  --f-mono:"Geist Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
   --f-label:"Isobar Digits","Geist","Helvetica Neue",Helvetica,Arial,sans-serif; /* small labels: Geist letters with the round Urbanist figures */
+  --f-mono:var(--f-label); /* no monospace left: times and axes use the label face, with even-width figures */
   --r-card:30px;
   --grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   color-scheme:dark;
@@ -129,9 +129,8 @@ dialog:focus-visible,.sheet:focus-visible{outline:none} /* opening a sheet focus
 /* local time in dot-matrix digits; each character has its own slot so only changed digits replay their animation */
 .clock{display:flex;align-items:center;gap:3px;height:38px;padding:0 14px;border-radius:999px;color:var(--ink)}
 .clock:empty{display:none}
-.clock .ck .dm{height:17px}
-.clock .ck-ap{margin-left:5px;color:var(--ink)}
-.clock .ck-ap:empty{display:none} /* 24-hour clock: no am/pm, so nothing may take space after the digits */
+.clock .ck{font:500 17px/1 var(--f-label);letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.clock .ck-ap{margin-left:4px;font:500 12px/1 var(--f-label);color:var(--ink-2)}
 .round{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;flex:none}
 .round svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 .spin svg{animation:spin 1s linear infinite}
@@ -143,23 +142,28 @@ dialog:focus-visible,.sheet:focus-visible{outline:none} /* opening a sheet focus
    "hero hero now now"
    "hero hero wind feels"
    "hourly hourly hourly hourly"
-   "uv humid air air"
-   "moon moon sun sun"
-   "radar radar press vis"
-   "radar radar rain clouds"
-   "pollen pollen pollen pollen"
-   "year year year year"
+   "radar radar rain uv"
+   "radar radar humid press"
+   "air air pollen pollen"
+   "vis clouds moon moon"
+   "sun sun sun sun"
    "src src src src";}
 @media (max-width:1000px){
   .board{grid-template-columns:repeat(2,minmax(0,1fr));
-   grid-template-areas:"hero hero" "now now" "wind feels" "hourly hourly" "uv humid" "air air" "moon moon" "sun sun" "press vis" "rain clouds" "pollen pollen" "radar radar" "year year" "src src";}
+   grid-template-areas:"hero hero" "now now" "hourly hourly" "radar radar" "wind feels" "rain uv" "humid press" "air air" "pollen pollen" "vis clouds" "sun sun" "moon moon" "src src";}
 }
 .a-hero{grid-area:hero}.a-now{grid-area:now}.a-wind{grid-area:wind}.a-feels{grid-area:feels}.a-hourly{grid-area:hourly}
 .a-days{grid-area:days}.a-uv{grid-area:uv}.a-humid{grid-area:humid}.a-air{grid-area:air}.a-moon{grid-area:moon}
 .a-radar{grid-area:radar}.a-sun{grid-area:sun}.a-press{grid-area:press}.a-vis{grid-area:vis}.a-rain{grid-area:rain}
 .a-clouds{grid-area:clouds}.a-pollen{grid-area:pollen}.a-src{grid-area:src}
-/* daylight through the year */
-.a-year{min-height:0}
+/* pollen with nothing in the air is one short line; on the wide board it becomes a full-width strip and the radar takes the vis and clouds row */
+.a-pollen.slim{min-height:0}
+.a-pollen.slim .ch{margin:0}
+.a-pollen.slim .ch-row{align-items:center}
+@media (min-width:1001px){.board:has(.a-pollen.slim){grid-template-areas:"hero hero now now" "hero hero wind feels" "hourly hourly hourly hourly" "radar radar rain uv" "radar radar humid press" "radar radar vis clouds" "air air moon moon" "pollen pollen pollen pollen" "sun sun sun sun" "src src src src"}}
+/* daylight through the year, in the lower half of the sun card */
+.sun-year{position:relative;margin-top:18px;padding-top:16px;border-top:1px solid color-mix(in oklab,currentColor 16%,transparent)}
+.sun-year .hero-now{top:12px;right:0}
 .yr-read{font-size:30px;font-weight:300;letter-spacing:-.02em;line-height:1.1;margin-top:2px}
 .yr-sub{margin:4px 0 12px;font-size:13px;color:var(--ink-2)}
 .yr-chart{position:relative;height:190px;border-radius:16px;overflow:hidden;cursor:grab;touch-action:pan-y;-webkit-user-select:none;user-select:none}
@@ -175,7 +179,6 @@ dialog:focus-visible,.sheet:focus-visible{outline:none} /* opening a sheet focus
 .yr-dst.r b{left:auto;right:6px}
 .yr-dst.up b{bottom:auto;top:7px}
 .yr-axis{display:grid;grid-template-columns:repeat(12,1fr);margin-top:8px;text-align:center}
-.a-year{grid-area:year}
 
 /* ---------- card base ---------- */
 .card{position:relative;isolation:isolate;overflow:hidden;border-radius:var(--r-card);padding:18px 20px 20px;min-width:0;min-height:190px;display:flex;flex-direction:column}
@@ -254,8 +257,8 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .ch p{margin:0;font-weight:450;font-size:17px;letter-spacing:-.02em;line-height:1.15;color:var(--ink-2)}
 .ch-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 .mono{font-family:var(--f-label);font-size:12px;font-weight:500;letter-spacing:-.005em;color:var(--ink-2)}
-/* times on axes and the clock keep the monospace figures, so they line up */
-.tm{font:500 11px/1 var(--f-mono);letter-spacing:.05em;text-transform:uppercase;color:var(--ink-2)}
+/* times on axes: even-width figures, so they line up */
+.tm{font:500 11.5px/1 var(--f-label);font-variant-numeric:tabular-nums;color:var(--ink-2)}
 .u{text-transform:none;letter-spacing:.01em} /* units keep their own spelling: hPa, km/h, min, m */
 .num{font-family:var(--f-num);font-weight:300;letter-spacing:-.04em;line-height:.9;font-variant-numeric:tabular-nums}
 .pig .num{text-shadow:0 .1em .22em rgba(255,255,255,.22)}
@@ -270,6 +273,9 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .learn p{margin:0;font-size:14px;line-height:1.55;color:var(--ink-2)}
 .learn .now{padding:12px 14px;border-radius:16px;background:rgba(255,255,255,.07);color:var(--ink)}
 .foot b{color:var(--ink);font-weight:550}
+/* the wind foot: gusts and the Beaufort name each stay whole, and drop under each other on a narrow card */
+.a-wind .foot{flex-wrap:wrap;row-gap:2px}
+.a-wind .foot span{white-space:nowrap}
 .muted{color:var(--ink-2)}
 .empty{margin:auto 0;color:var(--ink-2);font-size:14px;max-width:34ch}
 /* the app's pointer: a short raspberry capsule standing across the scale, like a needle */
@@ -278,7 +284,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 /* dot matrix numerals */
 .dm{display:block;overflow:visible}
 .dm .o{fill:currentColor;animation:dmIn .7s cubic-bezier(.2,.7,.2,1) both;animation-delay:var(--d)}
-.dm .g{fill:currentColor;opacity:.1}
+.dm .g{fill:currentColor;opacity:.06}
 .pig .dm{filter:drop-shadow(0 0 6px rgba(255,255,255,.5))}
 @keyframes dmIn{from{opacity:.1;transform:scale(.4);transform-box:fill-box;transform-origin:center}to{opacity:1;transform:none}}
 
@@ -353,16 +359,15 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .hin{position:relative;display:grid;padding-top:30px}
 /* sun and moon track: sunlight turning to night and back at the real sunset and sunrise */
 .htrack{position:absolute;left:0;top:6px;height:4px;border-radius:4px}
-.hev{position:absolute;top:14px;transform:translateX(-50%);display:flex;align-items:center;gap:4px;font:500 11px/1 var(--f-mono);letter-spacing:.04em;color:var(--ink-2);white-space:nowrap}
+.hev{position:absolute;top:14px;transform:translateX(-50%);display:flex;align-items:center;gap:4px;font:500 11px/1 var(--f-mono);font-variant-numeric:tabular-nums;color:var(--ink-2);white-space:nowrap}
 .hev svg{width:15px;height:12px;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
 .hcol{display:grid;grid-template-rows:22px 32px 78px 46px 10px;justify-items:center;align-items:center;padding:6px 0 4px}
-.htime{font:500 11px/1 var(--f-mono);letter-spacing:.04em;color:var(--ink-2);white-space:nowrap}
+.htime{font:500 11px/1 var(--f-mono);font-variant-numeric:tabular-nums;color:var(--ink-2);white-space:nowrap}
 .htime.now{background:var(--signal);color:var(--signal-ink);padding:5px 8px;border-radius:999px}
 .htime.mid{color:var(--ink);font-weight:600}
 .hpop{display:grid;justify-items:center;gap:4px;align-self:end}
 .hpop svg{width:8px;height:30px}
 .hpop span{font:500 11.5px/1 var(--f-label);color:var(--rain)}
-.hruler{width:100%;height:8px;background:repeating-linear-gradient(90deg,var(--ink-3) 0 1px,transparent 1px 9.66px);opacity:.7;align-self:end}
 .hcurve{position:absolute;left:0;top:96px;pointer-events:none;overflow:visible}
 .hcurve text{font:400 15px var(--f-num);fill:var(--ink);text-anchor:middle;font-variant-numeric:tabular-nums}
 /* one card, two views: the next 48 hours or the next 14 days */
@@ -556,6 +561,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .mbar .lim{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--signal);border-radius:2px}
 .lim-key{display:flex;align-items:center;gap:7px}
 .lim-key i{width:2px;height:12px;border-radius:2px;background:var(--signal)}
+.pol-us{display:block;margin-top:8px}
 
 /* ---------- moon ---------- */
 .moon{display:grid;grid-template-columns:minmax(120px,190px) minmax(0,1fr);gap:20px;align-items:center;flex:1}
@@ -612,7 +618,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 /* ---------- pollen ---------- */
 .pgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:4px}
 /* on wide screens pollen spans the full width, its six types in one line */
-@media (min-width:1001px){.a-pollen .pgrid{grid-template-columns:repeat(6,minmax(0,1fr))}}
+@media (min-width:1001px){.a-pollen .pgrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .pgrid .tile{gap:5px}
 .pgrid b{font:400 22px/1 var(--f-num);letter-spacing:-.02em}
 .dots{display:flex;gap:4px}
@@ -648,13 +654,14 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .rticks button::after{content:"";position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:rgba(255,255,255,.34);transition:transform .2s,background .2s}
 .rticks button.cur::after{background:var(--signal);transform:scale(1.75)}
 .rticks button.fut::after{background:rgba(143,176,255,.62)}
-.rtime{font:500 11px/1 var(--f-mono);letter-spacing:.05em;min-width:70px;text-align:right}
+.rtime{font:500 11px/1 var(--f-mono);font-variant-numeric:tabular-nums;min-width:70px;text-align:right}
 .zoomer{position:absolute;z-index:500;right:16px;top:16px;display:grid;gap:6px}
 .ch.lens.dark h3{color:#fff}.ch.lens.dark p{color:rgba(255,255,255,.65)}
 
 /* ---------- source ---------- */
 .a-src{display:flex;align-items:center;gap:12px;padding:2px 2px 0;color:var(--ink-2)}
-.a-src .mono{font-size:11px;line-height:1.5}
+.src-open{display:flex;align-items:center;gap:12px;color:var(--ink-2);text-align:left}
+.a-src .mono{font-size:12.5px;line-height:1.5}
 #dlgInfo p{margin:0 0 12px;font-size:14px;line-height:1.5;color:var(--ink-2)}
 #dlgInfo p b{color:var(--ink);font-weight:600}
 
@@ -669,7 +676,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .dock .round{width:48px;height:48px;background:rgba(255,255,255,.1)}
 .dock .round svg{width:20px;height:20px}
 .pill{height:48px;min-width:128px;padding:0 22px;border-radius:999px;display:flex;align-items:center;justify-content:center;gap:9px;font-weight:650;font-size:14px;letter-spacing:-.01em;color:var(--signal-ink);
-  background:radial-gradient(rgba(255,255,255,.16) 1px,transparent 1.6px) 0 0/5px 5px,var(--signal)}
+  background:var(--signal)}
 .pill svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2.1;stroke-linecap:round}
 /* page dots under "Places" when there are several places to swipe between */
 .pill .pl{display:grid;justify-items:center;gap:4px}
@@ -687,7 +694,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .topbar #tbTemp{display:flex;align-items:center}
 .topbar #tbTemp .dm{height:17px}
 /* the local time in the top bar: small and quiet, after a hairline */
-.topbar .tb-time{font:500 12px/1 var(--f-mono);letter-spacing:.04em;color:rgba(255,255,255,.58);padding-left:10px;border-left:1px solid rgba(255,255,255,.18);white-space:nowrap}
+.topbar .tb-time{font:500 12px/1 var(--f-mono);font-variant-numeric:tabular-nums;color:rgba(255,255,255,.58);padding-left:10px;border-left:1px solid rgba(255,255,255,.18);white-space:nowrap}
 
 /* ---------- sheets ---------- */
 dialog{border:0;padding:0;background:transparent;color:#fff;max-width:none;max-height:none;width:100%;height:100%;margin:0;overflow:visible}
@@ -810,7 +817,7 @@ html.wall .board{flex:1;min-height:0;gap:16px;grid-template-columns:repeat(9,min
    "hero hero hourly hourly hourly hourly hourly wind feels"
    "hero hero radar radar radar now now uv humid"
    "moon moon radar radar radar sun sun press vis"
-   "air air year year year pollen pollen rain clouds"}
+   "air air pollen pollen pollen sun sun rain clouds"}
 html.wall .board>.card{min-height:0}
 .wall-x{position:fixed;top:14px;right:14px;z-index:1100;opacity:0;transition:opacity .3s}
 html.wall .wall-x:hover,html.wall .wall-x:focus-visible{opacity:1}
@@ -841,7 +848,12 @@ html.wall .a-moon .strip canvas{height:46px}
 @media (prefers-reduced-motion:reduce){.rainbow{animation:none;opacity:1}}
 
 /* on a wide screen the dock sits in the bottom-right corner, clear of the cards */
-@media (min-width:900px){.dock{left:auto;right:24px;transform:none}}
+/* wide screens: the dock stands as a slim rail at the right edge, beside the board, so it never covers a card */
+@media (min-width:900px){
+  .dock{left:auto;right:16px;top:50%;bottom:auto;transform:translateY(-50%);flex-direction:column}
+  .dock .pill{flex-direction:column;min-width:0;width:48px;height:auto;padding:12px 0 10px;gap:6px;border-radius:24px;font-size:11px}
+  .app{max-width:1312px;padding-right:92px}
+}
 
 /* ---------- the 14-day sheet, in step with the board ---------- */
 /* No overlapping deck any more: separate rows with a small gap, in the board's own glass. */
@@ -861,3 +873,11 @@ html.wall .a-moon .strip canvas{height:46px}
 /* sheets scroll without a system scrollbar, like the rest of the app */
 .sheet{scrollbar-width:none}
 .sheet::-webkit-scrollbar{display:none}
+/* phones: a more compact main card (about a third shorter), so the next cards show sooner */
+@media (max-width:560px){
+  .hero{min-height:0;padding:18px 18px 16px}
+  .hero-temp{margin:10px 0 6px}
+  .hero-temp .dm{height:88px}
+  .arc{padding-top:8px}
+  .arc-in{max-width:300px;margin:0 auto}
+}

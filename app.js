@@ -334,7 +334,7 @@ function drawStrip(cv, off, base, mirror) {
   const s = sizeCanvas(cv); if (!s) return;
   const { ctx, w, h } = s, step = stripStep(w), r = Math.min(step * .36, 8), mid = w / 2, cy = 16;
   const phaseOn = d => moonIllum(new Date(base.valueOf() + d * dayMs)).phase;
-  ctx.font = "500 9px 'Geist Mono', ui-monospace, monospace"; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
+  ctx.font = "500 9px 'Isobar Digits', Geist, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
   const d0 = Math.floor(off - mid / step) - 1, d1 = Math.ceil(off + mid / step) + 1;
   let prev = phaseOn(d0 - 1);
   const tags = [];
@@ -872,7 +872,9 @@ function renderHero() {
   const dot = night
     ? `<g id="sunDot" class="sun-dot" transform="translate(${px} ${py})"><circle r="9" fill="none" stroke="currentColor" stroke-opacity=".6" stroke-width="1"/><circle r="2.8" fill="currentColor"/></g>`
     : `<g id="sunDot" class="sun-dot" transform="translate(${px} ${py})" opacity="${up ? 1 : .5}"><circle r="9" fill="none" stroke="currentColor" stroke-opacity=".6" stroke-width="1"/><circle r="4" fill="currentColor"/></g>`;
-  const arc = `<svg viewBox="0 0 300 108" aria-hidden="true">
+  // the drawing is only as tall as today's arc (plus room for the dot), so a low winter arc leaves no empty sky above it
+  const vy = Math.max(0, Math.floor(arcPoint(.5)[1] - 16));
+  const arc = `<svg viewBox="0 ${vy} 300 ${108 - vy}" aria-hidden="true">
     <line x1="0" y1="95" x2="300" y2="95" stroke="currentColor" stroke-opacity=".45" stroke-width="1.6" stroke-dasharray="0 6" stroke-linecap="round"/>
     ${segs.filter(g => g.type).map(g => `<path class="awx awx-${g.type}" d="${arcPath(g.f0, g.f1)}"/>`).join("")}
     <path id="arcDone" d="${arcPath(0, f)}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
@@ -918,7 +920,7 @@ function renderHero() {
     </div>`;
   glowAt(f);
   // the rainbow stands on the horizon line of the arc below
-  if (rb) whenMeasured(() => { const b = el.querySelector(".rainbow"), s = el.querySelector(".arc svg"); if (!b || !s) return; const cr = el.getBoundingClientRect(), sr = s.getBoundingClientRect(); b.style.setProperty("--rb-hy", `${((sr.top + sr.height * 95 / 108 - cr.top) / cr.height * 100).toFixed(1)}%`); });
+  if (rb) whenMeasured(() => { const b = el.querySelector(".rainbow"), s = el.querySelector(".arc svg"); if (!b || !s) return; const cr = el.getBoundingClientRect(), sr = s.getBoundingClientRect(); b.style.setProperty("--rb-hy", `${((sr.top + sr.height * (95 - vy) / (108 - vy) - cr.top) / cr.height * 100).toFixed(1)}%`); });
   $("#tbIc").innerHTML = icon(kind, isDay);
   const tbT = $("#tbTemp"); tbT.innerHTML = dm(String(R(c.temperature_2m)), { deg: true }); tbT.setAttribute("aria-label", `${R(c.temperature_2m)} degrees`);
   if (scrub) bindSunScrub();
@@ -1086,7 +1088,15 @@ function renderNow() {
       wet += `<circle class="drip" cx="${cx}" cy="${cyOf(rows - 1 - j)}" r="2.5" fill="var(--rain)" style="--p:${period}s;--w:${(start + j * stepT).toFixed(2)}s"/>`;
   });
   const dots = `${grid}<g filter="url(#bloom)">${wet}</g>`;
-  const axis = Array.from({ length: 6 }, (_, k) => times[k * 4] ? `<span class="tm">${k ? (S.clock === "12" ? fmtT(times[k * 4]).replace(/\s/g, "").toLowerCase() : fmtT(times[k * 4])) : "Now"}</span>` : "<span></span>").join("");
+  // on a 12-hour clock am/pm shows only where it changes, so the labels never run into each other on a phone
+  let lastAp = "";
+  const axis = Array.from({ length: 6 }, (_, k) => {
+    const t = times[k * 4]; if (!t) return "<span></span>";
+    if (!k) return `<span class="tm">Now</span>`;
+    if (S.clock !== "12") return `<span class="tm">${fmtT(t)}</span>`;
+    const [hm, ap = ""] = fmtT(t).toLowerCase().split(/\s+/), lab = ap === lastAp ? hm : hm + ap;
+    lastAp = ap; return `<span class="tm">${lab}</span>`;
+  }).join("");
   el.innerHTML = `<div class="ch-row">${head("Precipitation", sub)}${total > 0 ? `<span class="mono">${fmtP(total)} <span class="u">${PU()}</span> total</span>` : ""}</div>
     <div class="now-say">${esc(say)}</div>
     <div class="now-chart"><svg viewBox="0 0 ${n * sp} ${rows * sp}" role="img" aria-label="Precipitation per 15 minutes"><defs><filter id="bloom" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.3" result="b"/><feComponentTransfer in="b" result="s"><feFuncA type="linear" slope=".55"/></feComponentTransfer><feMerge><feMergeNode in="s"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>${dots}</svg></div>
@@ -1098,23 +1108,24 @@ function renderWind() {
   const { c } = X, el = card("c-wind");
   const sp = c.wind_speed_10m, dir = c.wind_direction_10m ?? 0, gust = c.wind_gusts_10m;
   const [b, bname] = beaufort(toMs(sp ?? 0));
-  let ticks = "";
-  for (let i = 0; i < 72; i++) {
-    const a = i * 5 * rad, major = i % 18 === 0, mid = i % 9 === 0;
-    const r1 = 92, r2 = major ? 80 : mid ? 84 : 87;
+  // a quiet ring with eight marks: the four points of the compass and the four between them
+  let ticks = `<circle cx="100" cy="100" r="92" fill="none" stroke="currentColor" stroke-opacity=".16" stroke-width="1"/>`;
+  for (let i = 0; i < 8; i++) {
+    const a = i * 45 * rad, major = i % 2 === 0, mid = !major;
+    const r1 = 92, r2 = major ? 81 : 86;
     ticks += `<line x1="${100 + r1 * sin(a)}" y1="${100 - r1 * cos(a)}" x2="${100 + r2 * sin(a)}" y2="${100 - r2 * cos(a)}" stroke="currentColor" stroke-opacity="${major ? .95 : mid ? .6 : .32}" stroke-width="${major ? 1.8 : 1}" stroke-linecap="round"/>`;
   }
-  const lab = ["N", "E", "S", "W"].map((t, i) => { const a = i * 90 * rad; return `<text x="${100 + 68 * sin(a)}" y="${100 - 68 * cos(a) + 3.5}" text-anchor="middle" font-family="Geist Mono, monospace" font-size="14" fill="currentColor" fill-opacity=".75">${t}</text>`; }).join("");
+  const lab = ["N", "E", "S", "W"].map((t, i) => { const a = i * 90 * rad; return `<text x="${100 + 68 * sin(a)}" y="${100 - 68 * cos(a) + 3.5}" text-anchor="middle" font-family="Geist, sans-serif" font-size="14" fill="currentColor" fill-opacity=".75">${t}</text>`; }).join("");
   const a = dir * rad, tip = 81, base = 95;
   const tri = `<line x1="${100 + tip * sin(a)}" y1="${100 - tip * cos(a)}" x2="${100 + base * sin(a)}" y2="${100 - base * cos(a)}" stroke="var(--signal)" stroke-width="6.5" stroke-linecap="round"/>`; // a capsule needle on the ring
 
-  const spTxt = sp == null ? "–" : String(Math.round(sp)).padStart(2, "0");
+  const spTxt = sp == null ? "–" : String(Math.round(sp));
   // streaks flow across the card from the side the wind comes from, scaled to its strength
   const kmh = toMs(sp ?? 0) * 3.6, gusts = windFlow(dir, kmh, toMs(gust ?? 0) * 3.6);
   el.innerHTML = `${gusts}${head("Wind", sp == null ? "–" : `From the ${pt8(dir)}`)}
     <div class="compass"><svg viewBox="0 0 200 200" role="img" aria-label="Wind from ${pt16(dir)}">${ticks}${lab}${tri}</svg>
       <div class="compass-c">${dm(spTxt)}<span class="mono u">${WU[S.wind]}</span></div></div>
-    <div class="foot"><span>Gusts <b>${R(gust)}</b></span><span>Bft <b>${b}</b> · ${esc(bname)}</span></div>`;
+    <div class="foot"><span>Gusts <b>${R(gust)}</b> ${WU[S.wind]}</span><span>Bft <b>${b}</b> · ${esc(bname)}</span></div>`;
 }
 
 /* ---------------- feels like ---------------- */
@@ -1138,7 +1149,7 @@ function renderFeels() {
     <div class="num big">${R(f)}°</div>
     <div class="ftrack" aria-hidden="true"><div class="fdots">${fdots}</div>
       <div class="tick" style="left:${P(t)}%"></div><div class="tri" style="left:${P(fp)}%"></div>
-      <span class="lab" style="left:${P(t)}%">Measured: ${R(t)}°</span></div>
+      <span class="lab" style="left:${P(t)}%">Actual ${R(t)}°</span></div>
     <p class="feels-why">${esc(why)}</p>`;
 }
 
@@ -1155,7 +1166,7 @@ function renderHourly() {
     const lit = pop == null ? 0 : Math.round(pop / 20);
     let pd = ""; for (let q = 0; q < 5; q++) pd += `<circle cx="4" cy="${26 - q * 5.5}" r="${q < lit ? 2.2 : 1.5}" fill="${q < lit ? "var(--rain)" : "currentColor"}" opacity="${q < lit ? 1 : .18}"/>`;
     cols.push(`<div class="hcol">${tl}${icon(kind, day)}<span></span>
-      <div class="hpop"><svg viewBox="0 0 8 30" aria-hidden="true">${pd}</svg><span>${pop != null && pop >= 10 ? pop + "%" : "&nbsp;"}</span></div><div class="hruler"></div></div>`);
+      <div class="hpop"><svg viewBox="0 0 8 30" aria-hidden="true">${pd}</svg><span>${pop != null && pop >= 10 ? pop + "%" : "&nbsp;"}</span></div></div>`);
   }
   const valid = temps.filter(v => v != null), mn = Math.min(...valid), mx = Math.max(...valid), span = (mx - mn) || 1;
   const pts = temps.map((v, i) => [i * colW + colW / 2, 24 + (1 - ((v ?? mn) - mn) / span) * 44]);
@@ -1355,7 +1366,7 @@ function drawSpread() {
   const cv = $("#spCv"), sz = sizeCanvas(cv); if (!sz) return;
   const { ctx, w, h } = sz, padL = 30, padR = 6, top = 10, bot = 24, cw = (w - padL - padR) / n;
   const X0 = i => padL + (i + .5) * cw;
-  ctx.font = "500 10px 'Geist Mono', ui-monospace, monospace"; ctx.textBaseline = "middle";
+  ctx.font = "500 10px 'Isobar Digits', Geist, sans-serif"; ctx.textBaseline = "middle";
   const grid = (vals, Y, fmt) => { ctx.strokeStyle = "rgba(255,255,255,.08)"; ctx.lineWidth = 1; ctx.fillStyle = "rgba(255,255,255,.5)"; ctx.textAlign = "right";
     for (const v of vals) { const y = Math.round(Y(v)) + .5; ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke(); ctx.fillText(fmt(v), padL - 6, y); } };
   // day labels along the bottom
@@ -1490,7 +1501,7 @@ function renderUV() {
     if (v >= 3) { if (!from) from = T(H.time[k]); to = T(H.time[k]); }
   }
   let ticks = "";
-  for (let v = 0; v <= 12; v++) { const th = PI * (1 - v / 12); ticks += `<line x1="${100 + 86 * cos(th)}" y1="${100 - 86 * sin(th)}" x2="${100 + (v % 3 ? 90 : 94) * cos(th)}" y2="${100 - (v % 3 ? 90 : 94) * sin(th)}" stroke="currentColor" stroke-opacity="${v % 3 ? .38 : .75}" stroke-linecap="round"/>`; }
+  for (let v = 0; v <= 12; v += 3) { const th = PI * (1 - v / 12); ticks += `<line x1="${100 + 86 * cos(th)}" y1="${100 - 86 * sin(th)}" x2="${100 + (v % 3 ? 90 : 94) * cos(th)}" y2="${100 - (v % 3 ? 90 : 94) * sin(th)}" stroke="currentColor" stroke-opacity="${v % 3 ? .38 : .75}" stroke-linecap="round"/>`; }
   const th = PI * (1 - clamp(uv, 0, 12) / 12), mx_ = 100 + 80 * cos(th), my_ = 100 - 80 * sin(th);
   const tri = `<line x1="${100 + 78 * cos(th)}" y1="${100 - 78 * sin(th)}" x2="${100 + 89 * cos(th)}" y2="${100 - 89 * sin(th)}" stroke="var(--signal)" stroke-width="6.5" stroke-linecap="round"/>`; // the capsule needle
   const sub = uv < 3 && peak >= 3 && from ? `Protection ${fmtT(from)}–${fmtT(new Date(to.valueOf() + 36e5))}` : peak > uv ? `Peak ${peak.toFixed(0)} at ${fmtT(peakT)}` : `Today's max ${R(Dy.uv_index_max[di])}`;
@@ -1558,12 +1569,12 @@ function renderAir() {
   const open = store.get("airOpen", false);
   el.innerHTML = `${v >= 60 ? `<span class="smog" aria-hidden="true"></span>` : ""}<div class="air${open ? " open" : ""}"><div class="air-l">${head("Air quality", L[1])}
       ${dm(String(Math.round(v)))}
-      <span class="mono">European AQI${a.us_aqi != null ? ` · US AQI ${Math.round(a.us_aqi)}` : ""}</span>
+      <span class="mono">European AQI</span>
       <div class="scale" aria-hidden="true">${scale}<span class="tri" style="left:calc(2.5px + (100% - 5px) * ${clamp(v / 115, 0, 1).toFixed(3)})"></span></div>
-      <div class="air-foot"><span class="mono">${peakT ? `Peaks at ${Math.round(peak)} around ${fmtT(peakT)}` : "Steady over the next 24 h"}</span>
+      <div class="air-foot"><span class="mono">${peakT ? `Worst around ${fmtT(peakT)}` : "Steady over the next 24 h"}</span>
       <button class="air-more mono" id="airMore" aria-expanded="${open}" aria-controls="airPol">Pollutants<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9.5l6 6 6-6"/></svg></button></div></div>
     <div class="pol-wrap" id="airPol"><div><div class="pol tile">${rows.map(([n, val, lim]) => `<div class="pol-r"><span class="mono">${n}</span><div class="mbar"><div class="fill" style="width:${clamp(val / (lim * 2) * 100, 2, 100)}%"></div><span class="lim" style="left:50%"></span></div><span class="v">${val < 10 ? val.toFixed(1) : Math.round(val)}<small>µg/m³</small></span></div>`).join("")}
-      <span class="mono lim-key"><i aria-hidden="true"></i>Now · WHO daily limit</span></div></div></div></div>`;
+      <span class="mono lim-key"><i aria-hidden="true"></i>Now · WHO daily limit</span>${a.us_aqi != null ? `<span class="mono pol-us">US AQI ${Math.round(a.us_aqi)}</span>` : ""}</div></div></div></div>`;
   $("#airMore").onclick = () => {
     const box = el.querySelector(".air"), on = !box.classList.contains("open");
     box.classList.toggle("open", on); $("#airMore").setAttribute("aria-expanded", on); store.set("airOpen", on);
@@ -1691,7 +1702,8 @@ function renderSun() {
       <div><span class="mono">Sunset</span><b>${fmtT(Dy.sunset[di] ? T(Dy.sunset[di]) : null)}</b></div>
       <div><span class="mono">Last light</span><b>${fmtT(st.dusk)}</b></div>
     </div>
-    <div class="foot" style="margin-top:14px"><span>Sunshine expected <b>${dur(sunsh)}</b></span><span>Solar noon <b>${fmtT(st.noon)}</b></span></div>`;
+    <div class="foot" style="margin-top:14px"><span>Sunshine expected <b>${dur(sunsh)}</b></span><span>Solar noon <b>${fmtT(st.noon)}</b></span></div>
+    <div class="sun-year" id="c-year"></div>`; // the daylight through the year fills this (renderYear runs right after)
   updateSun(null);
   bindSunCard();
 }
@@ -1857,7 +1869,7 @@ function renderPress() {
   const A = v => (135 + (clamp(v, 960, 1060) - 960) / 100 * 270) * rad;
   const pt = (a, r) => [100 + r * cos(a), 100 + r * sin(a)];
   let ticks = "";
-  for (let v = 960; v <= 1060; v += 5) { const a = A(v), big = v % 20 === 0, [x1, y1] = pt(a, 86), [x2, y2] = pt(a, big ? 74 : 80); ticks += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="currentColor" stroke-opacity="${big ? .8 : .32}" stroke-width="${big ? 1.6 : 1}" stroke-linecap="round"/>`; }
+  for (let v = 960; v <= 1060; v += 20) { const a = A(v), big = true, [x1, y1] = pt(a, 86), [x2, y2] = pt(a, big ? 74 : 80); ticks += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="currentColor" stroke-opacity="${big ? .8 : .32}" stroke-width="${big ? 1.6 : 1}" stroke-linecap="round"/>`; }
   const a = A(p ?? 1013), [tx, ty] = pt(a, 72), [bx, by] = pt(a, 86);
   const [s1x, s1y] = pt(A(960), 94), [s2x, s2y] = pt(A(1060), 94);
   el.innerHTML = `${head("Pressure", trend)}
@@ -1965,11 +1977,15 @@ const POLLEN = [["grass_pollen", "Grass", [5, 30, 100]], ["birch_pollen", "Birch
 function renderPollen() {
   const el = card("c-pollen"), a = AQ && AQ.current;
   const avail = a && POLLEN.some(([k]) => a[k] != null);
+  if (!avail) el.classList.remove("slim");
   if (!avail) { el.innerHTML = `${head("Pollen", "Not forecast here")}<p class="empty">Pollen counts come from the CAMS European model, so they're only available for locations in Europe.</p>`; return; }
   const lvl = (v, t) => v < 1 ? [0, "None"] : v < t[0] ? [1, "Low"] : v < t[1] ? [2, "Moderate"] : v < t[2] ? [3, "High"] : [4, "Very high"];
   const items = POLLEN.filter(([k]) => a[k] != null).map(([k, n, t]) => { const v = a[k], [l, ln] = lvl(v, t); return { n, v, l, ln }; });
   const top = items.reduce((m, i) => i.l > m.l ? i : m, items[0]);
-  el.innerHTML = `<div class="ch-row">${head("Pollen", top.l === 0 ? "Nothing in the air" : `${top.n} is ${top.ln.toLowerCase()}`)}<span class="mono u">grains/m³</span></div>
+  // nothing in the air at all: one quiet line instead of a wall of zeros
+  el.classList.toggle("slim", top.l === 0);
+  if (top.l === 0) { el.innerHTML = `<div class="ch-row">${head("Pollen", "Nothing in the air")}<span class="mono">All ${items.length} types at zero</span></div>`; return; }
+  el.innerHTML = `<div class="ch-row">${head("Pollen", top.l === 0 ? "Nothing in the air" : `${top.n} is ${top.ln.toLowerCase()}`)}</div>
     <div class="pgrid">${items.map(i => `<div class="tile"><span class="mono">${i.n}</span><b>${i.v < 10 ? i.v.toFixed(1) : Math.round(i.v)}</b><span class="dots" role="img" aria-label="${i.ln}">${[1, 2, 3, 4].map(q => `<i class="${q <= i.l ? "on" : ""}"></i>`).join("")}</span></div>`).join("")}</div>`;
 }
 
@@ -1977,17 +1993,17 @@ function renderPollen() {
 function renderSrc() {
   const m = MODELS.find(x => x[0] === S.model) || MODELS[0];
   $("#infoBody").innerHTML = `<p><b>Forecast</b> Open-Meteo, ${esc(m[1])} model. ${esc(m[2])}</p>
-    <p><b>Air and pollen</b> Copernicus CAMS.</p>
+    <p><b>Air and pollen</b> Copernicus CAMS. Pollen counts are in grains per cubic metre of air.</p>
     <p><b>Rain radar</b> RainViewer, on Esri map tiles (Esri, HERE, Garmin, © OpenStreetMap).</p>
     <p><b>Weather warnings</b> MeteoAlarm (EUMETNET) and the national weather services, such as KMI. Region outlines © EuroGeographics.</p>
     <p><b>Normals and records</b> ERA5 reanalysis (Copernicus), for the area around this spot: normals over 1991–2020, records since 1950.</p>
     <p><b>Moon</b> NASA LRO imagery. Phases, sunrise and twilight are calculated on this device.</p>
     <button class="wall-link" id="wallBtn">Show every card on one screen</button>`;
   $("#wallBtn").onclick = () => { $("#dlgInfo").close(); setWall(true); };
-  // where the forecast is for: coordinates, height above sea level and time zone
+  // where the forecast is for, at the top of the About sheet: coordinates, height above sea level and time zone
   const ll = (v, p, n) => `${Math.abs(v).toFixed(2)}° ${v >= 0 ? p : n}`;
   const elev = D.elevation ?? 0, elevTxt = S.precip === "inch" ? `${Math.round(elev * 3.281)} <span class="u">ft</span>` : `${Math.round(elev)} <span class="u">m</span>`;
-  $("#locLine").innerHTML = `${ll(D.latitude, "N", "S")}, ${ll(D.longitude, "E", "W")} · ${elevTxt} above sea level · ${esc(D.timezone.replace(/_/g, " "))}`;
+  $("#infoBody").insertAdjacentHTML("afterbegin", `<p><b>This spot</b> ${ll(D.latitude, "N", "S")}, ${ll(D.longitude, "E", "W")} · ${elevTxt} above sea level · ${esc(D.timezone.replace(/_/g, " "))}</p>`);
   $("#modelChip").innerHTML = `Model <b>${esc(m[1].split(" ·")[0])}</b>`;
   $("#modelChip").hidden = S.model === "best_match"; // shown only once you've picked a model of your own
 }
@@ -2219,7 +2235,7 @@ function stopLoop() { clearInterval(timer); timer = null; $("#rPlayIc").innerHTM
 function applyMode() {
   const m = S.mode === "auto" ? (D && !D.current.is_day ? "night" : D ? "day" : "night") : S.mode;
   document.documentElement.dataset.mode = m;
-  $('meta[name="theme-color"]').content = m === "day" ? "#e8e7ef" : "#08080b";
+  $('meta[name="theme-color"]').content = m === "day" ? "#e8e7ef" : "#0b1120";
   if (base) base.setUrl(esri("Base"));
 }
 // runs every second: the formatter is made once per clock style and time zone, and nothing is touched unless the minute changed
@@ -2230,13 +2246,11 @@ function renderClock() {
   if (!clockFmt || clockFmt.k !== fk) clockFmt = { k: fk, f: new Intl.DateTimeFormat(S.clock === "12" ? "en-US" : "en-GB", { hour: S.clock === "12" ? "numeric" : "2-digit", minute: "2-digit", hour12: S.clock === "12", timeZone: TZ }) };
   const parts = clockFmt.f.formatToParts(new Date());
   const get = t => (parts.find(p => p.type === t) || {}).value || "";
-  const hh = get("hour"), mm = get("minute"), ap = get("dayPeriod").toLowerCase(), chars = [...`${hh}:${mm}`], el = $("#clock");
+  const hh = get("hour"), mm = get("minute"), ap = get("dayPeriod").toLowerCase(), el = $("#clock");
   const shown = `${hh}:${mm}${ap}`;
   if (shown === clockShown && el.dataset.len) return;
   clockShown = shown;
-  if (+el.dataset.len !== chars.length) { el.innerHTML = chars.map(() => `<span class="ck"></span>`).join("") + `<span class="tm ck-ap"></span>`; el.dataset.len = chars.length; }
-  el.querySelectorAll(".ck").forEach((slot, i) => { if (slot.dataset.c !== chars[i]) { slot.dataset.c = chars[i]; slot.innerHTML = dm(chars[i]); } });
-  el.querySelector(".ck-ap").textContent = ap;
+  el.innerHTML = `<span class="ck">${hh}:${mm}</span>${ap ? `<span class="ck-ap">${ap}</span>` : ""}`; el.dataset.len = 1;
   el.setAttribute("aria-label", `Local time ${hh}:${mm}${ap ? " " + ap : ""}`);
   $("#tbTime").textContent = `${hh}:${mm}${ap ? " " + ap : ""}`; // the same time, quietly, in the top bar that shows on scrolling
 }
@@ -2244,7 +2258,7 @@ function renderPlace() {
   $("#placeName").textContent = place ? place.name : "Isobar";
   { const len = (place ? place.name : "").length, h = $("#placeName").parentElement; h.classList.toggle("long", len > 11 && len <= 17); h.classList.toggle("longer", len > 17); }
   $("#tbName").textContent = place ? place.name : "";
-  const t = D ? localDateLabel(new Date()) : ""; // the time itself lives in the dot-matrix clock pill
+  const t = D ? localDateLabel(new Date()) : ""; // the time itself lives in the clock pill
   $("#placeSub").textContent = place ? [place.sub, t].filter(Boolean).join(" · ") : "Finding your location";
   renderDots();
 }

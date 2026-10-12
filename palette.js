@@ -73,7 +73,7 @@
      low sun, soft morning blue, clear noon blue), the weather greys or darkens it, and the temperature tints it:
      the glows warm towards orange on a hot day and cool towards ice on a cold one. */
   const HSKY = {
-    night:  { core: "#060a26", mid: "#1b2468", hi: "#5d6ad6", acc: "#3b2a9a" },
+    night:  { core: "#070a21", mid: "#1d255b", hi: "#616bc1", acc: "#3a2c86" }, // about a fifth less saturated than the other skies: a calm night blue
     dusk:   { core: "#170b40", mid: "#5338c8", hi: "#ff8fc8", acc: "#2a55f0" },
     rose:   { core: "#3a0f45", mid: "#c94a7c", hi: "#ffa070", acc: "#6a3fd8" },
     golden: { core: "#5a2410", mid: "#ee7d2e", hi: "#ffd66e", acc: "#e8508a" },
