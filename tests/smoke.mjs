@@ -93,7 +93,8 @@ async function run(engine, name, viewport, variant = "normal") {
   });
   const page = await context.newPage(), errors = [];
   page.on("pageerror", e => errors.push(String(e)));
-  page.on("console", m => { if (m.type() === "error" && !/Failed to load resource/.test(m.text())) errors.push(m.text()); });
+  // ignored: blocked test requests, and Safari noting it skips the Android-only "interactive-widget" viewport setting
+  page.on("console", m => { if (m.type() === "error" && !/Failed to load resource|Viewport argument key/.test(m.text())) errors.push(m.text()); });
   await routes(page, variant);
   await page.goto(base);
   await page.waitForSelector("#heroTemp", { timeout: 15000 }).catch(() => {});
