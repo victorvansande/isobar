@@ -1087,14 +1087,27 @@ function renderNow() {
   // LED rain gauge. Wet columns fill cell by cell from the bottom; afterwards a drip steps down the empty
   // cells of the grid one at a time with a fading trail, and the top of the stack pulses as it lands.
   // Heavier rain drips more often; every column keeps its own rhythm.
-  let grid = "", wet = "";
+  let grid = "", wet = "", glow = "";
+  // dry for the whole window: the empty grid shows a sun by day or a crescent moon by night, centred with as many
+  // empty rows above as below, glowing softly
+  // no rain expected, but a small chance of a shower: soft columns as tall as the chance that hour (10% a dot, 100%
+  // the full height); only with not even that does the sun or moon appear
+  const popAt = t => { const k = X.H.time.findIndex(s => T(s) > t) - 1; return k >= 0 ? X.H.precipitation_probability[k] ?? 0 : 0; };
+  const chance = first < 0 ? times.map(t => { const p = popAt(t); return p >= 10 ? Math.max(1, Math.round(p / 100 * rows)) : 0; }) : [];
+  if (chance.some(Boolean)) sub = `Dry · up to ${Math.max(...times.map(popAt))}% chance`;
+  const dry = new Set();
+  if (first < 0 && !chance.some(Boolean)) {
+    const pic = X.isDay ? ["#.##.#", ".####.", "######", "######", ".####.", "#.##.#"] : ["..###.", ".##...", "##....", "##....", ".##...", "..###."];
+    const ox = Math.floor((n - pic[0].length) / 2), oy = (rows - pic.length) / 2;
+    pic.forEach((r, y) => [...r].forEach((c, x) => { if (c === "#") dry.add(`${ox + x},${rows - 1 - (oy + y)}`); }));
+  }
   rate.forEach((r, i) => {
     const lit = r <= 0 ? 0 : Math.min(rows, Math.max(1, Math.ceil(Math.log2(1 + r * 4) * 1.6)));
     const cx = i * sp + 5, cyOf = k => (rows - 1 - k) * sp + 5;
     const period = (5.6 - Math.min(lit, 8) * .3).toFixed(2), stepT = period * .024;
     const start = 2.4 + ((i * 7919) % 97) / 97 * period;
     for (let k = 0; k < rows; k++) {
-      if (k >= lit) { grid += `<circle cx="${cx}" cy="${cyOf(k)}" r="2.1" fill="currentColor" opacity=".07"/>`; continue; }
+      if (k >= lit) { if (k < (chance[i] || 0)) grid += `<circle cx="${cx}" cy="${cyOf(k)}" r="2.3" fill="var(--rain)" opacity=".38"/>`; else if (dry.has(`${i},${k}`)) glow += `<circle cx="${cx}" cy="${cyOf(k)}" r="2.5" fill="${X.isDay ? "#ffd88a" : "#e6e4ff"}"/>`; else grid += `<circle cx="${cx}" cy="${cyOf(k)}" r="2.1" fill="currentColor" opacity=".07"/>`; continue; }
       const tone = (.95 - (k / Math.max(lit - 1, 1)) * .4 * (lit / rows)).toFixed(2);
       const fill = `--d:${(.25 + i * .035 + k * .09).toFixed(2)}s`;
       const top = k === lit - 1 && lit < rows;
@@ -1103,7 +1116,7 @@ function renderNow() {
     for (let j = 0, n = rows - lit; lit && j < n; j++)
       wet += `<circle class="drip" cx="${cx}" cy="${cyOf(rows - 1 - j)}" r="2.5" fill="var(--rain)" style="--p:${period}s;--w:${(start + j * stepT).toFixed(2)}s"/>`;
   });
-  const dots = `${grid}<g filter="url(#bloom)">${wet}</g>`;
+  const dots = `${grid}<g filter="url(#bloom)">${wet}</g>${glow ? `<g class="dry-glow" filter="url(#bloom)">${glow}</g>` : ""}`;
   // on a 12-hour clock am/pm shows only where it changes, so the labels never run into each other on a phone
   let lastAp = "";
   const axis = Array.from({ length: 6 }, (_, k) => {
