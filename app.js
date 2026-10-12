@@ -901,7 +901,7 @@ function renderHero() {
   // the drawing is only as tall as today's arc (plus room for the dot), so a low winter arc leaves no empty sky above it
   const vy = Math.max(0, Math.floor(arcPoint(.5)[1] - 16));
   const arc = `<svg viewBox="0 ${vy} 300 ${108 - vy}" aria-hidden="true">
-    <line x1="0" y1="95" x2="300" y2="95" stroke="currentColor" stroke-opacity=".45" stroke-width="1.6" stroke-dasharray="0 6" stroke-linecap="round"/>
+    <line x1="0" y1="95" x2="300" y2="95" stroke="currentColor" stroke-opacity=".3" stroke-width="1"/>
     ${segs.filter(g => g.type).map(g => `<path class="awx awx-${g.type}" d="${arcPath(g.f0, g.f1)}"/>`).join("")}
     <path id="arcDone" d="${arcPath(0, f)}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
     <path id="arcLeft" d="${arcPath(f, 1)}" fill="none" stroke="currentColor" stroke-opacity=".5" stroke-width="1.8" stroke-dasharray="0 5.5" stroke-linecap="round"/>
