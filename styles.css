@@ -33,7 +33,7 @@
   --bg:#e8e7ef;
   --ground-dot:rgba(40,30,110,.1);
   --ink:#100f18;
-  --ink-2:rgba(16,15,24,.58);
+  --ink-2:rgba(16,15,24,.64); /* enough contrast for small text on the light ground (WCAG AA) */
   --ink-3:rgba(16,15,24,.28);
   --shade:rgba(70,50,160,.06);
   --g-a:rgba(255,255,255,.74);
@@ -82,6 +82,7 @@ html.standalone,html.standalone body{overscroll-behavior:none}
 html.standalone[data-mode="day"] body::before{content:"";position:fixed;left:0;right:0;top:0;height:calc(env(safe-area-inset-top,0px) + 14px);z-index:1001;pointer-events:none;
   background:linear-gradient(rgba(24,18,52,.32),rgba(24,18,52,0))}
 :focus-visible{outline:2px solid var(--signal);outline-offset:3px;border-radius:12px}
+dialog:focus-visible,.sheet:focus-visible{outline:none} /* opening a sheet focuses the panel itself: no ring around it, its buttons keep theirs */
 
 /* ---------- aurora: the colour field the glass refracts ---------- */
 .aurora{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;opacity:var(--aurora);transition:opacity .8s}
@@ -119,7 +120,7 @@ html.standalone[data-mode="day"] body::before{content:"";position:fixed;left:0;r
 .place{display:grid;text-align:left;min-width:0}
 .place h1{margin:0;font-weight:700;font-size:clamp(34px,5.2vw,56px);letter-spacing:-.04em;line-height:1;display:flex;align-items:center;gap:10px;text-wrap:balance}
 .place h1 svg{width:22px;height:22px;flex:none;opacity:.45;stroke:currentColor;fill:none;stroke-width:2}
-.place .sub{font-weight:600;font-size:clamp(16px,2vw,20px);letter-spacing:-.02em;color:var(--ink-3);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.place .sub{font-weight:600;font-size:clamp(16px,2vw,20px);letter-spacing:-.02em;color:var(--ink-2);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .top-r{display:flex;gap:8px;align-items:center;flex:none}
 .chip{display:flex;align-items:center;gap:.6em;height:38px;font:500 11px/1 var(--f-mono);letter-spacing:.06em;text-transform:uppercase;padding:0 14px;border-radius:999px;color:var(--ink-2);white-space:nowrap}
 .chip b{color:var(--ink);font-weight:500}
@@ -127,7 +128,7 @@ html.standalone[data-mode="day"] body::before{content:"";position:fixed;left:0;r
 .clock{display:flex;align-items:center;gap:3px;height:38px;padding:0 14px;border-radius:999px;color:var(--ink)}
 .clock:empty{display:none}
 .clock .ck .dm{height:17px}
-.clock .ck-ap{margin-left:5px}
+.clock .ck-ap{margin-left:5px;color:var(--ink)}
 .clock .ck-ap:empty{display:none} /* 24-hour clock: no am/pm, so nothing may take space after the digits */
 .round{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;flex:none}
 .round svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
@@ -251,6 +252,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .ch p{margin:0;font-weight:450;font-size:17px;letter-spacing:-.02em;line-height:1.15;color:var(--ink-2)}
 .ch-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 .mono{font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2)}
+.u{text-transform:none;letter-spacing:.02em} /* units keep their own spelling inside mono capitals: hPa, km/h, min, m */
 .num{font-family:var(--f-num);font-weight:300;letter-spacing:-.04em;line-height:.9;font-variant-numeric:tabular-nums}
 .pig .num{text-shadow:0 .1em .22em rgba(255,255,255,.22)}
 .num small{font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;font-weight:400;margin-left:6px;color:var(--ink-2);text-shadow:none;vertical-align:.25em}
@@ -697,8 +699,10 @@ dialog::backdrop{background:rgba(6,4,20,.4);-webkit-backdrop-filter:blur(8px);ba
 .row:hover,.row:focus-visible{background:rgba(255,255,255,.08)}
 .row b{font-weight:600;display:block}
 .row span{font-size:13px;color:var(--ink-2)}
-.row .x{color:var(--ink-2);padding:6px;border-radius:50%}
-.row .x:hover{color:#fff;background:rgba(255,255,255,.1)}
+.prow{position:relative}
+.prow .row:not(:last-child){padding-right:48px} /* room for the remove button */
+.prow .x{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--ink-2);padding:6px;border-radius:50%}
+.prow .x:hover{color:#fff;background:rgba(255,255,255,.1)}
 .label{font:500 11px/1 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);margin:20px 0 8px}
 .seg{display:flex;gap:4px;padding:4px;border-radius:999px;background:rgba(255,255,255,.07);flex-wrap:wrap}
 .seg button{flex:1;padding:9px 10px;border-radius:999px;font-weight:600;font-size:13px;color:var(--ink-2);white-space:nowrap}
@@ -823,3 +827,6 @@ html.wall .a-moon .strip canvas{height:46px}
   background:radial-gradient(closest-side,transparent 92%,rgba(150,80,255,.6) 92.9%,rgba(70,120,255,.65) 94%,rgba(60,210,150,.65) 95.1%,rgba(255,232,80,.7) 96.2%,rgba(255,150,60,.7) 97.3%,rgba(255,70,70,.65) 98.3%,transparent 99.2%)}
 @keyframes rbIn{to{opacity:1}}
 @media (prefers-reduced-motion:reduce){.rainbow{animation:none;opacity:1}}
+
+/* on a wide screen the dock sits in the bottom-right corner, clear of the cards */
+@media (min-width:900px){.dock{left:auto;right:24px;transform:none}}

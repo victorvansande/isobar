@@ -7,6 +7,7 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
+  actions: write # to keep its own schedule switched on (see the last step)
 concurrency:
   group: warnings
   cancel-in-progress: true
@@ -35,3 +36,10 @@ jobs:
           git add -A
           git commit -qm "Weather warnings $(date -u +%Y-%m-%dT%H:%MZ)"
           git push -qf "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" warnings
+      # GitHub pauses scheduled workflows in a repository without commits for 60 days. Switching this one on again
+      # (a no-op while it runs) resets that clock, so the warnings keep coming while the app's code stands still.
+      - name: Keep the schedule alive
+        if: github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/warnings.yml/enable" || true

@@ -34,10 +34,10 @@ let D = null, AQ = null, U = null, TZ = "UTC", OFF = 0, fetchedAt = 0; // U: how
 
 const MODELS = [
   ["best_match", "Best match", "Picks the sharpest local model for your spot (KNMI HARMONIE, DWD ICON-D2, Météo-France AROME, UKMO, HRRR…) and hands over to ECMWF for later days."],
-  ["ecmwf_ifs", "ECMWF IFS · 9 km", "The European Centre's flagship global model, consistently ranked the most skilful worldwide."],
+  ["ecmwf_ifs", "ECMWF IFS · 9 km", "The European Centre's global model, a reference for the days ahead."],
   ["ecmwf_aifs025_single", "ECMWF AIFS", "ECMWF's machine-learning global forecast."],
-  ["icon_seamless", "DWD ICON", "German Weather Service. 2 km over central Europe."],
-  ["knmi_seamless", "KNMI HARMONIE", "Dutch Met Office. 2 km over the Benelux."],
+  ["icon_seamless", "DWD ICON", "German Weather Service. 2.2 km over central Europe."],
+  ["knmi_seamless", "KNMI HARMONIE", "Dutch Met Office. 2 km over the Netherlands and Belgium, 5.5 km over the rest of Europe."],
   ["meteofrance_seamless", "Météo-France AROME", "1.3 km over France and its neighbours."],
   ["metno_seamless", "MET Norway", "1 km over the Nordics."],
   ["ukmo_seamless", "UK Met Office", "2 km over the British Isles."],
@@ -59,7 +59,8 @@ const fmtH = d => S.clock === "12"
 const dayOf = key => { const [Y, M, Dd] = key.split("-").map(Number); return new Date(Date.UTC(Y, M - 1, Dd, 12)); };
 const wd = key => dayOf(key).toLocaleDateString("en-GB", { weekday: "short", timeZone: "UTC" });
 const dm_ = key => dayOf(key).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
-const dur = s => { if (s == null) return "–"; const t = Math.round(s / 60), h = Math.floor(t / 60), m = t % 60; return `${h}h ${String(m).padStart(2, "0")}m`; };
+// one way to write a length of time everywhere: "10 h 57 min", "45 min", "3 min 48 s"
+const dur = s => { if (s == null || isNaN(s)) return "–"; const t = Math.round(s / 60), h = Math.floor(t / 60), m = t % 60; return h ? (m ? `${h} h ${m} min` : `${h} h`) : `${m} min`; };
 const inMins = m => m < 60 ? `${Math.round(m)} min` : `${Math.floor(m / 60)} h ${Math.round(m % 60) ? Math.round(m % 60) + " min" : ""}`.trim();
 const localDateLabel = d => new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: TZ }).format(d);
 
@@ -238,7 +239,7 @@ const smoothstep = (e0, e1, x) => { const t = clamp((x - e0) / (e1 - e0), 0, 1);
    mottled highlands, ~160 small soft craters (mostly in the southern highlands), the bright rayed craters,
    and a gentle darkening toward the rim. */
 let moonTex = null, moonMap = null, moonMapWait = true;
-/* NASA's lunar surface map (assets/moon-map.js), fetched after the app has started and read once into pixel data.
+/* NASA's lunar surface map (assets/moon-map.js), fetched once the moon card comes near the screen and read into pixel data.
    Until it's in (moonMapWait), the big moon isn't painted at all, rather than spending a long moment painting the
    stand-in surface that would be replaced a split second later; the stand-in is only for when the map can't load. */
 function loadMoonMap() {
@@ -354,11 +355,21 @@ function drawStrip(cv, off, base, mirror) {
 }
 
 /* ---------------- data ---------------- */
-async function getJSON(url) {
-  const r = await fetch(url);
-  const j = await r.json().catch(() => null);
-  if (!r.ok || !j || j.error) throw new Error((j && j.reason) || `Request failed (${r.status})`);
-  return j;
+/* Every request gives up after 10 seconds (a hanging connection then shows a message instead of spinning forever),
+   and can be called off with `signal` when something newer replaces it. */
+async function getJSON(url, signal) {
+  const c = new AbortController(), timer = setTimeout(() => c.abort(new DOMException("Timed out", "TimeoutError")), 10000);
+  const stop = () => c.abort(signal.reason);
+  if (signal) { if (signal.aborted) stop(); else signal.addEventListener("abort", stop, { once: true }); }
+  try {
+    const r = await fetch(url, { signal: c.signal });
+    const j = await r.json().catch(() => null);
+    if (!r.ok || !j || j.error) throw new Error((j && j.reason) || `Request failed (${r.status})`);
+    return j;
+  } catch (e) {
+    if (c.signal.reason && c.signal.reason.name === "TimeoutError") throw new Error("the service took too long to answer");
+    throw e;
+  } finally { clearTimeout(timer); if (signal) signal.removeEventListener("abort", stop); }
 }
 const qs = o => Object.entries(o).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&");
 /* How sure the forecast is, per day: four independent models (European, American, Canadian, German) forecast the same
@@ -384,11 +395,11 @@ function confidence(u) {
     tl = was = Math.max(tl, was);
     const level = split ? Math.min(2, tl + 1) : tl; // models split over rain: only this day is less sure
     const fz = wasFz = Math.max(deg, i * .45, wasFz);
-    out[day] = { deg, fz, lead: i, conf: ["high", "medium", "low"][level] };
+    out[day] = { deg, fz, lead: i, n: hi.length, conf: ["high", "medium", "low"][level] };
   });
   return out;
 }
-async function fetchAll(p) {
+async function fetchAll(p, signal) {
   const w = getJSON("https://api.open-meteo.com/v1/forecast?" + qs({
     latitude: p.lat, longitude: p.lon, timezone: "auto", forecast_days: 14, past_days: 1,
     current: "temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,cloud_cover,pressure_msl,wind_speed_10m,wind_direction_10m,wind_gusts_10m,visibility,uv_index,dew_point_2m",
@@ -396,16 +407,16 @@ async function fetchAll(p) {
     hourly: "temperature_2m,apparent_temperature,precipitation_probability,precipitation,weather_code,wind_speed_10m,wind_gusts_10m,wind_direction_10m,uv_index,is_day,pressure_msl,visibility,cloud_cover,relative_humidity_2m,dew_point_2m",
     daily: "weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,sunrise,sunset,daylight_duration,sunshine_duration,uv_index_max,precipitation_sum,precipitation_probability_max,precipitation_hours,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant",
     temperature_unit: S.temp === "f" ? "fahrenheit" : "celsius", wind_speed_unit: S.wind, precipitation_unit: S.precip, models: S.model
-  }));
+  }), signal);
   const a = getJSON("https://air-quality-api.open-meteo.com/v1/air-quality?" + qs({
     latitude: p.lat, longitude: p.lon, timezone: "auto", forecast_days: 2,
     current: "european_aqi,us_aqi,pm10,pm2_5,nitrogen_dioxide,ozone,sulphur_dioxide,alder_pollen,birch_pollen,grass_pollen,mugwort_pollen,olive_pollen,ragweed_pollen",
     hourly: "european_aqi"
-  })).catch(() => null);
+  }), signal).catch(() => null);
   // the same days from four independent models, to see how much they agree (see confidence())
   const u = getJSON("https://api.open-meteo.com/v1/forecast?" + qs({
     latitude: p.lat, longitude: p.lon, timezone: "auto", forecast_days: 14, daily: "temperature_2m_max,precipitation_sum", models: SPREAD_MODELS.join(",")
-  })).catch(() => null);
+  }), signal).catch(() => null);
   return [await w, await a, await u];
 }
 async function geocode(q) {
@@ -514,7 +525,8 @@ function renderSummary() {
   else if (Math.abs(dTomorrow) >= 3) second = `${dTomorrow > 0 ? "Warmer" : "Colder"} tomorrow, up to ${R(Dy.temperature_2m_max[di + 1])}°.`;
   else if (localHour < 14 && tc(Dy.temperature_2m_max[di]) - tc(c.temperature_2m) >= 2) second = `Up to ${R(Dy.temperature_2m_max[di])}° this afternoon.`;
   else if (Dy.temperature_2m_max[di + 1] != null) second = (Dy.precipitation_probability_max[di + 1] ?? 0) >= 60 && !wetNow ? "Rain likely tomorrow." : `Similar tomorrow, around ${R(Dy.temperature_2m_max[di + 1])}°.`;
-  $("#summary").textContent = `${first} ${second}`.trim();
+  // written only when it changes: the line is read out by screen readers, which should not hear it again every refresh
+  const txt = `${first} ${second}`.trim(), sm = $("#summary"); if (sm.textContent !== txt) sm.textContent = txt;
 }
 
 /* ---------------- weather-reactive effects ---------------- */
@@ -1079,8 +1091,8 @@ function renderNow() {
       wet += `<circle class="drip" cx="${cx}" cy="${cyOf(rows - 1 - j)}" r="2.5" fill="var(--rain)" style="--p:${period}s;--w:${(start + j * stepT).toFixed(2)}s"/>`;
   });
   const dots = `${grid}<g filter="url(#bloom)">${wet}</g>`;
-  const axis = Array.from({ length: 6 }, (_, k) => times[k * 4] ? `<span class="mono">${k ? fmtT(times[k * 4]) : "Now"}</span>` : "<span></span>").join("");
-  el.innerHTML = `<div class="ch-row">${head("Precipitation", sub)}${total > 0 ? `<span class="mono">${fmtP(total)} ${PU()} total</span>` : ""}</div>
+  const axis = Array.from({ length: 6 }, (_, k) => times[k * 4] ? `<span class="mono">${k ? (S.clock === "12" ? fmtT(times[k * 4]).replace(/\s/g, "").toLowerCase() : fmtT(times[k * 4])) : "Now"}</span>` : "<span></span>").join("");
+  el.innerHTML = `<div class="ch-row">${head("Precipitation", sub)}${total > 0 ? `<span class="mono">${fmtP(total)} <span class="u">${PU()}</span> total</span>` : ""}</div>
     <div class="now-say">${esc(say)}</div>
     <div class="now-chart"><svg viewBox="0 0 ${n * sp} ${rows * sp}" role="img" aria-label="Precipitation per 15 minutes"><defs><filter id="bloom" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.3" result="b"/><feComponentTransfer in="b" result="s"><feFuncA type="linear" slope=".55"/></feComponentTransfer><feMerge><feMergeNode in="s"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>${dots}</svg></div>
     <div class="now-axis">${axis}</div>`;
@@ -1106,7 +1118,7 @@ function renderWind() {
   const kmh = toMs(sp ?? 0) * 3.6, gusts = windFlow(dir, kmh, toMs(gust ?? 0) * 3.6);
   el.innerHTML = `${gusts}${head("Wind", sp == null ? "–" : `From the ${pt8(dir)}`)}
     <div class="compass"><svg viewBox="0 0 200 200" role="img" aria-label="Wind from ${pt16(dir)}">${ticks}${lab}${tri}</svg>
-      <div class="compass-c">${dm(spTxt)}<span class="mono">${WU[S.wind]}</span></div></div>
+      <div class="compass-c">${dm(spTxt)}<span class="mono u">${WU[S.wind]}</span></div></div>
     <div class="foot"><span>Gusts <b>${R(gust)}</b></span><span>Bft <b>${b}</b> · ${esc(bname)}</span></div>`;
 }
 
@@ -1116,9 +1128,11 @@ function renderFeels() {
   const t = c.temperature_2m, f = c.apparent_temperature;
   const diff = f - t, dC = toC(f) - toC(t), ms = toMs(c.wind_speed_10m ?? 0);
   let why, sub;
-  if (Math.abs(dC) < 1.5) { sub = "Close to the air"; why = "It feels about as warm as the thermometer says."; }
-  else if (dC < 0) { sub = "Colder"; why = ms > 3 ? `Wind makes it feel ${Math.abs(Math.round(diff))}° colder than the air.` : `Damp air makes it feel ${Math.abs(Math.round(diff))}° colder.`; }
-  else { sub = "Warmer"; why = (c.relative_humidity_2m ?? 0) > 55 ? `Humidity makes it feel ${Math.round(diff)}° warmer.` : `Sunshine and still air make it feel ${Math.round(diff)}° warmer.`; }
+  // only causes the numbers can back up: wind cools, humid warmth warms, the sun warms by day under an open sky
+  const d = Math.abs(Math.round(diff));
+  if (Math.abs(dC) < 1.5) { sub = "Same as measured"; why = "It feels about as warm as the thermometer says."; }
+  else if (dC < 0) { sub = "Colder"; why = ms > 3 ? `Wind makes it feel ${d}° colder than measured.` : `Feels ${d}° colder than measured.`; }
+  else { sub = "Warmer"; why = (c.relative_humidity_2m ?? 0) > 55 && toC(t) >= 20 ? `Humidity makes it feel ${d}° warmer.` : c.is_day && (c.cloud_cover ?? 100) < 50 ? `Sunshine and still air make it feel ${d}° warmer.` : `Feels ${d}° warmer than measured.`; }
   const lo = Math.min(t, f) - 6, hi = Math.max(t, f) + 6, P = v => ((v - lo) / (hi - lo) * 100).toFixed(1);
   // when it feels the same as the thermometer (to the degree), the marker sits right on it with no gap to fill
   const same = R(f) === R(t), fp = same ? t : f;
@@ -1225,8 +1239,8 @@ function dayStrip() {
   const P = v => ((v - lo) / ((hi - lo) || 1) * 100).toFixed(1);
   const tc = v => window.Palette.tempFam(toC(v)).mid;
   const cols = idx.map((i, n) => {
-    const key = Dy.time[i], [label, kind] = wmo(Dy.weather_code[i]);
-    const mn = Dy.temperature_2m_min[i], mx = Dy.temperature_2m_max[i], pop = nz(Dy.precipitation_probability_max[i]);
+    const key = Dy.time[i], [label, kind] = wmo(dayLook(i).code);
+    const mn = Dy.temperature_2m_min[i], mx = Dy.temperature_2m_max[i], pop = dayLook(i).pop;
     const lit = pop == null ? 0 : Math.round(pop / 20);
     let pd = ""; for (let q = 0; q < 5; q++) pd += `<circle cx="4" cy="${26 - q * 5.5}" r="${q < lit ? 2.2 : 1.5}" fill="${q < lit ? "var(--rain)" : "currentColor"}" opacity="${q < lit ? 1 : .18}"/>`;
     const now = n === 0 && c.temperature_2m != null ? `<span class="nd" style="bottom:${P(clamp(c.temperature_2m, lo, hi))}%"></span>` : "";
@@ -1234,7 +1248,7 @@ function dayStrip() {
     // "somewhere around here" rather than an exact range
     const uc = U && U[key], fuzz = uc && uc.conf !== "high" ? (uc.fz ?? uc.deg) * (S.temp === "f" ? 1.8 : 1) / 2 : 0;
     const top = clamp(+P(mx + fuzz), 0, 100), bot = clamp(+P(mn - fuzz), 0, 100), fz = fuzz ? clamp((top - +P(mx) + +P(mn) - bot) / 2 / Math.max(top - bot, 1) * 100 + 8, 8, 45) : 0;
-    return `<button class="dcol${uc && uc.conf === "low" ? " unsure" : ""}" data-n="${n}" aria-label="${n === 0 ? "Today" : wd(key) + " " + dm_(key)}: ${esc(label)}, ${R(mn)} to ${R(mx)} degrees${pop != null ? `, ${pop}% chance of rain` : ""}${uc && uc.conf !== "high" ? `, ${uc.conf} confidence` : ""}. Open details.">
+    return `<button class="dcol${uc && uc.conf === "low" ? " unsure" : ""}" data-n="${n}" aria-label="${n === 0 ? "Today" : wd(key) + " " + dm_(key)}: ${esc(label)}, ${R(mn)} to ${R(mx)} degrees${pop != null ? `, ${pop}% chance of rain` : ""}${uc && uc.conf !== "high" ? ", models disagree" : ""}. Open details.">
       <span class="htime${n === 0 ? " now" : ""}">${n === 0 ? "Today" : wd(key)}</span>${icon(kind, true)}
       <em class="dhi hiT" style="--tc:${tc(mx)}">${R(mx)}°</em>
       <span class="dbar"><span class="dfill${fuzz ? " fuzzy" : ""}" style="top:${(100 - top).toFixed(1)}%;bottom:${bot.toFixed(1)}%;--lo:${tc(mn)};--hi:${tc(mx)};--fz:${fz.toFixed(0)}%"></span>${now}</span>
@@ -1396,6 +1410,15 @@ function drawSpread() {
 })();
 
 /* ---------------- 14 days ---------------- */
+/* Today is told by the hours still to come, not the whole day: at 17:00 a morning's drizzle no longer stands for "today".
+   Other days keep the day's own summary (its most severe weather, its highest chance of rain). */
+function dayLook(i) {
+  const { Dy, H, hi, di } = X;
+  if (i !== di) return { code: Dy.weather_code[i], pop: nz(Dy.precipitation_probability_max[i]) };
+  let end = H.time.findIndex(t => t.slice(0, 10) > Dy.time[i]); if (end < 0) end = H.time.length;
+  const codes = H.weather_code.slice(hi, end).filter(v => v != null), pops = H.precipitation_probability.slice(hi, end).filter(v => v != null);
+  return { code: codes.length ? Math.max(...codes) : Dy.weather_code[i], pop: pops.length ? Math.max(...pops) : nz(Dy.precipitation_probability_max[i]) };
+}
 /* Rain (or snow) falls in a day card once rain is likely (40%+) or measurable (0.5 mm+).
    More rain means more drops; a likelier forecast draws them brighter. */
 function weatherFx(n, kind, pop, sumMm) {
@@ -1414,8 +1437,8 @@ function renderDays() {
   const P = v => ((v - lo) / ((hi - lo) || 1) * 100).toFixed(1);
   const open = store.get("openDay", 0);
   const items = idx.map((i, n) => {
-    const key = Dy.time[i], [label, kind] = wmo(Dy.weather_code[i]);
-    const mn = Dy.temperature_2m_min[i], mx = Dy.temperature_2m_max[i], pop = nz(Dy.precipitation_probability_max[i]);
+    const key = Dy.time[i], [label, kind] = wmo(dayLook(i).code);
+    const mn = Dy.temperature_2m_min[i], mx = Dy.temperature_2m_max[i], pop = dayLook(i).pop;
     const tc = v => window.Palette.tempFam(toC(v)).mid; // colour of a temperature on the shared scale
     const rise = Dy.sunrise[i] ? T(Dy.sunrise[i]) : null, set = Dy.sunset[i] ? T(Dy.sunset[i]) : null;
     const wdir = Dy.wind_direction_10m_dominant[i];
@@ -1437,11 +1460,11 @@ function renderDays() {
         ${tile("UV max", Dy.uv_index_max[i] != null ? Dy.uv_index_max[i].toFixed(1) : "–")}
         ${tile("Sunrise", fmtT(rise))}
         ${tile("Sunset", fmtT(set))}
-        ${tile("Sunshine", Dy.sunshine_duration[i] != null ? (Dy.sunshine_duration[i] / 3600).toFixed(1) + " h" : "–")}
+        ${tile("Sunshine", dur(Dy.sunshine_duration[i]))}
         ${cl[n] ? tile("Normal", `${R(fromC(cl[n].lo))}° / ${R(fromC(cl[n].hi))}°`) : ""}
         ${cl[n] && cl[n].rh ? tile("Record high", `${R(fromC(cl[n].rh[0]))}° <small>${cl[n].rh[1]}</small>`) : ""}
         ${cl[n] && cl[n].rl ? tile("Record low", `${R(fromC(cl[n].rl[0]))}° <small>${cl[n].rl[1]}</small>`) : ""}
-        ${U && U[key] ? `<button class="tile tile-go" data-spread="${n}"><span class="mono">Confidence</span><b>${cap1(U[key].conf)} · ${U[key].deg < 1 ? "models agree" : `models differ by up to ${Math.max(1, Math.round(U[key].deg * (S.temp === "f" ? 1.8 : 1)))}°`}${U[key].lead >= 6 ? " · far ahead" : ""}</b><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4.5 2.5L8 6l-3.5 3.5"/></svg></button>` : ""}
+        ${U && U[key] ? `<button class="tile tile-go" data-spread="${n}"><span class="mono">Models</span><b>${U[key].n || 4} models within ${Math.max(1, Math.round(U[key].deg * (S.temp === "f" ? 1.8 : 1)))}°${U[key].lead >= 6 ? " · far ahead" : ""}</b><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4.5 2.5L8 6l-3.5 3.5"/></svg></button>` : ""}
       </div></div></div>
     </article>`;
   }).join("");
@@ -1482,9 +1505,9 @@ function renderHumid() {
   const { c } = X, el = card("c-humid");
   const h = c.relative_humidity_2m, dp = c.dew_point_2m, dpC = toC(dp);
   // muggy air is described by its dew point (how much water it really holds); otherwise by how full the air is,
-  // so cool air at 82% reads as damp rather than "dry"
-  const lab = dpC == null || h == null ? "–" : dpC >= 21 ? "Oppressive" : dpC >= 18 ? "Humid" : dpC >= 16 ? "A little humid"
-    : h >= 90 ? "Very damp" : h >= 75 ? "Damp" : h >= 45 ? "Comfortable" : h >= 25 ? "Dry" : "Very dry";
+  // so cool air at 82% reads as humid rather than "dry"
+  const lab = dpC == null || h == null ? "–" : dpC >= 21 ? "Oppressive" : dpC >= 18 ? "Muggy" : dpC >= 16 ? "A little muggy"
+    : h >= 90 ? "Very humid" : h >= 75 ? "Humid" : h >= 45 ? "Comfortable" : h >= 25 ? "Dry" : "Very dry";
   // the surface: two periods of a gentle swell in 400 units, so sliding it by half its width loops without a seam
   const wave = cls => `<svg class="${cls}" viewBox="0 0 400 12" preserveAspectRatio="none" aria-hidden="true"><path d="M0 6 Q50 1 100 6 T200 6 T300 6 T400 6 V12 H0Z" fill="rgba(175,200,255,.24)"/><path d="M0 6 Q50 1 100 6 T200 6 T300 6 T400 6" fill="none" stroke="currentColor" stroke-opacity=".5" stroke-width="1" vector-effect="non-scaling-stroke"/></svg>`;
   const wet = (h ?? 0) >= 85; // condensation beads up on the card on very humid days
@@ -1536,7 +1559,7 @@ function renderAir() {
       <div class="air-foot"><span class="mono">${peakT ? `Peaks at ${Math.round(peak)} around ${fmtT(peakT)}` : "Steady over the next 24 h"}</span>
       <button class="air-more mono" id="airMore" aria-expanded="${open}" aria-controls="airPol">Pollutants<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9.5l6 6 6-6"/></svg></button></div></div>
     <div class="pol-wrap" id="airPol"><div><div class="pol tile">${rows.map(([n, val, lim]) => `<div class="pol-r"><span class="mono">${n}</span><div class="mbar"><div class="fill" style="width:${clamp(val / (lim * 2) * 100, 2, 100)}%"></div><span class="lim" style="left:50%"></span></div><span class="v">${val < 10 ? val.toFixed(1) : Math.round(val)}<small>µg/m³</small></span></div>`).join("")}
-      <span class="mono lim-key"><i aria-hidden="true"></i>WHO daily guideline</span></div></div></div></div>`;
+      <span class="mono lim-key"><i aria-hidden="true"></i>Now · WHO daily limit</span></div></div></div></div>`;
   $("#airMore").onclick = () => {
     const box = el.querySelector(".air"), on = !box.classList.contains("open");
     box.classList.toggle("open", on); $("#airMore").setAttribute("aria-expanded", on); store.set("airOpen", on);
@@ -1643,7 +1666,8 @@ function renderSun() {
   const fr = d => d && !isNaN(d) ? clamp((d - mid0) / dayMs, 0, 1) : null;
   const dl = Dy.daylight_duration[di], dly = di > 0 ? Dy.daylight_duration[di - 1] : null;
   const ch = dl != null && dly != null ? dl - dly : null;
-  const chTxt = ch == null ? "" : `${ch >= 0 ? "+" : "−"}${Math.floor(Math.abs(ch) / 60)}m ${String(Math.round(Math.abs(ch) % 60)).padStart(2, "0")}s vs yesterday`;
+  // the change in day length, with its units written as units (not in the mono capitals around them)
+  const chTxt = ch == null ? "" : `${ch >= 0 ? "+" : "−"}${Math.floor(Math.abs(ch) / 60)} <span class="u">min</span> ${Math.round(Math.abs(ch) % 60)} <span class="u">s</span> vs yesterday`;
   const night = "#120a3a", tw = "#6a3fe0", gold = "#ff8a3c", day = "#ffe6b0";
   const stops = [];
   const add = (f, col) => { if (f != null) stops.push([f, col]); };
@@ -1652,7 +1676,7 @@ function renderSun() {
   const grad = stops.sort((a, b) => a[0] - b[0]).map(([f, c]) => `<stop offset="${(f * 100).toFixed(2)}%" stop-color="${c}"/>`).join("");
   const sunsh = Dy.sunshine_duration[di];
   X.sunCard = { mid0, t: null };
-  el.innerHTML = `<div class="ch-row"><header class="ch"><h3 id="sunWhen">Sun</h3><p id="sunSub" hidden></p></header><span class="mono" id="sunChange" style="text-align:right">${esc(chTxt)}</span></div>
+  el.innerHTML = `<div class="ch-row"><header class="ch"><h3 id="sunWhen">Sun</h3><p id="sunSub" hidden></p></header><span class="mono" id="sunChange" style="text-align:right">${chTxt}</span></div>
     <button class="hero-now" id="sunNow" hidden>Back to now</button>
     <div class="band" id="sunBand" role="slider" tabindex="0" aria-label="Time of day. Drag, scroll or use the arrow keys to see the sun at another hour." aria-valuemin="0" aria-valuemax="1440"><svg viewBox="0 0 1000 30" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="sb">${grad}</linearGradient></defs><rect width="1000" height="30" fill="url(#sb)"/></svg><span class="tri" id="sunTri"></span>
       <div class="band-axis mono"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div></div>
@@ -1663,7 +1687,7 @@ function renderSun() {
       <div><span class="mono">Sunset</span><b>${fmtT(Dy.sunset[di] ? T(Dy.sunset[di]) : null)}</b></div>
       <div><span class="mono">Last light</span><b>${fmtT(st.dusk)}</b></div>
     </div>
-    <div class="foot" style="margin-top:14px"><span>Sunshine expected <b>${sunsh != null ? (sunsh / 3600).toFixed(1) + " h" : "–"}</b></span><span>Solar noon <b>${fmtT(st.noon)}</b></span></div>`;
+    <div class="foot" style="margin-top:14px"><span>Sunshine expected <b>${dur(sunsh)}</b></span><span>Solar noon <b>${fmtT(st.noon)}</b></span></div>`;
   updateSun(null);
   bindSunCard();
 }
@@ -1773,7 +1797,7 @@ function drawYear() {
     ctx.fillStyle = g; ctx.fillRect(Math.floor(i * cw), 0, Math.ceil(cw) + 1, h);
   });
 }
-const hm = mins => `${Math.floor(mins / 60)}h ${String(Math.round(mins % 60)).padStart(2, "0")}m`;
+const hm = mins => dur(mins * 60);
 // a wall-clock time [hours, minutes] in the chosen clock style
 const wallClock = ([h, m]) => S.clock === "12" ? `${h % 12 || 12}${m ? ":" + String(m).padStart(2, "0") : ""} ${h < 12 ? "am" : "pm"}` : `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 function updateYear(i) {
@@ -1783,14 +1807,17 @@ function updateYear(i) {
   const longest = Y.days.reduce((a, b) => b.len > a.len ? b : a), shortest = Y.days.reduce((a, b) => b.len < a.len ? b : a);
   $("#yrSel").style.left = `${((i + .5) / Y.days.length * 100).toFixed(2)}%`;
   $("#yrDate").textContent = isToday ? "Today" : `${wd(d.key)} ${dm_(d.key)}`;
-  $("#yrLen").textContent = hm(d.len);
+  // today uses the forecast's own sunrise, sunset and day length, so it matches the sun card to the minute
+  const api = isToday && X.Dy.sunrise[X.di] ? { rise: T(X.Dy.sunrise[X.di]), set: T(X.Dy.sunset[X.di]), len: X.Dy.daylight_duration[X.di] / 60 } : null;
+  const riseT = api ? api.rise : d.rise_t, setT = api ? api.set : d.set_t, len = api && api.len ? api.len : d.len;
+  $("#yrLen").textContent = hm(len);
   // one short line: the sun's hours, which clock time it is, and only the special days get a word
   const clock = Y.days.some(x => x.summer) ? (d.summer ? "summer time" : "winter time") : "";
   const change = (Y.days.dst || []).find(c => c.i === i);
   const special = change ? `clocks go ${change.fwd ? "forward" : "back"} at ${wallClock(change.from)}` : d === longest ? "longest day" : d === shortest ? "shortest day" : "";
-  $("#yrSub").textContent = d.rise_t && !isNaN(d.rise_t) ? [`${fmtT(d.rise_t)} – ${fmtT(d.set_t)}`, clock, special].filter(Boolean).join(" · ") : d.up ? "The sun doesn't set" : "The sun doesn't rise";
+  $("#yrSub").textContent = d.rise_t && !isNaN(d.rise_t) ? [`${fmtT(riseT)} – ${fmtT(setT)}`, clock, special].filter(Boolean).join(" · ") : d.up ? "The sun doesn't set" : "The sun doesn't rise";
   $("#yrNow").hidden = isToday;
-  const box = $("#yrChart"); box.setAttribute("aria-valuenow", i + 1); box.setAttribute("aria-valuetext", `${$("#yrDate").textContent}, ${hm(d.len)} of daylight, sunrise to sunset ${$("#yrSub").textContent}`);
+  const box = $("#yrChart"); box.setAttribute("aria-valuenow", i + 1); box.setAttribute("aria-valuetext", `${$("#yrDate").textContent}, ${hm(len)} of daylight, sunrise to sunset ${$("#yrSub").textContent}`);
 }
 function bindYear() {
   const box = $("#yrChart"), at = e => { const r = box.getBoundingClientRect(); return (e.clientX - r.left) / r.width * X.year.days.length - .5; };
@@ -1827,7 +1854,7 @@ function renderPress() {
       <path d="M${s1x} ${s1y} A94 94 0 1 1 ${s2x} ${s2y}" fill="none" stroke="currentColor" stroke-opacity=".16" stroke-width="1"/>
       <line${fast ? ` class="tremble"` : ""} x1="${tx}" y1="${ty}" x2="${bx}" y2="${by}" stroke="var(--signal)" stroke-width="6.5" stroke-linecap="round"/>
       <circle cx="${pt(A(1013.25), 94)[0].toFixed(1)}" cy="${pt(A(1013.25), 94)[1].toFixed(1)}" r="2.6" fill="currentColor"><title>Standard pressure, 1013 hPa</title></circle></svg>
-      <div class="dial-v" role="img" aria-label="${val} ${inHg ? "inches of mercury" : "hectopascals"}">${dm(String(val))}<span class="mono">${inHg ? "inHg" : "hPa"}</span></div></div>
+      <div class="dial-v" role="img" aria-label="${val} ${inHg ? "inches of mercury" : "hectopascals"}">${dm(String(val))}<span class="mono u">${inHg ? "inHg" : "hPa"}</span></div></div>
     <div class="foot"><span>Last 3 hours</span><b>${dp == null ? "–" : `${dp >= 0 ? "+" : "−"}${Math.abs(inHg ? dp * 0.02953 : dp).toFixed(inHg ? 2 : 1)}`}</b></div>`;
 }
 
@@ -1861,7 +1888,8 @@ function renderVis() {
   // clarity 0 (thick fog, under 0.5 km) to 1 (30 km and more): how blue the sky is and how much haze hangs over it all
   const clear = km == null ? .5 : clamp((lg(km) - lg(.5)) / (lg(30) - lg(.5)), 0, 1);
   const fmtD = d => imperial ? `${Math.round(d / 1.609 * 10) / 10} mi` : `${d} km`;
-  const say = km == null ? "" : edge == null ? "Even nearby hills are lost in fog" : edge === RIDGES.length - 1 ? `Hills ${fmtD(50)} away are in view` : `Clear out to hills ${fmtD(RIDGES[edge])} away, hazy beyond`;
+  // plain words about the distance; the hills are only the picture
+  const say = km == null ? "" : km < 1 ? `Fog: you can see less than ${fmtD(1)}` : `You can see about ${fmtD(km >= 10 ? Math.round(km) : Math.round(km * 10) / 10)}`;
   el.innerHTML = `<span class="vis-sky" aria-hidden="true" style="--clear:${Math.round(clear * 100)}%;--skyA:${(.35 + .4 * clear).toFixed(2)}"></span>
     <span class="vis-fog" aria-hidden="true" style="--fogA:${((1 - clear) * .75).toFixed(2)}"></span>
     ${head("Visibility", lab)}
@@ -1930,7 +1958,7 @@ function renderPollen() {
   const lvl = (v, t) => v < 1 ? [0, "None"] : v < t[0] ? [1, "Low"] : v < t[1] ? [2, "Moderate"] : v < t[2] ? [3, "High"] : [4, "Very high"];
   const items = POLLEN.filter(([k]) => a[k] != null).map(([k, n, t]) => { const v = a[k], [l, ln] = lvl(v, t); return { n, v, l, ln }; });
   const top = items.reduce((m, i) => i.l > m.l ? i : m, items[0]);
-  el.innerHTML = `<div class="ch-row">${head("Pollen", top.l === 0 ? "Nothing in the air" : `${top.n} is ${top.ln.toLowerCase()}`)}<span class="mono">grains/m³</span></div>
+  el.innerHTML = `<div class="ch-row">${head("Pollen", top.l === 0 ? "Nothing in the air" : `${top.n} is ${top.ln.toLowerCase()}`)}<span class="mono u">grains/m³</span></div>
     <div class="pgrid">${items.map(i => `<div class="tile"><span class="mono">${i.n}</span><b>${i.v < 10 ? i.v.toFixed(1) : Math.round(i.v)}</b><span class="dots" role="img" aria-label="${i.ln}">${[1, 2, 3, 4].map(q => `<i class="${q <= i.l ? "on" : ""}"></i>`).join("")}</span></div>`).join("")}</div>`;
 }
 
@@ -1947,9 +1975,10 @@ function renderSrc() {
   $("#wallBtn").onclick = () => { $("#dlgInfo").close(); setWall(true); };
   // where the forecast is for: coordinates, height above sea level and time zone
   const ll = (v, p, n) => `${Math.abs(v).toFixed(2)}° ${v >= 0 ? p : n}`;
-  const elev = D.elevation ?? 0, elevTxt = S.precip === "inch" ? `${Math.round(elev * 3.281)} ft` : `${Math.round(elev)} m`;
-  $("#locLine").textContent = `${ll(D.latitude, "N", "S")}, ${ll(D.longitude, "E", "W")} · ${elevTxt} above sea level · ${D.timezone.replace(/_/g, " ")}`;
+  const elev = D.elevation ?? 0, elevTxt = S.precip === "inch" ? `${Math.round(elev * 3.281)} <span class="u">ft</span>` : `${Math.round(elev)} <span class="u">m</span>`;
+  $("#locLine").innerHTML = `${ll(D.latitude, "N", "S")}, ${ll(D.longitude, "E", "W")} · ${elevTxt} above sea level · ${esc(D.timezone.replace(/_/g, " "))}`;
   $("#modelChip").innerHTML = `Model <b>${esc(m[1].split(" ·")[0])}</b>`;
+  $("#modelChip").hidden = S.model === "best_match"; // shown only once you've picked a model of your own
 }
 
 /* ---------------- radar ---------------- */
@@ -2221,7 +2250,7 @@ async function loadClimate() {
   const key = climKey(X.lat, X.lon);
   if (CLIM && CLIM.key === key) return;
   const kept = store.get(key, null);
-  if (kept) { CLIM = kept; return climUpdate(); }
+  if (kept) { CLIM = kept; kept.at = Date.now(); store.set(key, kept); return climUpdate(); } // marked as used, so it stays among the six
   if (climBusy === key || !navigator.onLine) return;
   climBusy = key;
   try {
@@ -2249,6 +2278,12 @@ async function loadClimate() {
       nh.push(c ? +(a / c).toFixed(1) : null); nl.push(c ? +(b / c).toFixed(1) : null);
     }
     CLIM = { key, nh, nl, rh, rl, from: Math.max(CLIM_FROM, new Date(t[0] * 1000 + shift).getUTCFullYear()) };
+    // keep the tables of the six places looked at most recently (each about 12 kB), drop older ones
+    try {
+      const old = Object.keys(localStorage).filter(k => k.startsWith("isobar:clim:")).map(k => [k, (JSON.parse(localStorage.getItem(k)) || {}).at || 0]).sort((a, b) => b[1] - a[1]);
+      old.slice(5).forEach(([k]) => localStorage.removeItem(k));
+    } catch {}
+    CLIM.at = Date.now();
     store.set(key, CLIM);
     climUpdate();
   } catch { /* no climate today: the cards simply leave it out */ } finally { climBusy = ""; }
@@ -2264,8 +2299,9 @@ function climLine() {
   const cl = climFor(X.todayKey); if (!cl) return "";
   const hi = X.Dy.temperature_2m_max[X.di], lo = X.Dy.temperature_2m_min[X.di];
   const date = dm_(X.todayKey);
-  if (hi != null && cl.rh && toC(hi) > cl.rh[0]) return `Warmest ${date} since ${cl.from}`;
-  if (lo != null && cl.rl && toC(lo) < cl.rl[0]) return `Coldest ${date} since ${cl.from}`;
+  // a record only with a clear margin: the history is an average over the area (~25 km), the forecast is for this spot
+  if (hi != null && cl.rh && toC(hi) > cl.rh[0] + 1.5) return `Warmer than any ${date} since ${cl.from}`;
+  if (lo != null && cl.rl && toC(lo) < cl.rl[0] - 1.5) return `Colder than any ${date} since ${cl.from}`;
   if (hi == null) return "";
   const diff = (toC(hi) - cl.hi) * (S.temp === "f" ? 1.8 : 1), a = Math.round(Math.abs(diff));
   return a < 2 ? "About normal for the time of year" : `${a}° ${diff > 0 ? "warmer" : "colder"} than normal`;
@@ -2281,31 +2317,36 @@ function showError(msg) {
   el.innerHTML = `${head("No forecast", "Something went wrong")}<div class="err"><p>${esc(msg)}</p><button class="btn" id="retry">Try again</button></div>`;
   $("#retry").onclick = () => load(place);
 }
-let loading = false, dataKey = "";
+let loading = false, dataKey = "", loadCtrl = null, shownPlace = null; // shownPlace: the place whose forecast is on screen
+// A background refresh waits its turn; something you asked for (another place, a refresh) calls off whatever is loading.
 async function load(p, { quiet = false } = {}) {
-  if (!p || loading) return;
+  if (!p || (loading && quiet)) return;
+  if (loadCtrl) loadCtrl.abort();
+  const my = loadCtrl = new AbortController();
   const prev = place, key = cacheKey(p);
   loading = true; $("#refreshBtn").classList.add("spin"); $("#netPill").classList.add("busy");
   place = p; store.set("place", p);
   if (!saved.some(s => samePlace(s, p))) { roamer = p; store.set("roamer", p); } // an unsaved place leads the swipe order
   renderPlace();
   // a place seen before opens straight from its last forecast while the fresh one loads
-  if (dataKey !== key) { const hit = forecasts.get(key); if (hit) { adopt(hit, key); try { renderAll(); } catch (e) { console.error(e); } } }
+  if (dataKey !== key) { const hit = forecasts.get(key); if (hit) { adopt(hit, key); shownPlace = p; try { renderAll(); } catch (e) { console.error(e); } } }
   try {
-    const [w, a, u] = await fetchAll(p);
-    adopt({ D: w, AQ: a, U: confidence(u), at: Date.now() }, key);
+    const [w, a, u] = await fetchAll(p, my.signal);
+    if (my.signal.aborted) return;
+    adopt({ D: w, AQ: a, U: confidence(u), at: Date.now() }, key); shownPlace = p;
     forecasts.put(key, { D, AQ, U, at: fetchedAt });
     netFail = false; loadWarnings(p);
     renderAll();
   } catch (e) {
+    if (my.signal.aborted) return; // replaced by a newer request: that one reports
     netFail = true;
     if (dataKey === key) { if (!quiet && navigator.onLine) toast("Couldn't reach the forecast. Showing the last one."); }
     else if (!D) showError(navigator.onLine ? `Couldn't load the forecast: ${e.message}. Try again in a moment.` : "You're offline. Connect to the internet to load the forecast.");
     else { // nothing kept for this place: stay on the one that is showing
-      place = prev; store.set("place", prev); renderPlace();
+      place = shownPlace || prev; store.set("place", place); renderPlace();
       toast(navigator.onLine ? `Couldn't load ${p.name}. Try again in a moment.` : `${p.name} loads once you're back online.`);
     }
-  } finally { loading = false; $("#refreshBtn").classList.remove("spin"); $("#netPill").classList.remove("busy"); renderNet(); }
+  } finally { if (loadCtrl === my) { loadCtrl = null; loading = false; $("#refreshBtn").classList.remove("spin"); $("#netPill").classList.remove("busy"); renderNet(); } }
 }
 function adopt(f, key) { D = f.D; AQ = f.AQ; U = f.U || null; TZ = D.timezone; OFF = D.utc_offset_seconds; fetchedAt = f.at; dataKey = key; }
 const cacheKey = p => [p.lat, p.lon, S.temp, S.wind, S.precip, S.model].join("|");
@@ -2349,16 +2390,25 @@ function inWarning(w, x, y) {
     return inside;
   });
 }
+// When the warnings feed itself has gone quiet (not updated for 2 hours, or gone), saying nothing would read as "all
+// clear". warnStale then holds the time of its last update ("" if unknown) and the banner says warnings are unavailable.
+let warnStale = null;
 async function loadWarnings(p) {
+  let updated;
   try {
     const r = await fetch(`${WARN_URL}${Math.floor(p.lat / 5)}_${Math.floor(p.lon / 5)}.json`, { cache: "no-cache" });
-    if (r.status === 404) warnings = []; // no warnings anywhere in this tile
-    else if (r.ok) {
-      const soon = Date.now() + 36 * 36e5; // what's on now, and what starts within the next day and a half
-      warnings = (await r.json()).warnings.filter(w => Date.parse(w.expires) > Date.now() && Date.parse(w.onset) < soon && inWarning(w, p.lon, p.lat))
+    if (r.status === 404) { // no warnings anywhere in this tile; trust that only if the feed is alive
+      warnings = [];
+      const ix = await fetch(WARN_URL.replace(/w\/$/, "index.json"), { cache: "no-cache" });
+      updated = ix.ok ? (await ix.json()).updated : null;
+    } else if (r.ok) {
+      const j = await r.json(), soon = Date.now() + 36 * 36e5; // what's on now, and what starts within the next day and a half
+      updated = j.updated;
+      warnings = j.warnings.filter(w => Date.parse(w.expires) > Date.now() && Date.parse(w.onset) < soon && inWarning(w, p.lon, p.lat))
         .sort((a, b) => b.level - a.level || Date.parse(a.onset) - Date.parse(b.onset));
-    } // other failures (offline, a hiccup): keep what was shown
-  } catch {}
+    } else return; // other failures (a hiccup): keep what was shown
+    warnStale = !updated || Date.now() - Date.parse(updated) > 2 * 36e5 ? (updated || "") : null;
+  } catch { return; } // offline: keep what was shown
   if (place === p) renderWarnings();
 }
 // "14:00", "tomorrow 06:00" or "Tue 09:00", in the place's own time
@@ -2367,7 +2417,15 @@ function whenAt(d) {
   return k === today ? fmtT(d) : k === key(new Date(Date.now() + 864e5)) ? `tomorrow ${fmtT(d)}` : `${wd(k)} ${fmtT(d)}`;
 }
 function renderWarnings() {
-  const b = $("#warn"); b.hidden = !warnings.length; if (!warnings.length) return;
+  const b = $("#warn"); b.classList.remove("stale");
+  if (!warnings.length && warnStale !== null) { // the feed is down: say so rather than show nothing
+    b.hidden = false; b.classList.add("stale"); b.style.setProperty("--wc", "#9aa0aa");
+    $("#warnT").textContent = "Warnings unavailable";
+    $("#warnS").textContent = warnStale ? `Last updated ${whenAt(new Date(warnStale))}` : "The warnings feed isn't responding";
+    b.setAttribute("aria-label", `Official weather warnings are unavailable right now. ${$("#warnS").textContent}.`);
+    return;
+  }
+  b.hidden = !warnings.length; if (!warnings.length) return;
   const w = warnings[0], [name, col] = WLEVEL[w.level] || WLEVEL[2], now = Date.now() >= Date.parse(w.onset);
   b.style.setProperty("--wc", col);
   $("#warnT").textContent = `${name} warning · ${w.type}`;
@@ -2375,6 +2433,7 @@ function renderWarnings() {
   b.setAttribute("aria-label", `${name} weather warning for ${w.type}. ${$("#warnS").textContent}. Show details.`);
 }
 $("#warn").onclick = () => {
+  if (!warnings.length) { $("#warnBody").innerHTML = `<p>The official warnings (MeteoAlarm, via KMI and the other national weather services) couldn't be refreshed for a while, so this app can't tell whether any apply right now. Check meteo.be or your national weather service.</p>`; $("#dlgWarn").showModal(); return; }
   const link = u => /^https?:\/\//.test(u) ? ` · <a href="${esc(u)}" target="_blank" rel="noopener">More details</a>` : "";
   $("#warnBody").innerHTML = warnings.map(w => {
     const [name, col] = WLEVEL[w.level] || WLEVEL[2];
@@ -2426,7 +2485,8 @@ $("#c-days").addEventListener("click", e => {
 const dlgP = $("#dlgPlaces"), dlgS = $("#dlgSet");
 document.querySelectorAll("[data-close]").forEach(b => b.onclick = () => b.closest("dialog").close());
 [dlgP, dlgS, $("#dlgDays"), $("#dlgInfo"), $("#dlgLearn"), $("#dlgWarn"), $("#dlgSpread")].forEach(d => d.addEventListener("click", e => { if (e.target === d) d.close(); }));
-const placeRow = (p, i, kind) => `<div class="row" role="button" tabindex="0" data-kind="${kind}" data-i="${i}"><span><b>${esc(p.name)}</b><span>${esc(p.sub || `${p.lat}, ${p.lon}`)}</span></span>${kind === "saved" ? `<button class="x" data-del="${i}" aria-label="Remove ${esc(p.name)}">✕</button>` : ""}</div>`;
+// a place: the row itself is a button; for saved places the remove button sits beside it (never inside another button)
+const placeRow = (p, i, kind) => `<div class="prow"><button class="row" data-kind="${kind}" data-i="${i}"><span><b>${esc(p.name)}</b><span>${esc(p.sub || `${p.lat}, ${p.lon}`)}</span></span></button>${kind === "saved" ? `<button class="x" data-del="${i}" aria-label="Remove ${esc(p.name)}">✕</button>` : ""}</div>`;
 let results = [];
 function renderSaved() {
   $("#savedList").innerHTML = saved.length ? saved.map((p, i) => placeRow(p, i, "saved")).join("") : `<p class="muted" style="margin:4px 14px;font-size:13px">No saved places yet.</p>`;
@@ -2506,7 +2566,6 @@ dlgP.addEventListener("click", e => {
   const p = row.dataset.kind === "saved" ? saved[+row.dataset.i] : results[+row.dataset.i];
   dlgP.close(); load(p);
 });
-dlgP.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.matches(".row[data-kind]")) { e.preventDefault(); e.target.click(); } });
 $("#saveCur").onclick = () => { if (!place) return; saved.push({ name: place.name, sub: place.sub, lat: place.lat, lon: place.lon }); store.set("saved", saved); renderSaved(); toast(`Saved ${place.name}`); };
 $("#placeBtn").onclick = openPlaces; $("#searchBtn").onclick = openPlaces;
 $("#locBtn").onclick = async () => {
@@ -2678,7 +2737,11 @@ setInterval(renderClock, 1000);
 (async function boot() {
   applyMode();
   // once the real lunar map is read, redraw the moon from it (until then the painted fallback shows)
-  loadMoonMap().then(() => { moonMapWait = false; moonTex = null; drawMoons(); });
+  const moonIn = () => loadMoonMap().then(() => { moonMapWait = false; moonTex = null; drawMoons(); });
+  if ("IntersectionObserver" in window) { // the 186 kB lunar map loads only as the moon card comes near the screen
+    const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { io.disconnect(); moonIn(); } }, { rootMargin: "900px 0px" });
+    io.observe(card("c-moon"));
+  } else moonIn();
   const hit = place && forecasts.get(cacheKey(place));
   if (hit) { adopt(hit, cacheKey(place)); try { renderAll(); } catch (e) { console.error(e); } }
   renderNet();
