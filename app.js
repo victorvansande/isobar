@@ -1425,9 +1425,9 @@ function yearData() {
 }
 function renderYear() {
   const el = card("c-year"), Y = (X.year = yearData());
-  el.innerHTML = `${head("Daylight", `Through ${Y.year}`)}
+  el.innerHTML = `<header class="ch"><h3>Daylight</h3><p id="yrDate"></p></header>
     <button class="hero-now" id="yrNow" hidden>Today</button>
-    <div class="yr-read"><b id="yrDate"></b><span class="num" id="yrLen"></span><span class="mono" id="yrDst"></span></div>
+    <div class="yr-read num" id="yrLen"></div>
     <p class="yr-sub" id="yrSub"></p>
     <div class="yr-chart" id="yrChart" role="slider" tabindex="0" aria-label="Day of the year. Drag or use the arrow keys to see the daylight on another day." aria-valuemin="1" aria-valuemax="${Y.days.length}">
       <canvas id="yrCv" aria-hidden="true"></canvas>
@@ -1453,18 +1453,17 @@ const hm = mins => `${Math.floor(mins / 60)}h ${String(Math.round(mins % 60)).pa
 function updateYear(i) {
   const Y = X.year; if (!Y) return;
   i = clamp(Math.round(i), 0, Y.days.length - 1); Y.cur = i;
-  const d = Y.days[i], prev = Y.days[i - 1] || d, today = Y.days[Y.today], isToday = i === Y.today;
-  const step = d.len - prev.len, longest = Y.days.reduce((a, b) => b.len > a.len ? b : a), shortest = Y.days.reduce((a, b) => b.len < a.len ? b : a);
+  const d = Y.days[i], isToday = i === Y.today;
+  const longest = Y.days.reduce((a, b) => b.len > a.len ? b : a), shortest = Y.days.reduce((a, b) => b.len < a.len ? b : a);
   $("#yrSel").style.left = `${((i + .5) / Y.days.length * 100).toFixed(2)}%`;
   $("#yrDate").textContent = isToday ? "Today" : `${wd(d.key)} ${dm_(d.key)}`;
   $("#yrLen").textContent = hm(d.len);
-  const note = d === longest ? "the longest day" : d === shortest ? "the shortest day"
-    : Math.abs(step) < .5 ? "about as long as the day before" : `${Math.abs(step) < 1 ? Math.round(Math.abs(step) * 60) + " s" : Math.round(Math.abs(step)) + " min"} ${step > 0 ? "longer" : "shorter"} than the day before`;
-  const vs = isToday ? "" : ` · ${d.len >= today.len ? "+" : "−"}${hm(Math.abs(d.len - today.len))} vs today`;
-  $("#yrSub").textContent = d.rise_t && !isNaN(d.rise_t) ? `Sunrise ${fmtT(d.rise_t)} · Sunset ${fmtT(d.set_t)} · ${note}${vs}` : d.up ? "The sun doesn't set" : "The sun doesn't rise";
-  $("#yrDst").textContent = Y.days.some(x => x.summer) ? (d.summer ? "Summer time" : "Winter time") : "";
+  // one short line: the sun's hours, which clock time it is, and only the special days get a word
+  const clock = Y.days.some(x => x.summer) ? (d.summer ? "summer time" : "winter time") : "";
+  const special = d === longest ? "longest day" : d === shortest ? "shortest day" : "";
+  $("#yrSub").textContent = d.rise_t && !isNaN(d.rise_t) ? [`${fmtT(d.rise_t)} – ${fmtT(d.set_t)}`, clock, special].filter(Boolean).join(" · ") : d.up ? "The sun doesn't set" : "The sun doesn't rise";
   $("#yrNow").hidden = isToday;
-  const box = $("#yrChart"); box.setAttribute("aria-valuenow", i + 1); box.setAttribute("aria-valuetext", `${$("#yrDate").textContent}, ${hm(d.len)} of daylight`);
+  const box = $("#yrChart"); box.setAttribute("aria-valuenow", i + 1); box.setAttribute("aria-valuetext", `${$("#yrDate").textContent}, ${hm(d.len)} of daylight, sunrise to sunset ${$("#yrSub").textContent}`);
 }
 function bindYear() {
   const box = $("#yrChart"), at = e => { const r = box.getBoundingClientRect(); return (e.clientX - r.left) / r.width * X.year.days.length - .5; };
