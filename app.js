@@ -1846,20 +1846,29 @@ function renderClouds() {
   const { c } = X, el = card("c-clouds");
   const cc = c.cloud_cover ?? 0;
   const lab = cc <= 12 ? "Clear" : cc <= 37 ? "Few clouds" : cc <= 62 ? "Scattered" : cc <= 87 ? "Broken" : "Overcast";
-  const cols = 14, rows = 6, total = cols * rows, lit = Math.round(cc / 100 * total);
+  if (el._drift) clearInterval(el._drift);
+  el.innerHTML = `${head("Cloud cover", lab)}
+    <div class="num big">${R(cc)}<small>%</small></div>
+    <div class="field"></div>`;
+  whenMeasured(() => cloudField(el, cc));
+}
+/* The dot field fills the room the card has: as many rows as fit below the number (at least six), always 14 across. */
+function cloudField(el, cc) {
+  const box = el.querySelector(".field"); if (!box) return;
+  if (el._drift) clearInterval(el._drift);
+  const cols = 14, w = box.clientWidth || 238, rowH = 13 * w / 238;
+  const rows = clamp(Math.floor((box.clientHeight - 10) / rowH), 6, 14), total = cols * rows, lit = Math.round(cc / 100 * total);
   // a smooth field that wraps around the width, so the lit dots form cloud banks that can drift and come back round
   const T = 2 * PI / cols;
   const order = Array.from({ length: total }, (_, i) => { const x = i % cols, y = Math.floor(i / cols); return [i, sin(x * T + y * .55) + .6 * sin(2 * x * T + 1.7 - y * .8) + .35 * sin(3 * x * T + 4.1 + y * 1.1) + ((i * 9301 + 49297) % 233280) / 233280 * .45]; }).sort((a, b) => b[1] - a[1]).map(a => a[0]);
   const on = new Set(order.slice(0, lit));
   let dots = ""; for (let i = 0; i < total; i++) { const x = i % cols, y = Math.floor(i / cols); dots += `<circle cx="${x * 17 + 8}" cy="${y * 13 + 7}" r="4.6" fill="currentColor"${on.has(i) ? "" : ' class="off"'}/>`; }
-  if (el._drift) clearInterval(el._drift);
-  el.innerHTML = `${head("Cloud cover", lab)}
-    <div class="num big">${R(cc)}<small>%</small></div>
-    <div class="field"><svg viewBox="0 0 238 78" aria-hidden="true">${dots}</svg></div>`;
+  box.innerHTML = `<svg viewBox="0 0 238 ${rows * 13}" aria-hidden="true">${dots}</svg>`;
+  el._fit = `${w}x${box.clientHeight}`;
   if (!lit || lit === total || calmMotion.matches) return;
   // the banks drift left to right one column at a time, like a dot-matrix ticker, at the pace of the wind:
   // a step every ~3 s when it's calm, ~1 s in a moderate breeze (5 m/s), a quarter second in a gale
-  const dotEls = el.querySelectorAll(".field circle"), ms = toMs(c.wind_speed_10m ?? 0);
+  const dotEls = box.querySelectorAll("circle"), ms = toMs(X.c.wind_speed_10m ?? 0);
   const step = clamp(3200 / (1 + ms / 2.5), 230, 3200);
   el.style.setProperty("--drift", `${Math.min(450, step * .7) | 0}ms`);
   let shift = 0;
@@ -2545,6 +2554,7 @@ window.addEventListener("resize", () => {
     // canvas effects are drawn at a fixed pixel size, so redraw them (instantly) at the new size
     const hf = $("#heroFrost"); if (hf) frostRim(hf);
     const hc = $("#humidCv"); if (hc) startCondensation(hc);
+    if (D) renderClouds(); // the cloud field fits as many rows as the card has room for
   }, 150);
 });
 const tb = $("#topbar");
