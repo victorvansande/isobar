@@ -1199,6 +1199,7 @@ function renderHourly() {
   el.dataset.view = view;
   el.innerHTML = `<div class="ch-row"><header class="ch"><h3 id="hTitle">${view === "d" ? "Next 14 days" : "Next 48 hours"}</h3>
       <p class="hv-h">${R(mn)}° to ${R(mx)}°</p>
+      <p class="hv-d" id="hDaysSub">${dayHint()}</p>
       <span class="hv-d hlinks"><button class="hall" id="hAll">Full forecast<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4.5 2.5L8 6l-3.5 3.5"/></svg></button><button class="hall" id="hSure">How sure?<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4.5 2.5L8 6l-3.5 3.5"/></svg></button></span></header>
       <div class="hseg" role="tablist" aria-label="Forecast range"><button role="tab" data-v="h" aria-selected="${view === "h"}">48 h</button><button role="tab" data-v="d" aria-selected="${view === "d"}">14 days</button></div></div>
     <div class="hscroll hv-h" tabindex="0" aria-label="Hourly forecast, scroll sideways"><div class="hin" style="grid-template-columns:repeat(${n},${colW}px);width:${W}px">${track}${cols.join("")}${svg}</div></div>
@@ -1270,9 +1271,16 @@ $("#c-hourly").addEventListener("click", e => {
   if (e.target.closest("#hAll")) openDays(null);
   if (e.target.closest("#hSure")) openSpread(0);
 });
+/* Until someone has opened a day once, the 14-day view says the days can be tapped; after that it shows their range. */
+function dayHint() {
+  if (!store.get("dayTapped", false)) return "Tap a day for its full forecast";
+  const { Dy, di } = X, lo = Math.min(...Dy.temperature_2m_min.slice(di, di + 14).filter(v => v != null)), hi = Math.max(...Dy.temperature_2m_max.slice(di, di + 14).filter(v => v != null));
+  return `${R(lo)}° to ${R(hi)}°`;
+}
 /* Pops the full 14-day stack out in a sheet; with a day number, that day comes up unfolded. */
 function openDays(n) {
   if (n != null) store.set("openDay", n);
+  if (n != null && !store.get("dayTapped", false)) { store.set("dayTapped", true); const s = $("#hDaysSub"); if (s) s.textContent = dayHint(); }
   renderDays();
   $("#dlgDays").showModal();
   const sheet = $("#dlgDays .sheet");
@@ -1549,13 +1557,14 @@ function renderAir() {
   let peak = v, peakT = null; const HA = AQ.hourly;
   if (HA) { const start = HA.time.findIndex(t => T(t) >= new Date(Date.now() - 36e5)); for (let k = Math.max(0, start); k < Math.min(HA.time.length, start + 24); k++) if ((HA.european_aqi[k] ?? 0) > peak) { peak = HA.european_aqi[k]; peakT = T(HA.time[k]); } }
   const rows = [["PM2.5", a.pm2_5, 15], ["PM10", a.pm10, 45], ["O₃", a.ozone, 100], ["NO₂", a.nitrogen_dioxide, 25], ["SO₂", a.sulphur_dioxide, 40]].filter(r => r[1] != null);
-  const scale = EAQ.map((_, i) => `<i class="${i <= li ? "on" : ""}"></i>`).join("");
+  // the scale as a row of 24 dots, five index points each (0–120), lit up to the value now
+  const scale = Array.from({ length: 24 }, (_, k) => `<i class="${k * 5 < v ? "on" : ""}"></i>`).join("");
   // the pollutant figures are for the curious: folded away behind a small toggle, which remembers its state
   const open = store.get("airOpen", false);
   el.innerHTML = `${v >= 60 ? `<span class="smog" aria-hidden="true"></span>` : ""}<div class="air${open ? " open" : ""}"><div class="air-l">${head("Air quality", L[1])}
       ${dm(String(Math.round(v)))}
       <span class="mono">European AQI${a.us_aqi != null ? ` · US AQI ${Math.round(a.us_aqi)}` : ""}</span>
-      <div class="scale" aria-hidden="true">${scale}<span class="tri" style="left:${clamp(v / 120 * 100, 2, 98)}%"></span></div>
+      <div class="scale" aria-hidden="true">${scale}<span class="tri" style="left:calc(2.5px + (100% - 5px) * ${clamp(v / 115, 0, 1).toFixed(3)})"></span></div>
       <div class="air-foot"><span class="mono">${peakT ? `Peaks at ${Math.round(peak)} around ${fmtT(peakT)}` : "Steady over the next 24 h"}</span>
       <button class="air-more mono" id="airMore" aria-expanded="${open}" aria-controls="airPol">Pollutants<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9.5l6 6 6-6"/></svg></button></div></div>
     <div class="pol-wrap" id="airPol"><div><div class="pol tile">${rows.map(([n, val, lim]) => `<div class="pol-r"><span class="mono">${n}</span><div class="mbar"><div class="fill" style="width:${clamp(val / (lim * 2) * 100, 2, 100)}%"></div><span class="lim" style="left:50%"></span></div><span class="v">${val < 10 ? val.toFixed(1) : Math.round(val)}<small>µg/m³</small></span></div>`).join("")}
@@ -1750,7 +1759,11 @@ function yearData() {
     const noonUTC = noonOf(i), off = offs[i], st = sunTimes(noonUTC, X.lat, X.lon);
     const h = t => t && !isNaN(t) ? (((t.valueOf() / 36e5 + off) % 24) + 24) % 24 : null; // a moment as hours on the local clock
     const up = sunAlt(st.noon, X.lat, X.lon) > 0;
-    days.push({ key: new Date(Date.UTC(year, 0, 1 + i)).toISOString().slice(0, 10), off, up,
+    // the sun's height every quarter of an hour of the local day: the chart is drawn from these, so it is right at any latitude
+    // (midnight sun, polar night, white nights where dusk runs into dawn), whatever the rise and set times do
+    const alt = new Float32Array(97), mid = Date.UTC(year, 0, 1 + i) - off * 36e5;
+    for (let k = 0; k <= 96; k++) alt[k] = sunAlt(new Date(mid + k * 9e5), X.lat, X.lon) / rad;
+    days.push({ key: new Date(Date.UTC(year, 0, 1 + i)).toISOString().slice(0, 10), off, up, alt,
       dawn: h(st.dawn), rise: h(st.rise), ge: h(st.goldenEnd), noon: h(st.noon), gold: h(st.golden), set: h(st.set), dusk: h(st.dusk),
       rise_t: st.rise, set_t: st.set, len: !isNaN(st.rise) && !isNaN(st.set) ? (st.set - st.rise) / 6e4 : up ? 1440 : 0 });
   }
@@ -1789,11 +1802,14 @@ function drawYear() {
   if (holdDraw) return void holdDraw.add(drawYear);
   const Y = X.year, cv = $("#yrCv"); if (!Y || !cv) return;
   const s = sizeCanvas(cv); if (!s) return;
-  const { ctx, w, h } = s, n = Y.days.length, cw = w / n;
+  const { ctx, w, h } = s, n = Y.days.length, cw = w / n, mix = window.Palette.mix;
+  // The sky's colour for the sun's height, as in the sun card: night until −6° (civil dawn), violet twilight up to
+  // sunrise, golden light up to 6°, then warming to full day at that day's highest sun, so every day keeps its glow.
   Y.days.forEach((d, i) => {
-    const g = ctx.createLinearGradient(0, 0, 0, h), add = (hr, col) => { if (hr != null) g.addColorStop(clamp(hr / 24, 0, 1), col); };
-    if (d.rise == null || d.set == null) { add(0, d.up ? YEAR_COL.day : YEAR_COL.night); add(24, d.up ? YEAR_COL.day : YEAR_COL.night); }
-    else { add(0, YEAR_COL.night); add(d.dawn ?? d.rise, YEAR_COL.night); add(d.rise, YEAR_COL.tw); add(d.ge ?? d.rise, YEAR_COL.gold); add(d.noon, YEAR_COL.day); add(d.gold ?? d.set, YEAR_COL.gold); add(d.set, YEAR_COL.tw); add(d.dusk ?? d.set, YEAR_COL.night); add(24, YEAR_COL.night); }
+    const peak = Math.max(...d.alt), g = ctx.createLinearGradient(0, 0, 0, h);
+    const sky = a => a <= -6 ? YEAR_COL.night : a <= -.833 ? mix(YEAR_COL.night, YEAR_COL.tw, (a + 6) / 5.167)
+      : a <= 6 ? mix(YEAR_COL.tw, YEAR_COL.gold, (a + .833) / 6.833) : mix(YEAR_COL.gold, YEAR_COL.day, peak > 6 ? (a - 6) / (peak - 6) : 1);
+    for (let k = 0; k <= 96; k++) g.addColorStop(k / 96, sky(d.alt[k]));
     ctx.fillStyle = g; ctx.fillRect(Math.floor(i * cw), 0, Math.ceil(cw) + 1, h);
   });
 }
@@ -2080,17 +2096,22 @@ const makeRadarLayer = () => L.GridLayer.extend({
   },
   createTile(coords, done) {
     const tile = document.createElement("canvas"); tile.width = tile.height = 256;
-    const z = Math.min(coords.z, 7), k = 2 ** (coords.z - z), img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      if (!tile.width) return; // dropped while its image was loading
-      // the part of the source tile this tile shows, plus a few pixels around it so the softening has neighbours
-      const sw = 256 / k, pad = 3, sx = (coords.x % k) * sw, sy = (coords.y % k) * sw;
-      const x0 = Math.max(0, sx - pad), y0 = Math.max(0, sy - pad), x1 = Math.min(256, sx + sw + pad), y1 = Math.min(256, sy + sw + pad);
+    // The area of RainViewer's zoom-7 (or lower) world this tile shows: sw source pixels square at (sx, sy). A shifted
+    // layer (options.shift, in source pixels) takes its area from elsewhere, which can span up to four source tiles;
+    // without a shift each tile reads only its own source tile.
+    const z = Math.min(coords.z, 7), k = 2 ** (coords.z - z), sw = 256 / k, pad = 3, n = 2 ** z;
+    const [shx, shy] = this.options.shift || [0, 0], sx = coords.x * sw - shx, sy = coords.y * sw - shy;
+    let x0 = Math.floor(sx - pad), y0 = Math.floor(sy - pad), x1 = Math.ceil(sx + sw + pad), y1 = Math.ceil(sy + sw + pad);
+    if (!shx && !shy) { const ox = Math.floor(coords.x / k) * 256, oy = Math.floor(coords.y / k) * 256; x0 = Math.max(ox, x0); y0 = Math.max(oy, y0); x1 = Math.min(ox + 256, x1); y1 = Math.min(oy + 256, y1); } // radar now: its own source tile only
+    const parts = [];
+    for (let ty = Math.floor(y0 / 256); ty <= Math.floor((y1 - 1) / 256); ty++) for (let tx = Math.floor(x0 / 256); tx <= Math.floor((x1 - 1) / 256); tx++) if (ty >= 0 && ty < n) parts.push([tx, ty]);
+    let left = parts.length; const imgs = [];
+    const finish = () => {
+      if (!tile.width) return; // dropped while its images were loading
       const w = x1 - x0, h = y1 - y0;
       radarScratch.width = w; radarScratch.height = h;
       const s = radarScratch.getContext("2d", { willReadFrequently: true });
-      s.drawImage(img, x0, y0, w, h, 0, 0, w, h);
+      for (const [img, tx, ty] of imgs) s.drawImage(img, tx * 256 - x0, ty * 256 - y0);
       const im = s.getImageData(0, 0, w, h), p = im.data;
       softBlur(p, w, h);
       for (let i = 0; i < p.length; i += 4) {
@@ -2105,8 +2126,13 @@ const makeRadarLayer = () => L.GridLayer.extend({
       c.drawImage(radarScratch, sx - x0, sy - y0, sw, sw, 0, 0, 256, 256);
       done(null, tile);
     };
-    img.onerror = () => done(null, tile);
-    img.src = this.options.url.replace("{z}", z).replace("{x}", Math.floor(coords.x / k)).replace("{y}", Math.floor(coords.y / k));
+    if (!left) { done(null, tile); return tile; }
+    for (const [tx, ty] of parts) {
+      const img = new Image(); img.crossOrigin = "anonymous";
+      img.onload = () => { imgs.push([img, tx, ty]); if (!--left) finish(); };
+      img.onerror = () => { if (!--left) finish(); };
+      img.src = this.options.url.replace("{z}", z).replace("{x}", ((tx % n) + n) % n).replace("{y}", ty);
+    }
     return tile;
   }
 });
@@ -2167,11 +2193,13 @@ async function initRadar() {
     radarHost = j.host; radarLoaded = Date.now();
     layers.forEach(l => map.removeLayer(l)); stopLoop();
     const past = (j.radar && j.radar.past) || [], fut = (j.radar && j.radar.nowcast) || [];
+    const tileUrl = f => `${radarHost}${f.path}/256/{z}/{x}/{y}/2/1_1.png`;
     frames = [...past.map(f => ({ ...f, fut: false })), ...fut.map(f => ({ ...f, fut: true }))];
-    layers = frames.map(f => new RadarLayer({ url: `${radarHost}${f.path}/256/{z}/{x}/{y}/2/1_1.png`, opacity: 0, maxZoom: 12, zIndex: 10 })); // show() puts the ones it needs on the map
-    $("#rTicks").innerHTML = frames.map((f, i) => `<button class="${f.fut ? "fut" : ""}" data-i="${i}" aria-label="Frame ${i + 1}"></button>`).join("");
+    layers = frames.map(f => new RadarLayer({ url: tileUrl(f), opacity: 0, maxZoom: 12, zIndex: 10 })); // show() puts the ones it needs on the map
+    const ticks = () => { $("#rTicks").innerHTML = frames.map((f, i) => `<button class="${f.fut ? "fut" : ""}" data-i="${i}" aria-label="${f.fut ? "Forecast frame" : "Frame"} ${i + 1}"></button>`).join(""); };
+    ticks();
     $("#rTicks").onclick = e => { const b = e.target.closest("button"); if (b) { stopLoop(); show(+b.dataset.i); } };
-    $("#radarSub").textContent = fut.length ? "Last 2 hours and next 30 min" : "Last 2 hours";
+    $("#radarSub").textContent = ""; // the timeline below says which hours are shown
     show(past.length - 1);
   } catch { $("#radarSub").textContent = navigator.onLine ? "Radar is unavailable right now" : "Offline"; }
 }
@@ -2183,7 +2211,7 @@ function show(i) {
   layers.forEach((l, k) => {
     if (!near(k)) { if (map.hasLayer(l)) map.removeLayer(l); return; }
     if (!map.hasLayer(l)) l.addTo(map);
-    l.setOpacity(k === fi ? .8 : 0);
+    l.setOpacity(k === fi ? (frames[k].fut ? .62 : .8) : 0); // forecast frames a little fainter: they are an estimate
   });
   [...$("#rTicks").children].forEach((b, k) => b.classList.toggle("cur", k === fi));
   const t = new Date(frames[fi].time * 1000), mins = Math.round((t - Date.now()) / 6e4);
@@ -2215,9 +2243,11 @@ function renderClock() {
   el.querySelectorAll(".ck").forEach((slot, i) => { if (slot.dataset.c !== chars[i]) { slot.dataset.c = chars[i]; slot.innerHTML = dm(chars[i]); } });
   el.querySelector(".ck-ap").textContent = ap;
   el.setAttribute("aria-label", `Local time ${hh}:${mm}${ap ? " " + ap : ""}`);
+  $("#tbTime").textContent = `${hh}:${mm}${ap ? " " + ap : ""}`; // the same time, quietly, in the top bar that shows on scrolling
 }
 function renderPlace() {
   $("#placeName").textContent = place ? place.name : "Isobar";
+  { const len = (place ? place.name : "").length, h = $("#placeName").parentElement; h.classList.toggle("long", len > 11 && len <= 17); h.classList.toggle("longer", len > 17); }
   $("#tbName").textContent = place ? place.name : "";
   const t = D ? localDateLabel(new Date()) : ""; // the time itself lives in the dot-matrix clock pill
   $("#placeSub").textContent = place ? [place.sub, t].filter(Boolean).join(" · ") : "Finding your location";

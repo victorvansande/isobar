@@ -118,7 +118,11 @@ dialog:focus-visible,.sheet:focus-visible{outline:none} /* opening a sheet focus
 .wx p{margin:0 0 8px;font-size:14px;line-height:1.5;color:var(--ink-2)}
 .wx a{color:var(--ink);font-size:13px}
 .place{display:grid;text-align:left;min-width:0}
-.place h1{margin:0;font-weight:700;font-size:clamp(34px,5.2vw,56px);letter-spacing:-.04em;line-height:1;display:flex;align-items:center;gap:10px;text-wrap:balance}
+.place h1{margin:0;font-weight:700;font-size:clamp(34px,5.2vw,56px);letter-spacing:-.04em;line-height:1.05;display:flex;align-items:center;gap:10px;min-width:0}
+/* the place name always stays on one line: long names get a smaller size, and a very long one is cut with an ellipsis */
+#placeName{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.place h1.long{font-size:clamp(26px,4vw,44px)}
+.place h1.longer{font-size:clamp(22px,3.2vw,36px)}
 .place h1 svg{width:22px;height:22px;flex:none;opacity:.45;stroke:currentColor;fill:none;stroke-width:2}
 .place .sub{font-weight:600;font-size:clamp(16px,2vw,20px);letter-spacing:-.02em;color:var(--ink-2);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .top-r{display:flex;gap:8px;align-items:center;flex:none}
@@ -269,7 +273,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .muted{color:var(--ink-2)}
 .empty{margin:auto 0;color:var(--ink-2);font-size:14px;max-width:34ch}
 /* the app's pointer: a short raspberry capsule standing across the scale, like a needle */
-.tri{position:absolute;width:5px;height:12px;border-radius:3px;background:var(--signal);margin-left:-2.5px;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.tri{position:absolute;width:4px;height:12px;border-radius:2px;background:var(--signal);margin-left:-2px;box-shadow:0 1px 3px rgba(0,0,0,.3)}
 
 /* dot matrix numerals */
 .dm{display:block;overflow:visible}
@@ -523,9 +527,10 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .air{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:0 20px;flex:1}
 .air-l{display:flex;flex-direction:column}
 .air-l .dm{height:58px;margin:8px 0 6px;align-self:flex-start}
-.scale{display:grid;grid-template-columns:repeat(6,1fr);gap:3px;margin-top:auto;position:relative;padding-top:14px}
-.scale i{height:5px;border-radius:3px;background:rgba(255,255,255,.28)}
-.scale i.on{background:#fff}
+/* the air-quality scale: a row of dots like the other scales, lit up to the value (the pointer marks it exactly) */
+.scale{display:flex;justify-content:space-between;align-items:center;margin:auto -2.5px 0;position:relative;padding-top:16px;height:6px;box-sizing:content-box}
+.scale i{width:5px;height:5px;border-radius:50%;background:var(--ink-3);transform:scale(.62)}
+.scale i.on{background:var(--ink);transform:none}
 .scale .tri{top:0}
 .air:not(.open){grid-template-columns:minmax(0,1fr)}
 .air-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:8px}
@@ -614,6 +619,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 /* ---------- radar ---------- */
 .card.a-radar{padding:0;min-height:440px}
 .a-radar .ch{position:absolute;z-index:500;top:14px;left:14px;pointer-events:none;padding:10px 14px;border-radius:18px}
+.a-radar .ch p:empty{display:none} /* only a message (offline, unavailable) shows under the title */
 .here-pin{border-radius:50%;background:var(--signal);box-shadow:0 0 0 2.5px #fff,0 1px 4px rgba(0,0,0,.3)}
 #radarMap{position:absolute;inset:6px;border-radius:calc(var(--r-card) - 6px);overflow:hidden;background:#474749}
 /* Leaflet adds map tiles together ("plus-lighter"); on a screen with a fractional pixel ratio their antialiased edges
@@ -676,6 +682,8 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 /* the temperature in dot-matrix, as on the main card, at the clock's size */
 .topbar #tbTemp{display:flex;align-items:center}
 .topbar #tbTemp .dm{height:17px}
+/* the local time in the top bar: small and quiet, after a hairline */
+.topbar .tb-time{font:500 12px/1 var(--f-mono);letter-spacing:.04em;color:rgba(255,255,255,.58);padding-left:10px;border-left:1px solid rgba(255,255,255,.18);white-space:nowrap}
 
 /* ---------- sheets ---------- */
 dialog{border:0;padding:0;background:transparent;color:#fff;max-width:none;max-height:none;width:100%;height:100%;margin:0;overflow:visible}
