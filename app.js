@@ -803,7 +803,7 @@ function renderHero() {
   X.sun = scrub ? { rise: a0, set: a1, f, cur: f, body } : null;
   const mi = mp && moonIllum(new Date(now));
   const dot = mp
-    ? `<g id="sunDot" class="sun-dot" transform="translate(${px} ${py})"><circle r="9" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="1"/><circle r="5" fill="#fff" fill-opacity=".18"/><path d="${moonSvg(mi.phase, 5)}" fill="#fff"${X.moon && X.moon.south ? ' transform="scale(-1 1)"' : ""}/></g>`
+    ? `<g id="sunDot" class="sun-dot" transform="translate(${px} ${py})"><circle r="9" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="1"/><circle r="6.5" fill="#fff" fill-opacity=".2"/><path d="${moonSvg(mi.phase, 6.5)}" fill="#fff"${X.moon && X.moon.south ? ' transform="scale(-1 1)"' : ""}/></g>`
     : `<g id="sunDot" class="sun-dot" transform="translate(${px} ${py})" opacity="${up ? 1 : .5}"><circle r="9" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="1"/><circle r="4" fill="#fff"/></g>`;
   const arc = `<svg viewBox="0 0 300 108" aria-hidden="true">
     <line x1="0" y1="95" x2="300" y2="95" stroke="rgba(255,255,255,.45)" stroke-width="1.6" stroke-dasharray="0 6" stroke-linecap="round"/>
