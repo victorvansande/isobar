@@ -775,25 +775,44 @@ function renderHero() {
   const rise = Dy.sunrise[di] ? T(Dy.sunrise[di]) : null, set = Dy.sunset[di] ? T(Dy.sunset[di]) : null;
   const st = sunTimes(dayOf(X.todayKey), X.lat, X.lon);
   const now = Date.now();
+  const sunDay = !!(rise && set && !isNaN(rise));
+  const up = sunDay ? now >= rise && now <= set : sunAlt(new Date(), X.lat, X.lon) > 0;
   let f = 0, mid = "";
-  if (rise && set && !isNaN(rise)) {
+  if (sunDay) {
     f = clamp((now - rise) / (set - rise), 0, 1);
     if (now < rise) mid = `Sunrise in ${inMins((rise - now) / 6e4)}`;
     else if (now > set) { const nr = Dy.sunrise[di + 1] ? T(Dy.sunrise[di + 1]) : null; mid = nr ? `Sunrise in ${inMins((nr - now) / 6e4)}` : "After sunset"; }
     else mid = `Solar noon ${fmtT(st.noon)}`;
-  } else mid = sunAlt(new Date(), X.lat, X.lon) > 0 ? "Midnight sun" : "Polar night";
-  arcDay = rise && set && !isNaN(rise) ? { rise, set, peak: Math.max(0, sunAlt(st.noon, X.lat, X.lon)) } : null; // peak: the sun's highest point today
+  } else mid = up ? "Midnight sun" : "Polar night";
+  // By day the arc follows the sun. After dark it follows the moon while the moon is up, from moonrise to moonset,
+  // as high as the moon climbs tonight; with no moon in the sky the sun waits, dimmed, for the morning.
+  const mp = up ? null : moonPass(new Date(now));
+  let a0 = rise, a1 = set, body = "sun";
+  if (mp) { a0 = mp.rise; a1 = mp.set; body = "moon"; f = clamp((now - a0) / (a1 - a0), 0, 1); }
+  arcDay = mp ? { peak: mp.peak } : sunDay ? { peak: Math.max(0, sunAlt(st.noon, X.lat, X.lon)) } : null; // peak: the highest point on today's path
   const [px, py] = arcPoint(f).map(v => v.toFixed(1));
-  const up = rise && set && now >= rise && now <= set;
-  const scrub = !!(rise && set && !isNaN(rise));
-  X.sun = scrub ? { rise, set, f, cur: f } : null;
+  const scrub = !!(mp || sunDay);
+  // the weather along the path: rain or snow hours as a soft band under the arc, heavy cloud as a faint one
+  const segs = scrub ? arcWeather(a0, a1) : [];
+  if (body === "sun" && up && sunDay) {
+    const wet = g => g.type === "wet" || g.type === "snow";
+    const cur = segs.find(g => now >= g.t0 && now < g.t1);
+    const next = cur && wet(cur) ? segs.find(g => g.t0 >= cur.t1 && !wet(g)) : segs.find(g => g.t0 > now && wet(g));
+    if (next) mid = cur && wet(cur) ? `Dry from ${fmtT(next.h)}` : `${next.type === "snow" ? "Snow" : "Rain"} from ${fmtT(next.h)}`;
+  }
+  X.sun = scrub ? { rise: a0, set: a1, f, cur: f, body } : null;
+  const mi = mp && moonIllum(new Date(now));
+  const dot = mp
+    ? `<g id="sunDot" class="sun-dot" transform="translate(${px} ${py})"><circle r="9" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="1"/><circle r="5" fill="#fff" fill-opacity=".18"/><path d="${moonSvg(mi.phase, 5)}" fill="#fff"${X.moon && X.moon.south ? ' transform="scale(-1 1)"' : ""}/></g>`
+    : `<g id="sunDot" class="sun-dot" transform="translate(${px} ${py})" opacity="${up ? 1 : .5}"><circle r="9" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="1"/><circle r="4" fill="#fff"/></g>`;
   const arc = `<svg viewBox="0 0 300 108" aria-hidden="true">
     <line x1="0" y1="95" x2="300" y2="95" stroke="rgba(255,255,255,.45)" stroke-width="1.6" stroke-dasharray="0 6" stroke-linecap="round"/>
+    ${segs.filter(g => g.type).map(g => `<path class="awx awx-${g.type}" d="${arcPath(g.f0, g.f1)}"/>`).join("")}
     <path id="arcDone" d="${arcPath(0, f)}" fill="none" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/>
     <path id="arcLeft" d="${arcPath(f, 1)}" fill="none" stroke="rgba(255,255,255,.38)" stroke-width="1.2" stroke-dasharray="2 4"/>
     <line id="arcDrop" x1="${px}" y1="${py}" x2="${px}" y2="95" stroke="rgba(255,255,255,.55)" stroke-width="1" stroke-dasharray="1 3"/>
     <circle cx="30" cy="95" r="2.6" fill="#fff"/><circle cx="150" cy="95" r="2.6" fill="#fff"/><circle cx="270" cy="95" r="2.6" fill="#fff"/>
-    <g id="sunDot" class="sun-dot" transform="translate(${px} ${py})" opacity="${up ? 1 : .5}"><circle r="9" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="1"/><circle r="4" fill="#fff"/></g>
+    ${dot}
   </svg>`;
   const [label] = wmo(c.weather_code);
   // The sky behind the card, painted back to front so combined weather stacks naturally:
@@ -824,10 +843,11 @@ function renderHero() {
     <div class="hero-meta"><span id="heroFeels">Feels like ${R(c.apparent_temperature)}°</span><span>High ${R(Dy.temperature_2m_max[di])}° · Low ${R(Dy.temperature_2m_min[di])}°</span></div>
     <div class="arc"><div class="arc-in" id="arcIn"${scrub ? ` role="slider" tabindex="0" aria-label="Time of day. Drag the sun or use the arrow keys to see the temperature at that hour." aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(f * 100)}" aria-valuetext="Now"` : ""}>${arc}</div></div>
     <div class="hero-foot">
-      <div><b>${fmtT(rise)}</b><span>Sunrise</span></div>
+      <div><b>${fmtT(a0)}</b><span>${mp ? "Moonrise" : "Sunrise"}</span></div>
       <div class="mid"><span id="heroMid">${esc(mid)}</span></div>
-      <div class="r"><b>${fmtT(set)}</b><span>Sunset</span></div>
+      <div class="r"><b>${fmtT(a1)}</b><span>${mp ? "Moonset" : "Sunset"}</span></div>
     </div>`;
+  glowAt(f);
   $("#tbIc").innerHTML = icon(kind, isDay);
   const tbT = $("#tbTemp"); tbT.innerHTML = dm(String(R(c.temperature_2m)), { deg: true }); tbT.setAttribute("aria-label", `${R(c.temperature_2m)} degrees`);
   if (scrub) bindSunScrub();
@@ -856,6 +876,52 @@ const arcPath = (f0, f1) => {
   for (let i = 0; i <= n; i++) { const [x, y] = arcPoint(f0 + (f1 - f0) * i / n); d += `${i ? "L" : "M"}${x.toFixed(1)} ${y.toFixed(1)}`; }
   return d;
 };
+/* The moon's current trip across the sky (null while it is down): rise and set to the minute, and its highest point. */
+function moonPass(t) {
+  const hc = .133 * rad, up = x => moonAlt(new Date(x), X.lat, X.lon) > hc, now = t.valueOf(), step = 6e5, lim = 30 * 36e5;
+  if (!up(now)) return null;
+  let a = now, b = now;
+  while (now - a < lim && up(a - step)) a -= step;
+  while (b - now < lim && up(b + step)) b += step;
+  if (now - a >= lim || b - now >= lim) return null; // a moon that never sets has no arc to draw
+  const edge = (out, inn) => { for (let i = 0; i < 7; i++) { const m = (out + inn) / 2; if (up(m)) inn = m; else out = m; } return (out + inn) / 2; };
+  a = edge(a - step, a); b = edge(b + step, b);
+  let peak = 0; for (let x = a; x <= b; x += step) peak = Math.max(peak, moonAlt(new Date(x), X.lat, X.lon));
+  return { rise: new Date(a), set: new Date(b), peak };
+}
+/* The lit part of the moon as an SVG path around 0,0 (same shape as moonLitPath on the moon card). */
+function moonSvg(p, r) {
+  const k = cos(2 * PI * p), rx = Math.max(r * Math.abs(k), .01).toFixed(2), sw = k > 0 ? 0 : 1;
+  return p < .5 ? `M0 ${-r}A${r} ${r} 0 0 1 0 ${r}A${rx} ${r} 0 0 ${sw} 0 ${-r}Z` : `M0 ${r}A${r} ${r} 0 0 1 0 ${-r}A${rx} ${r} 0 0 ${sw} 0 ${r}Z`;
+}
+/* The hourly weather along the arc between a0 and a1, merged into runs: "wet" (rain, drizzle, thunder), "snow",
+   "cloud" (75% cover or more) or "" (fair). f0/f1 are positions on the arc, h the first hour of the run. */
+function arcWeather(a0, a1) {
+  const H = X.H, A = a0.valueOf(), B = a1.valueOf(), segs = [];
+  H.time.forEach((s, k) => {
+    const t = T(s).valueOf(), from = Math.max(t - 18e5, A), to = Math.min(t + 18e5, B);
+    if (to <= from) return;
+    const kd = wmo(H.weather_code[k])[1], mm = toMm(H.precipitation[k] ?? 0);
+    const type = kd === "snow" || kd === "sleet" ? "snow" : ["rain", "drizzle", "thunder"].includes(kd) || mm >= .1 ? "wet" : (H.cloud_cover[k] ?? 0) >= 75 ? "cloud" : "";
+    const last = segs.at(-1);
+    if (last && last.type === type && last.t1 === from) { last.t1 = to; last.f1 = (to - A) / (B - A); }
+    else segs.push({ type, t0: from, t1: to, f0: (from - A) / (B - A), f1: (to - A) / (B - A), h: new Date(Math.max(t, A)) });
+  });
+  return segs;
+}
+/* The warm light on a clear day sits where the sun is: low on the left in the morning, highest at noon, low on the
+   right in the evening, and it turns golden as the sun nears the horizon. */
+function glowAt(f) {
+  const g = $("#c-hero .sunglow"), s = X.sun;
+  if (!g || !s || s.body !== "sun") return;
+  const [x, y] = arcPoint(f), lift = clamp((95 - y) / 82, 0, 1);
+  const alt = sunAlt(new Date(s.rise.valueOf() + f * (s.set - s.rise)), X.lat, X.lon) / rad, warm = clamp(1 - alt / 14, 0, 1);
+  const gx = x / 300 * 112 - 6;
+  g.style.setProperty("--gx", `${gx.toFixed(1)}%`);
+  g.style.setProperty("--gy", `${(24 - lift * 34).toFixed(1)}%`);
+  g.style.setProperty("--ga", `${(99 + 81 * clamp((gx + 6) / 112, 0, 1)).toFixed(1)}deg`); // rays fan away from the sun, straight down at noon
+  g.style.setProperty("--ray", `255 ${Math.round(247 - 52 * warm)} ${Math.round(226 - 90 * warm)}`);
+}
 /* Hourly values at any instant, interpolated between the two nearest hours. */
 function hourAt(t) {
   const H = X.H; let k = H.time.findIndex(s => T(s) > t) - 1;
@@ -879,8 +945,10 @@ function scrubSun(f) {
   $("#heroWhen").textContent = fmtT(t);
   $("#heroSub").textContent = label;
   $("#heroFeels").textContent = `Feels like ${R(h.feels)}°`;
-  $("#heroMid").textContent = `Sun ${Math.max(0, Math.round(sunAlt(t, X.lat, X.lon) / rad))}° above the horizon`;
-  paint(card("c-hero"), weatherPal(Math.round(toC(h.temp) * 2) / 2, kind, true));
+  const moon = s.body === "moon";
+  $("#heroMid").textContent = `${moon ? "Moon" : "Sun"} ${Math.max(0, Math.round((moon ? moonAlt : sunAlt)(t, X.lat, X.lon) / rad))}° above the horizon`;
+  paint(card("c-hero"), weatherPal(Math.round(toC(h.temp) * 2) / 2, kind, sunAlt(t, X.lat, X.lon) > 0)); // the moon is often up by day too
+  glowAt(f);
   $("#heroUpd").hidden = true; $("#heroNow").hidden = false;
   const box2 = $("#arcIn"); box2.setAttribute("aria-valuenow", Math.round(f * 100)); box2.setAttribute("aria-valuetext", `${fmtT(t)}, ${v} degrees, ${label}`);
 }

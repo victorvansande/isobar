@@ -289,6 +289,11 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .hero-now{position:absolute;top:18px;right:18px;padding:8px 12px;border-radius:999px;font:500 11px/1 var(--f-mono);letter-spacing:.06em;text-transform:uppercase;background:var(--signal);color:var(--signal-ink)}
 .pig.hero{transition:background-color .5s}
 .arc svg{width:100%;height:auto;display:block;overflow:visible}
+/* the weather along the sun or moon path: rain and snow hours as a soft band, heavy cloud as a faint one */
+.arc .awx{fill:none;stroke-width:6;stroke-linecap:round}
+.arc .awx-wet{stroke:#a9d6ff;stroke-opacity:.5}
+.arc .awx-snow{stroke:#fff;stroke-opacity:.5}
+.arc .awx-cloud{stroke:#fff;stroke-opacity:.2}
 .hero-foot{display:grid;grid-template-columns:1fr auto 1fr;align-items:end;margin-top:4px}
 .hero-foot div{display:grid;gap:1px}
 .hero-foot b{font:400 20px/1 var(--f-num);letter-spacing:-.02em}
@@ -452,18 +457,18 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .cloud i{position:absolute;border-radius:50%;background:var(--cc)}
 @keyframes cloudflow{from{transform:translateX(-105%)}to{transform:translateX(calc(100cqw + 5%))}}
 .overcast-sky{position:absolute;inset:0;background:linear-gradient(180deg,rgba(150,152,178,.34),rgba(150,152,178,.08) 55%,transparent 80%)}
-/* a clear day: warm light in the corner that breathes */
+/* a clear day: warm light that breathes, placed where the sun is (glowAt sets --gx, --gy, --ga and --ray) */
 .sunglow{position:absolute;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
-.sunglow::before{content:"";position:absolute;width:90%;aspect-ratio:1;right:-34%;top:-38%;border-radius:50%;
-  background:radial-gradient(closest-side,rgba(255,248,226,.55),rgba(255,236,190,.16) 45%,transparent 75%);animation:sunpulse 9s ease-in-out infinite alternate}
-/* god rays: two sets of irregular, soft beams fanning down-left from the corner, fading with distance and
+.sunglow::before{content:"";position:absolute;width:90%;aspect-ratio:1;left:var(--gx,89%);top:var(--gy,4%);translate:-50% -50%;border-radius:50%;
+  background:radial-gradient(closest-side,rgb(var(--ray,255 247 226) / .55),rgb(var(--ray,255 236 190) / .16) 45%,transparent 75%);animation:sunpulse 9s ease-in-out infinite alternate}
+/* god rays: two sets of irregular, soft beams fanning away from the sun, fading with distance and
    swaying slowly against each other, like light shafts rather than drawn lines */
-.sunglow::after,.sunglow i{content:"";position:absolute;inset:0;transform-origin:104% -4%;
-  -webkit-mask-image:radial-gradient(135% 115% at 104% -4%,#000 0%,rgba(0,0,0,.55) 38%,transparent 78%);mask-image:radial-gradient(135% 115% at 104% -4%,#000 0%,rgba(0,0,0,.55) 38%,transparent 78%)}
+.sunglow::after,.sunglow i{content:"";position:absolute;inset:0;transform-origin:var(--gx,104%) var(--gy,-4%);
+  -webkit-mask-image:radial-gradient(135% 115% at var(--gx,104%) var(--gy,-4%),#000 0%,rgba(0,0,0,.55) 38%,transparent 78%);mask-image:radial-gradient(135% 115% at var(--gx,104%) var(--gy,-4%),#000 0%,rgba(0,0,0,.55) 38%,transparent 78%)}
 .sunglow::after{filter:blur(7px);animation:raysway 17s ease-in-out infinite alternate;
-  background:conic-gradient(from 180deg at 104% -4%,transparent 0deg 7deg,rgba(255,247,226,.26) 11deg,transparent 17deg 22deg,rgba(255,247,226,.15) 26deg,transparent 31deg,rgba(255,247,226,.32) 39deg,rgba(255,247,226,.08) 46deg,transparent 51deg 57deg,rgba(255,247,226,.2) 62deg,transparent 68deg,rgba(255,247,226,.12) 75deg,transparent 81deg 360deg)}
+  background:conic-gradient(from var(--ga,180deg) at var(--gx,104%) var(--gy,-4%),transparent 0deg 7deg,rgb(var(--ray,255 247 226) / .26) 11deg,transparent 17deg 22deg,rgb(var(--ray,255 247 226) / .15) 26deg,transparent 31deg,rgb(var(--ray,255 247 226) / .32) 39deg,rgb(var(--ray,255 247 226) / .08) 46deg,transparent 51deg 57deg,rgb(var(--ray,255 247 226) / .2) 62deg,transparent 68deg,rgb(var(--ray,255 247 226) / .12) 75deg,transparent 81deg 360deg)}
 .sunglow i{filter:blur(11px);opacity:.85;animation:raysway 24s ease-in-out infinite alternate-reverse;
-  background:conic-gradient(from 180deg at 104% -4%,transparent 0deg 3deg,rgba(255,240,214,.18) 7deg,transparent 13deg 19deg,rgba(255,240,214,.28) 31deg,transparent 37deg 44deg,rgba(255,240,214,.16) 53deg,transparent 60deg 66deg,rgba(255,240,214,.22) 70deg,transparent 77deg 360deg)}
+  background:conic-gradient(from var(--ga,180deg) at var(--gx,104%) var(--gy,-4%),transparent 0deg 3deg,rgb(var(--ray,255 247 226) / .18) 7deg,transparent 13deg 19deg,rgb(var(--ray,255 247 226) / .28) 31deg,transparent 37deg 44deg,rgb(var(--ray,255 247 226) / .16) 53deg,transparent 60deg 66deg,rgb(var(--ray,255 247 226) / .22) 70deg,transparent 77deg 360deg)}
 @keyframes sunpulse{from{transform:scale(1);opacity:.8}to{transform:scale(1.12);opacity:1}}
 @keyframes raysway{from{transform:rotate(-3.5deg);opacity:.7}to{transform:rotate(3deg);opacity:1}}
 /* frost on the main card */
