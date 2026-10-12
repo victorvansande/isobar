@@ -1,5 +1,7 @@
 # Every half hour: fetch the official weather warnings from MeteoAlarm and publish them, tiled by location, on the
 # "warnings" branch, where the app reads them (see tools/warnings.mjs). The branch always holds a single commit.
+# GitHub often delays or skips scheduled runs (some days only a few start), so each run keeps refreshing every half
+# hour for about five and a half hours; a newer run cancels the older one. Public repositories have free minutes.
 name: Weather warnings
 on:
   schedule:
@@ -14,7 +16,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 350
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -25,21 +27,30 @@ jobs:
         with:
           path: .geo
           key: region-outlines-v1
-      - name: Build warnings
-        run: node tools/warnings.mjs out
-      - name: Publish to the warnings branch
-        working-directory: out
-        run: |
-          git init -q -b warnings
-          git config user.name "isobar-warnings"
-          git config user.email "isobar-warnings@users.noreply.github.com"
-          git add -A
-          git commit -qm "Weather warnings $(date -u +%Y-%m-%dT%H:%MZ)"
-          git push -qf "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" warnings
       # GitHub pauses scheduled workflows in a repository without commits for 60 days. Switching this one on again
       # (a no-op while it runs) resets that clock, so the warnings keep coming while the app's code stands still.
+      # It runs first, because a newer run may cancel this one before the loop below ends.
       - name: Keep the schedule alive
         if: github.event_name == 'schedule'
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/warnings.yml/enable" || true
+      - name: Build and publish, every half hour
+        env:
+          PUSH_URL: https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+        run: |
+          publish() {
+            cd out
+            git init -q -b warnings
+            git config user.name "isobar-warnings"
+            git config user.email "isobar-warnings@users.noreply.github.com"
+            git add -A
+            git commit -qm "Weather warnings $(date -u +%Y-%m-%dT%H:%MZ)"
+            git push -qf "$PUSH_URL" warnings
+          }
+          for round in $(seq 1 11); do
+            rm -rf out
+            if node tools/warnings.mjs out; then (publish) || echo "publish failed, trying again next round"
+            else echo "build failed, trying again next round"; fi
+            if [ "$round" -lt 11 ]; then sleep 1800; fi
+          done

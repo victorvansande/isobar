@@ -119,7 +119,8 @@ function dm(str, { deg = false, ghost = true } = {}) {
   }
   if (deg) { [".#.", "#.#", ".#."].forEach((row, y) => [...row].forEach((v, cx) => { if (v === "#") on.push([x + cx, y, 1]); })); x += 3; }
   else x -= 1;
-  let s = `<svg class="dm" viewBox="-0.5 -0.5 ${x} 7" aria-hidden="true">`;
+  // --dshift: how far to slide the number so its digits, not digits plus degree sign, sit on the centre line
+  let s = `<svg class="dm" viewBox="-0.5 -0.5 ${x} 7" aria-hidden="true"${deg ? ` style="--dshift:${(200 / x).toFixed(2)}%"` : ""}>`;
   if (ghost) for (const [a, b] of off) s += `<circle class="g" cx="${a}" cy="${b}" r=".33"/>`;
   for (const [a, b, small] of on) s += `<circle class="o" cx="${a}" cy="${b}" r="${small ? .3 : .4}" style="--d:${(((a * 7 + b * 13) % 17) / 17 * .55).toFixed(2)}s"/>`;
   return s + "</svg>";
@@ -922,6 +923,7 @@ function renderHero() {
   // the rainbow stands on the horizon line of the arc below
   if (rb) whenMeasured(() => { const b = el.querySelector(".rainbow"), s = el.querySelector(".arc svg"); if (!b || !s) return; const cr = el.getBoundingClientRect(), sr = s.getBoundingClientRect(); b.style.setProperty("--rb-hy", `${((sr.top + sr.height * (95 - vy) / (108 - vy) - cr.top) / cr.height * 100).toFixed(1)}%`); });
   $("#tbIc").innerHTML = icon(kind, isDay);
+  $("#tbIc").classList.toggle("lift", kind === "cloudy" || kind === "partly"); // cloud icons sit high to leave room for rain; alone in the bar they are centred
   const tbT = $("#tbTemp"); tbT.innerHTML = dm(String(R(c.temperature_2m)), { deg: true }); tbT.setAttribute("aria-label", `${R(c.temperature_2m)} degrees`);
   if (scrub) bindSunScrub();
   // below 0° the card frosts over at the rim (fades in the first time only); from 28° it shimmers
@@ -1691,7 +1693,7 @@ function renderSun() {
   const grad = stops.sort((a, b) => a[0] - b[0]).map(([f, c]) => `<stop offset="${(f * 100).toFixed(2)}%" stop-color="${c}"/>`).join("");
   const sunsh = Dy.sunshine_duration[di];
   X.sunCard = { mid0, t: null };
-  el.innerHTML = `<div class="ch-row"><header class="ch"><h3 id="sunWhen">Sun</h3><p id="sunSub" hidden></p></header><span class="mono" id="sunChange" style="text-align:right">${chTxt}</span></div>
+  el.innerHTML = `<div class="ch-row"><header class="ch"><h3 id="sunWhen">Sun</h3><p id="sunSub"></p></header><span class="mono" id="sunChange" style="text-align:right">${chTxt}</span></div>
     <button class="hero-now" id="sunNow" hidden>Back to now</button>
     <div class="band" id="sunBand" role="slider" tabindex="0" aria-label="Time of day. Drag, scroll or use the arrow keys to see the sun at another hour." aria-valuemin="0" aria-valuemax="1440"><svg viewBox="0 0 1000 30" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="sb">${grad}</linearGradient></defs><rect width="1000" height="30" fill="url(#sb)"/></svg><span class="tri" id="sunTri"></span>
       <div class="band-axis tm"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div></div>
@@ -1717,7 +1719,7 @@ function updateSun(t) {
   $("#sunTri").style.left = `${(f * 100).toFixed(2)}%`;
   const state = alt > 6 ? `Sun ${Math.round(alt)}° high` : alt > -.8 ? "Golden hour" : alt > -6 ? "Twilight" : "Night";
   $("#sunWhen").textContent = live ? "Sun" : fmtT(at);
-  $("#sunSub").textContent = state; $("#sunSub").hidden = live; // the length of the day lives in the Daylight card
+  $("#sunSub").textContent = state; $("#sunSub").hidden = false; // now too: golden hour, twilight, night or how high the sun stands
   $("#sunChange").hidden = !live; $("#sunNow").hidden = live;
   const band = $("#sunBand");
   band.setAttribute("aria-valuenow", Math.round(f * 1440));
@@ -1931,6 +1933,7 @@ function renderRain() {
   el.innerHTML = `${head("Rain", "Today")}
     <div class="num big">${fmtP(today)}<small>${PU()}</small></div>
     <div class="spark"><svg viewBox="0 0 240 42" preserveAspectRatio="none" aria-hidden="true">${bars}</svg></div>
+    <div class="spark-ax">${[0, 12, 23].map(k => H.time[hi + k] ? `<span class="tm">${k ? fmtT(T(H.time[hi + k])) : "Now"}</span>` : "<span></span>").join("")}</div>
     <div class="foot"><span>Next 24 h <b>${fmtP(sum24)} ${PU()}</b></span><span>${pop != null ? `<b>${pop}%</b> chance` : ""}</span></div>`;
 }
 
@@ -2455,10 +2458,13 @@ function whenAt(d) {
   const key = x => new Date(x.valueOf() + OFF * 1000).toISOString().slice(0, 10), today = key(new Date()), k = key(d);
   return k === today ? fmtT(d) : k === key(new Date(Date.now() + 864e5)) ? `tomorrow ${fmtT(d)}` : `${wd(k)} ${fmtT(d)}`;
 }
+// the notice that warnings are unavailable can be hidden; it comes back when the feed goes quiet again another time
+const warnHideKey = () => warnStale || `none ${new Date().toDateString()}`;
 function renderWarnings() {
-  const b = $("#warn"); b.classList.remove("stale");
+  const b = $("#warn"), x = $("#warnX"); b.classList.remove("stale"); x.hidden = true;
   if (!warnings.length && warnStale !== null) { // the feed is down: say so rather than show nothing
-    b.hidden = false; b.classList.add("stale"); b.style.setProperty("--wc", "#9aa0aa");
+    if (store.get("warnHide", null) === warnHideKey()) { b.hidden = true; return; }
+    b.hidden = false; x.hidden = false; b.classList.add("stale"); b.style.setProperty("--wc", "#9aa0aa");
     $("#warnT").textContent = "Warnings unavailable";
     $("#warnS").textContent = warnStale ? `Last updated ${whenAt(new Date(warnStale))}` : "The warnings feed isn't responding";
     b.setAttribute("aria-label", `Official weather warnings are unavailable right now. ${$("#warnS").textContent}.`);
@@ -2471,6 +2477,7 @@ function renderWarnings() {
   $("#warnS").textContent = [now ? `Until ${whenAt(new Date(w.expires))}` : `From ${whenAt(new Date(w.onset))}`, warnings.length > 1 ? `+${warnings.length - 1} more` : (w.areas[0] || "")].filter(Boolean).join(" · ");
   b.setAttribute("aria-label", `${name} weather warning for ${w.type}. ${$("#warnS").textContent}. Show details.`);
 }
+$("#warnX").onclick = () => { store.set("warnHide", warnHideKey()); renderWarnings(); };
 $("#warn").onclick = () => {
   if (!warnings.length) { $("#warnBody").innerHTML = `<p>The official warnings (MeteoAlarm, via KMI and the other national weather services) couldn't be refreshed for a while, so this app can't tell whether any apply right now. Check meteo.be or your national weather service.</p>`; $("#dlgWarn").showModal(); return; }
   const link = u => /^https?:\/\//.test(u) ? ` · <a href="${esc(u)}" target="_blank" rel="noopener">More details</a>` : "";

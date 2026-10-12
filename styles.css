@@ -101,7 +101,14 @@ dialog:focus-visible,.sheet:focus-visible{outline:none} /* opening a sheet focus
 .summary{margin:-6px 4px 18px;max-width:46ch;font-size:17px;font-weight:500;line-height:1.4;letter-spacing:-.01em;color:var(--ink);text-wrap:pretty}
 .summary:empty{display:none}
 /* official weather warning: a calm glass banner with the level as a coloured dot (yellow, orange, red) */
-.warn{display:flex;align-items:center;gap:12px;width:calc(100% - 8px);margin:-8px 4px 20px;padding:12px 16px 12px 14px;border-radius:20px;text-align:left;color:var(--ink)}
+.warn-wrap{position:relative;margin:-8px 4px 20px}
+.warn-wrap:has(.warn[hidden]){display:none}
+/* the "unavailable" notice can be put away: a small cross where the chevron would be */
+.warn-x{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:34px;height:34px;color:var(--ink-2)}
+.warn.stale svg{display:none}
+.warn.stale{padding-right:44px}
+.warn-x:active{transform:translateY(-50%) scale(.93)}
+.warn{display:flex;align-items:center;gap:12px;width:100%;margin:0;padding:12px 16px 12px 14px;border-radius:20px;text-align:left;color:var(--ink)}
 .warn[hidden]{display:none}
 .warn .wl{width:10px;height:10px;border-radius:50%;flex:none;background:var(--wc);box-shadow:0 0 0 4px color-mix(in srgb,var(--wc) 25%,transparent)}
 .warn span{flex:1;min-width:0;display:grid;gap:2px}
@@ -299,7 +306,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .hero-moon svg{display:block;width:100%;height:100%}
 .hero-upd:not([hidden]) + .hero-moon{top:46px}
 .hero-temp{display:flex;justify-content:center;margin:26px 0 14px}
-.hero-temp .dm{height:clamp(112px,15vw,168px)}
+.hero-temp .dm{height:clamp(112px,15vw,168px);transform:translateX(var(--dshift,0))} /* centred on the digits; the degree sign hangs to the right */
 .hero-meta{text-align:center;font-weight:600;font-size:15px;letter-spacing:-.01em;display:grid;gap:2px}
 .hero-meta span:not(:first-child){color:var(--ink-2)}
 .hero-meta .clim{font-size:13px;font-weight:500;margin-top:2px}
@@ -339,7 +346,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .compass{position:relative;width:min(100%,200px);aspect-ratio:1;margin:0 auto}
 .compass svg{position:relative;width:100%;height:100%;display:block}
 .compass-c{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:6px}
-.compass-c .dm{height:34px}
+.compass-c .dm{height:42px}
 
 /* ---------- feels ---------- */
 .ftrack{position:relative;height:46px;margin:16px 4px 6px}
@@ -520,7 +527,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 @keyframes smog{to{transform:translate(14%,5%)}}
 .gauge svg{width:100%;height:auto;display:block;overflow:visible}
 .gauge-v{position:absolute;left:0;right:0;bottom:0;text-align:center}
-.gauge-v .dm{height:32px;margin:0 auto 4px}
+.gauge-v .dm{height:40px;margin:0 auto 4px}
 
 /* ---------- humidity ---------- */
 /* humidity as a water level: the card fills like a glass, with a slowly moving surface; the dotted line on top is 100%: saturated air, where water starts to condense out as dew, mist or fog */
@@ -596,7 +603,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .dial{position:relative;width:min(100%,190px);margin:0 auto;color:var(--ink)}
 .dial svg{width:100%;height:auto;display:block;overflow:visible}
 .dial-v{position:absolute;left:0;right:0;top:50%;transform:translateY(-44%);text-align:center}
-.dial-v .dm{height:25px;margin:0 auto 8px}
+.dial-v .dm{height:27px;margin:0 auto 8px}
 .vis{margin:auto -20px -20px;padding-top:12px;color:var(--ink)}
 /* atmospheric depth: near ridges dark, far ones blue-grey under a blue sky; lost ones wash into the haze colour */
 .a-vis{--v-near:#1d1a2a;--v-far:#8f99bd;--v-haze:#e7e4ec;--v-sky:#a9c6ff}
@@ -610,6 +617,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 @keyframes ridgebob{from{translate:0 0}to{translate:0 3px}}
 .vis text{font:500 9px var(--f-label);fill:var(--ink-2)}
 .spark svg{width:100%;height:42px;display:block;margin-top:10px}
+.spark-ax{display:flex;justify-content:space-between;margin-top:5px} /* now on the left, so the bars read as the next 24 hours */
 .field svg{width:100%;height:auto;display:block;margin:4px 0 6px}
 .a-clouds .field{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center}
 .a-clouds .field circle{opacity:.95;transform-box:fill-box;transform-origin:center;transition:transform var(--drift,.45s) ease,opacity var(--drift,.45s) ease}
@@ -688,6 +696,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
   transform:translate(-50%,-160%);transition:transform .45s cubic-bezier(.3,.8,.2,1);color:#fff;max-width:calc(100% - 32px)}
 .topbar.show{transform:translate(-50%,0)}
 .topbar .ic{width:22px;height:22px}
+.topbar .lift .ic{transform:translateY(3.2px)}
 .topbar b{font-weight:650;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .topbar span{font:300 20px/1 var(--f-num)}
 /* the temperature in dot-matrix, as on the main card, at the clock's size */
@@ -819,7 +828,7 @@ html.wall .board{flex:1;min-height:0;gap:16px;grid-template-columns:repeat(9,min
    "moon moon radar radar radar sun sun press vis"
    "air air pollen pollen pollen sun sun rain clouds"}
 html.wall .board>.card{min-height:0}
-.wall-x{position:fixed;top:14px;right:14px;z-index:1100;opacity:0;transition:opacity .3s}
+.wall-x{position:fixed;top:14px;right:14px;z-index:1100;opacity:.45;transition:opacity .3s} /* always findable, quietly; full strength on hover */
 html.wall .wall-x:hover,html.wall .wall-x:focus-visible{opacity:1}
 html:not(.wall) .wall-x{display:none}
 .wall-link{display:block;margin-top:18px;padding:0;font-size:12.5px;color:var(--ink-2);text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--ink-3)}
