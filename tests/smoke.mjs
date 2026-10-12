@@ -153,6 +153,7 @@ async function run(engine, name, viewport, variant = "normal") {
     check("and back", (await page.textContent("#placeName")) === "Herentals", await page.textContent("#placeName"));
     // the radar: zoom in and out (this once ran Safari out of memory)
     await page.locator("#c-radar").scrollIntoViewIfNeeded();
+    await page.waitForSelector("#radarMap .leaflet-pane", { timeout: 8000 }).catch(() => {}); // the map loads as the radar nears the screen
     for (let i = 0; i < 4; i++) { await tap(page, "#zIn"); await page.waitForTimeout(250); }
     for (let i = 0; i < 4; i++) { await tap(page, "#zOut"); await page.waitForTimeout(250); }
     check("radar survives zooming", await page.evaluate(() => !!document.querySelector("#radarMap .leaflet-pane")).catch(() => false));

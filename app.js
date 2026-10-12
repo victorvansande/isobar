@@ -195,6 +195,10 @@ function moonShape(ctx, cx, cy, r, phase, mirror, lit, dark) {
   moonLitPath(ctx, cx, cy, r, phase); ctx.fillStyle = lit; ctx.fill();
   ctx.restore();
 }
+/* Canvases size themselves from the page layout. While renderAll rebuilds the cards, their drawing waits until every card
+   is in place (holdDraw), so the browser lays the page out once instead of once per canvas. Same frame, same result. */
+let holdDraw = null;
+const whenMeasured = fn => holdDraw ? holdDraw.add(fn) : fn();
 function sizeCanvas(cv) {
   const dpr = Math.min(window.devicePixelRatio || 1, 2), w = cv.clientWidth, h = cv.clientHeight;
   if (!w || !h) return null;
@@ -233,32 +237,40 @@ const smoothstep = (e0, e1, x) => { const t = clamp((x - e0) / (e1 - e0), 0, 1);
 /* The full-moon surface, painted once per size and reused for every phase: soft seas with noise-warped edges,
    mottled highlands, ~160 small soft craters (mostly in the southern highlands), the bright rayed craters,
    and a gentle darkening toward the rim. */
-let moonTex = null, moonMap = null;
-/* NASA's lunar surface map (assets/moon-map.js), read once into pixel data. */
+let moonTex = null, moonMap = null, moonMapWait = true;
+/* NASA's lunar surface map (assets/moon-map.js), fetched after the app has started and read once into pixel data.
+   Until it's in (moonMapWait), the big moon isn't painted at all, rather than spending a long moment painting the
+   stand-in surface that would be replaced a split second later; the stand-in is only for when the map can't load. */
 function loadMoonMap() {
   return new Promise(res => {
-    if (!window.MOON_MAP) return res(null);
-    const img = new Image();
-    img.onload = () => {
-      const c = document.createElement("canvas"); c.width = img.width; c.height = img.height;
-      const x = c.getContext("2d"); x.drawImage(img, 0, 0);
-      try { moonMap = { w: img.width, h: img.height, d: x.getImageData(0, 0, img.width, img.height).data }; } catch { moonMap = null; }
-      res(moonMap);
+    const read = () => {
+      if (!window.MOON_MAP) return res(null);
+      const img = new Image();
+      // decoded off the main thread; only the near side (the middle half of the map, longitudes −90° to 90°) is read
+      const take = () => {
+        const W = img.width, x0 = W / 4, cw = W / 2, c = document.createElement("canvas"); c.width = cw; c.height = img.height;
+        const x = c.getContext("2d", { willReadFrequently: true }); x.drawImage(img, x0, 0, cw, img.height, 0, 0, cw, img.height);
+        try { moonMap = { w: W, h: img.height, d: x.getImageData(0, 0, cw, img.height).data, x0, cw }; } catch { moonMap = null; }
+        res(moonMap);
+      };
+      img.src = window.MOON_MAP;
+      (img.decode ? img.decode() : new Promise((ok, no) => { img.onload = ok; img.onerror = no; })).then(take, () => res(null));
     };
-    img.onerror = () => res(null);
-    img.src = window.MOON_MAP;
+    if (window.MOON_MAP) return read();
+    const s = document.createElement("script"); s.src = "assets/moon-map.js"; s.onload = read; s.onerror = () => res(null);
+    document.head.appendChild(s);
   });
 }
 /* The real near side: the map projected onto the disc as seen from Earth (orthographic, longitude 0 facing us),
    turned to soft grey with a faint cool tint and a touch of darkening toward the rim. */
 function moonTextureReal(size) {
   const cv = document.createElement("canvas"); cv.width = cv.height = size;
-  const c = cv.getContext("2d"), img = c.createImageData(size, size), p = img.data, { w, h, d } = moonMap;
+  const c = cv.getContext("2d"), img = c.createImageData(size, size), p = img.data, { w, h, d, x0, cw } = moonMap;
   for (let py = 0; py < size; py++) for (let px = 0; px < size; px++) {
     const u = (px + .5) / size * 2 - 1, v = (py + .5) / size * 2 - 1, r2 = u * u + v * v, i = (py * size + px) * 4;
     if (r2 > 1) { p[i + 3] = 0; continue; }
     const lat = Math.asin(-v), cl = Math.cos(lat), lon = cl > 1e-6 ? Math.asin(clamp(u / cl, -1, 1)) : 0;
-    const tx = Math.min(w - 1, Math.floor((lon / (2 * PI) + .5) * w)), ty = Math.min(h - 1, Math.floor((.5 - lat / PI) * h)), j = (ty * w + tx) * 4;
+    const tx = clamp(Math.floor((lon / (2 * PI) + .5) * w) - x0, 0, cw - 1), ty = Math.min(h - 1, Math.floor((.5 - lat / PI) * h)), j = (ty * cw + tx) * 4;
     const lum = (d[j] * .3 + d[j + 1] * .59 + d[j + 2] * .11) / 255;
     const shade = clamp(lum * 1.3 + .15, 0, 1) * (.86 + .14 * Math.sqrt(1 - r2)); // slightly softened contrast keeps it calm
     p[i] = 248 * shade; p[i + 1] = 247 * shade; p[i + 2] = Math.min(255, 258 * shade);
@@ -306,7 +318,7 @@ function moonTexture(size) {
 /* Matte moon: the painted surface shown only where the sun lights it, with a faint trace on the dark side (earthshine).
    South of the equator the moon appears upside down, so the whole face turns 180°. */
 function drawBigMoon(cv, phase, south) {
-  const s = sizeCanvas(cv); if (!s) return;
+  const s = sizeCanvas(cv); if (!s || moonMapWait) return;
   const { ctx, w } = s, cx = w / 2, cy = w / 2, r = w * .4, tex = moonTexture(Math.round(r * 2 * (cv.width / w)));
   ctx.save();
   if (south) { ctx.translate(cx, cy); ctx.rotate(PI); ctx.translate(-cx, -cy); } // the 180° turn also flips the lit side
@@ -859,7 +871,7 @@ function renderHero() {
   const tbT = $("#tbTemp"); tbT.innerHTML = dm(String(R(c.temperature_2m)), { deg: true }); tbT.setAttribute("aria-label", `${R(c.temperature_2m)} degrees`);
   if (scrub) bindSunScrub();
   // below 0° the card frosts over at the rim (fades in the first time only); from 28° it shimmers
-  if (cold) frostRim($("#heroFrost"), 17, !heroFrostGrown);
+  if (cold) { const grow = !heroFrostGrown; whenMeasured(() => frostRim($("#heroFrost"), 17, grow)); }
   heroFrostGrown = cold;
   setHaze("hero", tC >= 28 ? clamp(4 + (tC - 28) * 1.5, 4, 14) : 0);
 }
@@ -1124,7 +1136,7 @@ function renderHourly() {
       <span class="hv-d hlinks"><button class="hall" id="hAll">Full forecast<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4.5 2.5L8 6l-3.5 3.5"/></svg></button><button class="hall" id="hSure">How sure?<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4.5 2.5L8 6l-3.5 3.5"/></svg></button></span></header>
       <div class="hseg" role="tablist" aria-label="Forecast range"><button role="tab" data-v="h" aria-selected="${view === "h"}">48 h</button><button role="tab" data-v="d" aria-selected="${view === "d"}">14 days</button></div></div>
     <div class="hscroll hv-h" tabindex="0" aria-label="Hourly forecast, scroll sideways"><div class="hin" style="grid-template-columns:repeat(${n},${colW}px);width:${W}px">${track}${cols.join("")}${svg}</div></div>
-    <div class="hscroll hv-d" tabindex="0" aria-label="Daily forecast, scroll sideways">${dayStrip()}</div>`;
+    <div class="hscroll hv-d" id="hDays" tabindex="0" aria-label="Daily forecast, scroll sideways">${view === "d" ? dayStrip() : ""}</div>`; // the hidden view is built when it is first opened
 }
 /* The next 14 days as columns: each day's low-to-high range as a bar on one shared scale, coloured by temperature,
    with the chance of rain in dots. Tapping a day opens the full forecast with that day unfolded. */
@@ -1158,6 +1170,7 @@ $("#c-hourly").addEventListener("click", e => {
   const tab = e.target.closest(".hseg button");
   if (tab) {
     const v = tab.dataset.v, el = card("c-hourly"); store.set("hview", v); el.dataset.view = v;
+    if (v === "d" && !$("#hDays").firstChild) $("#hDays").innerHTML = dayStrip();
     el.querySelectorAll(".hseg button").forEach(b => b.setAttribute("aria-selected", String(b === tab)));
     $("#hTitle").textContent = v === "d" ? "Next 14 days" : "Next 48 hours";
     return;
@@ -1403,7 +1416,7 @@ function renderHumid() {
     <div class="num big">${R(h)}<small>%</small></div>
     <div class="foot"><span>Dew point <b>${R(dp)}°</b></span><button class="info-i" id="humidInfo" aria-label="How humidity, dew and fog work"><svg viewBox="0 0 12 12"><path d="M6 5.4v3.6"/><path d="M6 3h.01"/></svg></button></div>`;
   $("#humidInfo").onclick = () => openLearn(c.temperature_2m, dp, h);
-  if (wet) startCondensation($("#humidCv")); else condStop();
+  if (wet) whenMeasured(() => startCondensation($("#humidCv"))); else condStop();
 }
 
 /* A plain-language explainer of humidity, dew point, dew, frost and fog, starting from today's numbers. */
@@ -1508,6 +1521,7 @@ function updateMoon(off) {
 }
 function drawMoons() {
   if (!X.moon || !D) return;
+  if (holdDraw) return void holdDraw.add(drawMoons);
   const cv = $("#moonCv"), st = $("#moonStrip"); if (!cv || !st) return;
   drawBigMoon(cv, X.moon.phase, X.moon.south);
   drawStrip(st, X.moonOff || 0, X.moon.base, X.moon.south);
@@ -1621,8 +1635,12 @@ function bindSunCard() {
    card: night, twilight, golden hour and daylight. Times are on the place's own clock, so the jumps where it switches
    between winter and summer time show as a step. Drag across it (or use the arrow keys) to read any day. */
 const YEAR_COL = { night: "#120a3a", tw: "#6a3fe0", gold: "#ff8a3c", day: "#ffe6b0" };
+// the year's 365 days only change with the place and the year, so they're worked out once and kept
+let yearKept = null;
 function yearData() {
-  const year = +new Date(Date.now() + OFF * 1000).toISOString().slice(0, 4), fmt = new Intl.DateTimeFormat("en-GB", { timeZone: TZ, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+  const year = +new Date(Date.now() + OFF * 1000).toISOString().slice(0, 4), yk = `${year}|${X.lat}|${X.lon}|${TZ}`;
+  if (yearKept && yearKept.k === yk) { const t = yearKept.days.findIndex(d => d.key === X.todayKey); return { year, days: yearKept.days, today: t < 0 ? 0 : t }; }
+  const fmt = new Intl.DateTimeFormat("en-GB", { timeZone: TZ, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
   const offH = d => { const p = Object.fromEntries(fmt.formatToParts(d).map(x => [x.type, x.value])); return (Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute) - d.valueOf()) / 36e5; };
   const days = [], n = (Date.UTC(year + 1, 0, 1) - Date.UTC(year, 0, 1)) / 864e5;
   for (let i = 0; i < n; i++) {
@@ -1635,6 +1653,7 @@ function yearData() {
   }
   const minOff = Math.min(...days.map(d => d.off));
   days.forEach(d => { d.summer = d.off > minOff; });
+  yearKept = { k: yk, days };
   const today = days.findIndex(d => d.key === X.todayKey);
   return { year, days, today: today < 0 ? 0 : today };
 }
@@ -1654,6 +1673,7 @@ function renderYear() {
   bindYear();
 }
 function drawYear() {
+  if (holdDraw) return void holdDraw.add(drawYear);
   const Y = X.year, cv = $("#yrCv"); if (!Y || !cv) return;
   const s = sizeCanvas(cv); if (!s) return;
   const { ctx, w, h } = s, n = Y.days.length, cw = w / n;
@@ -1917,7 +1937,8 @@ function softBlur(p, w, h) {
     if (al > 0) { const m = 255 / al; p[i] = a[i] * m; p[i + 1] = a[i + 1] * m; p[i + 2] = a[i + 2] * m; }
   }
 }
-const RadarLayer = window.L ? L.GridLayer.extend({
+let RadarLayer = null;
+const makeRadarLayer = () => L.GridLayer.extend({
   // few spare tiles and no redraws mid-zoom: every tile is a recoloured canvas, and iOS has a hard cap on canvas memory
   options: { keepBuffer: 1, updateWhenZooming: false },
   onAdd(map) {
@@ -1956,10 +1977,35 @@ const RadarLayer = window.L ? L.GridLayer.extend({
     img.src = this.options.url.replace("{z}", z).replace("{x}", Math.floor(coords.x / k)).replace("{y}", Math.floor(coords.y / k));
     return tile;
   }
-}) : null;
+});
+/* The map library (Leaflet) only loads once the radar is about to scroll into view; its stylesheet goes in front of
+   the app's own, where it always stood, so the app's styles still win. */
+const LEAFLET = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/";
+let leafletP = null;
+function loadLeaflet() {
+  if (window.L) return Promise.resolve(true);
+  return leafletP || (leafletP = new Promise(res => {
+    const css = document.createElement("link"); css.rel = "stylesheet"; css.href = LEAFLET + "leaflet.min.css";
+    const js = document.createElement("script"); js.src = LEAFLET + "leaflet.min.js";
+    let left = 2; const one = () => { if (!--left) res(!!window.L); };
+    const fail = () => { leafletP = null; css.remove(); js.remove(); res(false); };
+    css.onload = one; js.onload = one; css.onerror = js.onerror = fail;
+    document.head.insertBefore(css, document.querySelector('link[href="styles.css"]'));
+    document.head.appendChild(js);
+  }));
+}
+/* The radar wakes up when its card comes within a long scroll of the screen (or straight away if it's already
+   near), so a launch doesn't spend time and data on a map far down the page. Runs one at a time. */
+let radarNear = !("IntersectionObserver" in window), radarRun = Promise.resolve();
+const wantRadar = () => { if (radarNear && D) radarRun = radarRun.then(initRadar).catch(e => console.error(e)); };
+if (!radarNear) {
+  const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { io.disconnect(); radarNear = true; wantRadar(); } }, { rootMargin: "1400px 0px" });
+  io.observe(card("c-radar"));
+}
 async function initRadar() {
   const box = $("#radarMap");
-  if (!window.L) { box.innerHTML = `<p class="empty" style="padding:60px 20px">The map library didn't load. Check your connection and refresh.</p>`; return; }
+  if (!(await loadLeaflet())) { box.innerHTML = `<p class="empty" style="padding:60px 20px">The map library didn't load. Check your connection and refresh.</p>`; return; }
+  if (!RadarLayer) RadarLayer = makeRadarLayer();
   const ll = [D.latitude, D.longitude];
   if (!map) {
     map = L.map(box, { zoomControl: false, scrollWheelZoom: false, attributionControl: false }).setView(ll, 7);
@@ -2020,11 +2066,18 @@ function applyMode() {
   $('meta[name="theme-color"]').content = m === "day" ? "#e8e7ef" : "#08080b";
   if (base) base.setUrl(esri("Base"));
 }
+// runs every second: the formatter is made once per clock style and time zone, and nothing is touched unless the minute changed
+let clockFmt = null, clockShown = "";
 function renderClock() {
-  if (!D) return;
-  const parts = new Intl.DateTimeFormat(S.clock === "12" ? "en-US" : "en-GB", { hour: S.clock === "12" ? "numeric" : "2-digit", minute: "2-digit", hour12: S.clock === "12", timeZone: TZ }).formatToParts(new Date());
+  if (!D || document.hidden) return;
+  const fk = S.clock + TZ;
+  if (!clockFmt || clockFmt.k !== fk) clockFmt = { k: fk, f: new Intl.DateTimeFormat(S.clock === "12" ? "en-US" : "en-GB", { hour: S.clock === "12" ? "numeric" : "2-digit", minute: "2-digit", hour12: S.clock === "12", timeZone: TZ }) };
+  const parts = clockFmt.f.formatToParts(new Date());
   const get = t => (parts.find(p => p.type === t) || {}).value || "";
   const hh = get("hour"), mm = get("minute"), ap = get("dayPeriod").toLowerCase(), chars = [...`${hh}:${mm}`], el = $("#clock");
+  const shown = `${hh}:${mm}${ap}`;
+  if (shown === clockShown && el.dataset.len) return;
+  clockShown = shown;
   if (+el.dataset.len !== chars.length) { el.innerHTML = chars.map(() => `<span class="ck"></span>`).join("") + `<span class="mono ck-ap"></span>`; el.dataset.len = chars.length; }
   el.querySelectorAll(".ck").forEach((slot, i) => { if (slot.dataset.c !== chars[i]) { slot.dataset.c = chars[i]; slot.innerHTML = dm(chars[i]); } });
   el.querySelector(".ck-ap").textContent = ap;
@@ -2039,9 +2092,13 @@ function renderPlace() {
 }
 function renderAll() {
   derive(); applyMode(); renderPlace(); renderClock();
-  const parts = [renderSummary, renderHero, renderNow, renderWind, renderFeels, renderHourly, renderDays, renderUV, renderHumid, renderAir, renderMoon, renderSun, renderYear, renderPress, renderVis, renderRain, renderClouds, renderPollen, renderSrc];
+  // the full 14-day stack lives in a sheet: it's built when the sheet opens (openDays), and here only if it's open
+  const parts = [renderSummary, renderHero, renderNow, renderWind, renderFeels, renderHourly, ...($("#dlgDays").open ? [renderDays] : []), renderUV, renderHumid, renderAir, renderMoon, renderSun, renderYear, renderPress, renderVis, renderRain, renderClouds, renderPollen, renderSrc];
+  holdDraw = new Set();
   for (const f of parts) { try { f(); } catch (e) { console.error(f.name, e); } }
-  initRadar();
+  const draws = holdDraw; holdDraw = null; // every card is in place: now the canvases measure and draw
+  for (const f of draws) { try { f(); } catch (e) { console.error(e); } }
+  wantRadar();
   loadClimate();
 }
 
@@ -2064,6 +2121,9 @@ async function loadClimate() {
   if (climBusy === key || !navigator.onLine) return;
   climBusy = key;
   try {
+    // a one-off download of about half a megabyte: wait until the app has settled, so it never competes with the forecast
+    await new Promise(r => "requestIdleCallback" in window ? requestIdleCallback(() => r(), { timeout: 4000 }) : setTimeout(r, 1500));
+    if (climKey(X.lat, X.lon) !== key) return; // moved on to another place meanwhile
     const u = `https://archive-api.open-meteo.com/v1/archive?latitude=${X.lat}&longitude=${X.lon}&start_date=${CLIM_FROM}-01-01&end_date=${CLIM_TO}-12-31&daily=temperature_2m_max,temperature_2m_min&timezone=auto&timeformat=unixtime`;
     const j = await (await fetch(u)).json(), t = j.daily && j.daily.time;
     if (!t || !t.length) return;
@@ -2147,15 +2207,18 @@ function adopt(f, key) { D = f.D; AQ = f.AQ; U = f.U || null; TZ = D.timezone; O
 const cacheKey = p => [p.lat, p.lon, S.temp, S.wind, S.precip, S.model].join("|");
 /* The last forecast of the six most recent places and settings, so they open offline too. */
 const forecasts = {
+  mem: null, // read from storage once; afterwards kept in memory, so a refresh doesn't parse every stored forecast again
   all() {
-    const c = store.get("forecasts", null); if (c) return c;
+    if (this.mem) return this.mem;
+    const c = store.get("forecasts", null); if (c) return (this.mem = c);
     const old = store.get("cache", null); // the single-place cache of earlier versions
-    return old && old.key ? { [old.key]: { D: old.D, AQ: old.AQ, at: old.at } } : {};
+    return (this.mem = old && old.key ? { [old.key]: { D: old.D, AQ: old.AQ, at: old.at } } : {});
   },
   get(key) { return this.all()[key] || null; },
   put(key, f) {
     const c = this.all(); c[key] = f;
     const keys = Object.keys(c).sort((a, b) => c[b].at - c[a].at);
+    this.mem = Object.fromEntries(keys.slice(0, 6).map(k => [k, c[k]]));
     // a full storage keeps fewer places rather than none
     for (let n = Math.min(6, keys.length); n > 0; n--) {
       try { localStorage.setItem("isobar:forecasts", JSON.stringify(Object.fromEntries(keys.slice(0, n).map(k => [k, c[k]])))); break; } catch {}
@@ -2435,7 +2498,8 @@ window.addEventListener("resize", () => {
   }, 150);
 });
 const tb = $("#topbar");
-window.addEventListener("scroll", () => { const on = scrollY > 160 && !!D; tb.classList.toggle("show", on); tb.setAttribute("aria-hidden", String(!on)); }, { passive: true });
+let tbOn = null; // touch the top bar only when it actually shows or hides, not on every scroll event
+window.addEventListener("scroll", () => { const on = scrollY > 160 && !!D; if (on === tbOn) return; tbOn = on; tb.classList.toggle("show", on); tb.setAttribute("aria-hidden", String(!on)); }, { passive: true });
 document.addEventListener("visibilitychange", () => { if (!document.hidden && place && Date.now() - fetchedAt > 10 * 6e4) { load(place, { quiet: true }); followMe(); } });
 
 /* A place found by location follows you: on launch and on coming back to the app, if location is already allowed,
@@ -2476,13 +2540,13 @@ if (document.documentElement.classList.contains("standalone")) {
   });
 }
 setInterval(() => { if (place && !document.hidden) load(place, { quiet: true }); }, 10 * 6e4);
-setInterval(() => { if (D) { renderPlace(); renderNet(); } }, 30e3);
+setInterval(() => { if (D && !document.hidden) { renderPlace(); renderNet(); } }, 30e3);
 setInterval(renderClock, 1000);
 
 (async function boot() {
   applyMode();
   // once the real lunar map is read, redraw the moon from it (until then the painted fallback shows)
-  loadMoonMap().then(m => { if (m) { moonTex = null; drawMoons(); } });
+  loadMoonMap().then(() => { moonMapWait = false; moonTex = null; drawMoons(); });
   const hit = place && forecasts.get(cacheKey(place));
   if (hit) { adopt(hit, cacheKey(place)); try { renderAll(); } catch (e) { console.error(e); } }
   renderNet();
