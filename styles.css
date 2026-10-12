@@ -806,3 +806,9 @@ html.wall .moon-stats{gap:8px}
 html.wall .a-moon .strip{margin-top:4px}
 html.wall .a-moon{padding-top:14px}
 html.wall .a-moon .strip canvas{height:46px}
+
+/* a pale sky on the main card (snow, fog): dark text, lines and falling flakes instead of white */
+.pig.hero.light{--ink:#18202e;--ink-2:rgba(24,32,46,.62);--ink-3:rgba(24,32,46,.3);color:var(--ink)}
+.hero.light .fx i{background:linear-gradient(to bottom,rgba(60,75,110,0),rgba(60,75,110,.6))}
+.hero.light .fx.snow i,.hero.light .fx.hail i{background:#7f90b8}
+.hero.light .stars i{background:#4a5a80}

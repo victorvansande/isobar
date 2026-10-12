@@ -7,7 +7,7 @@ const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "
 const cap1 = s => s ? s[0].toUpperCase() + s.slice(1) : s;
 const R = v => (v == null || isNaN(v)) ? "–" : Math.round(v);
 const nz = v => v == null || isNaN(v) ? null : v;
-const { FAM, weatherPal, heroPal, paint } = window.Palette;
+const { FAM, weatherPal, heroPal, lum, paint } = window.Palette;
 
 /* The dock's refraction uses an SVG filter inside backdrop-filter, which only Chromium renders. */
 if (navigator.userAgentData && navigator.userAgentData.brands.some(b => /Chromium/.test(b.brand))) document.documentElement.classList.add("lq");
@@ -795,6 +795,7 @@ function renderHero() {
   // the sky outside right now: the sun's height and the weather set the colour, the temperature tints it
   const tC = toC(c.temperature_2m), pal = heroPal(Math.round(sunAlt(new Date(), X.lat, X.lon) / rad * 2) / 2, kind, tC);
   paint(el, pal);
+  el.classList.toggle("light", lum(pal.mid) > .42); // a pale sky (snow, fog) takes dark text
   const au = $("#aurora"); paint(au, pal);
   au.style.setProperty("--x", (tC < 13 ? FAM.coral : FAM.cobalt).mid);
   const rise = Dy.sunrise[di] ? T(Dy.sunrise[di]) : null, set = Dy.sunset[di] ? T(Dy.sunset[di]) : null;
@@ -828,15 +829,15 @@ function renderHero() {
   X.sun = scrub ? { rise: a0, set: a1, f, cur: f, body } : null;
   const mi = mp && moonIllum(new Date(now));
   const dot = mp
-    ? `<g id="sunDot" class="sun-dot" transform="translate(${px} ${py})"><circle r="9" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="1"/><circle r="6.5" fill="#fff" fill-opacity=".2"/><path d="${moonSvg(mi.phase, 6.5)}" fill="#fff"${X.moon && X.moon.south ? ' transform="scale(-1 1)"' : ""}/></g>`
-    : `<g id="sunDot" class="sun-dot" transform="translate(${px} ${py})" opacity="${up ? 1 : .5}"><circle r="9" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="1"/><circle r="4" fill="#fff"/></g>`;
+    ? `<g id="sunDot" class="sun-dot" transform="translate(${px} ${py})"><circle r="9" fill="none" stroke="currentColor" stroke-opacity=".6" stroke-width="1"/><circle r="6.5" fill="currentColor" fill-opacity=".2"/><path d="${moonSvg(mi.phase, 6.5)}" fill="currentColor"${X.moon && X.moon.south ? ' transform="scale(-1 1)"' : ""}/></g>`
+    : `<g id="sunDot" class="sun-dot" transform="translate(${px} ${py})" opacity="${up ? 1 : .5}"><circle r="9" fill="none" stroke="currentColor" stroke-opacity=".6" stroke-width="1"/><circle r="4" fill="currentColor"/></g>`;
   const arc = `<svg viewBox="0 0 300 108" aria-hidden="true">
-    <line x1="0" y1="95" x2="300" y2="95" stroke="rgba(255,255,255,.45)" stroke-width="1.6" stroke-dasharray="0 6" stroke-linecap="round"/>
+    <line x1="0" y1="95" x2="300" y2="95" stroke="currentColor" stroke-opacity=".45" stroke-width="1.6" stroke-dasharray="0 6" stroke-linecap="round"/>
     ${segs.filter(g => g.type).map(g => `<path class="awx awx-${g.type}" d="${arcPath(g.f0, g.f1)}"/>`).join("")}
-    <path id="arcDone" d="${arcPath(0, f)}" fill="none" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/>
-    <path id="arcLeft" d="${arcPath(f, 1)}" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1.8" stroke-dasharray="0 5.5" stroke-linecap="round"/>
-    <line id="arcDrop" x1="${px}" y1="${py}" x2="${px}" y2="95" stroke="rgba(255,255,255,.55)" stroke-width="1" stroke-dasharray="1 3"/>
-    <circle cx="30" cy="95" r="2.6" fill="#fff"/><circle cx="150" cy="95" r="2.6" fill="#fff"/><circle cx="270" cy="95" r="2.6" fill="#fff"/>
+    <path id="arcDone" d="${arcPath(0, f)}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+    <path id="arcLeft" d="${arcPath(f, 1)}" fill="none" stroke="currentColor" stroke-opacity=".5" stroke-width="1.8" stroke-dasharray="0 5.5" stroke-linecap="round"/>
+    <line id="arcDrop" x1="${px}" y1="${py}" x2="${px}" y2="95" stroke="currentColor" stroke-opacity=".55" stroke-width="1" stroke-dasharray="1 3"/>
+    <circle cx="30" cy="95" r="2.6" fill="currentColor"/><circle cx="150" cy="95" r="2.6" fill="currentColor"/><circle cx="270" cy="95" r="2.6" fill="currentColor"/>
     ${dot}
   </svg>`;
   const [label] = wmo(c.weather_code);
@@ -886,6 +887,21 @@ let heroFrostGrown = false;
 /* ---------------- dragging the sun: scrub through today's daylight ---------------- */
 /* Runs `fn` with the latest event at most once per screen refresh. Touch screens report moves faster than the screen
    redraws, so updating on every event queues work up and the indicator trails the finger. */
+/* The app's one rule for the mouse wheel: over a slider, strip or timeline, one notch moves it exactly as far as one
+   press of an arrow key (a trackpad's small steps add up to one); everywhere else the wheel scrolls the page as usual. */
+function wheelStep(el, step) {
+  if (!el) return;
+  let acc = 0, last = 0;
+  el.addEventListener("wheel", e => {
+    const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY; if (!d) return;
+    e.preventDefault();
+    const px = d * (e.deltaMode === 1 ? 33 : e.deltaMode === 2 ? 400 : 1), now = performance.now();
+    if (now - last > 300 || Math.sign(px) !== Math.sign(acc)) acc = 0;
+    last = now;
+    if (Math.abs(px) >= 50) { acc = 0; step(Math.sign(px)); return; } // a mouse notch: one step
+    acc += px; if (Math.abs(acc) >= 50) { step(Math.sign(acc)); acc = 0; } // a trackpad: its small steps add up
+  }, { passive: false });
+}
 function perFrame(fn) { let last = null, id = 0; return e => { last = e; if (!id) id = requestAnimationFrame(() => { id = 0; fn(last); }); }; }
 /* Where the sun sits on the main card's arc: a smooth half-ellipse from sunrise to sunset, as tall as the sun really
    climbs that day (90° would reach the top). So the arc is low and flat in a northern winter, tall in summer, and
@@ -972,7 +988,8 @@ function scrubSun(f) {
   $("#heroFeels").textContent = `Feels like ${R(h.feels)}°`;
   const moon = s.body === "moon";
   $("#heroMid").textContent = `${moon ? "Moon" : "Sun"} ${Math.max(0, Math.round((moon ? moonAlt : sunAlt)(t, X.lat, X.lon) / rad))}° above the horizon`;
-  paint(card("c-hero"), heroPal(Math.round(sunAlt(t, X.lat, X.lon) / rad * 2) / 2, kind, Math.round(toC(h.temp) * 2) / 2)); // the sky at that hour; half steps keep repaints rare
+  const hp = heroPal(Math.round(sunAlt(t, X.lat, X.lon) / rad * 2) / 2, kind, Math.round(toC(h.temp) * 2) / 2); // the sky at that hour; half steps keep repaints rare
+  paint(card("c-hero"), hp); card("c-hero").classList.toggle("light", lum(hp.mid) > .42);
   glowAt(f);
   $("#heroUpd").hidden = true; $("#heroNow").hidden = false;
   const box2 = $("#arcIn"); box2.setAttribute("aria-valuenow", Math.round(f * 100)); box2.setAttribute("aria-valuetext", `${fmtT(t)}, ${v} degrees, ${label}`);
@@ -993,6 +1010,7 @@ function bindSunScrub() {
     const f = { ArrowRight: s.cur + hour, ArrowUp: s.cur + hour, ArrowLeft: s.cur - hour, ArrowDown: s.cur - hour, Home: 0, End: 1 }[e.key];
     if (f == null) return; e.preventDefault(); scrubSun(f);
   });
+  wheelStep(box, d => { const s = X.sun; if (s) scrubSun(s.cur + d * 36e5 / (s.set - s.rise)); }); // an hour per notch
   $("#heroNow").onclick = () => { renderHero(); $("#arcIn").focus({ preventScroll: true }); };
 }
 
@@ -1168,6 +1186,7 @@ function dotScroll(sc, bar) {
   const go = e => { const r = bar.getBoundingClientRect(); sc.scrollLeft = clamp((e.clientX - r.left) / r.width, 0, 1) * (sc.scrollWidth - sc.clientWidth); };
   bar.addEventListener("pointerdown", e => { if (e.button) return; bar.setPointerCapture(e.pointerId); go(e); });
   bar.addEventListener("pointermove", e => { if (bar.hasPointerCapture(e.pointerId)) go(e); });
+  wheelStep(bar, d => sc.scrollBy({ left: d * Math.max(48, sc.clientWidth / 6), behavior: "smooth" })); // a sixth of the strip per notch
   whenMeasured(draw);
 }
 /* The next 14 days as columns: each day's low-to-high range as a bar on one shared scale, coloured by temperature,
@@ -1345,6 +1364,7 @@ function drawSpread() {
     const d = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1 }[e.key]; if (!d || !ENS) return;
     e.preventDefault(); spSel = clamp(spSel + d, 0, ENS.days.length - 1); drawSpread();
   });
+  wheelStep(box, d => { if (!ENS) return; spSel = clamp(spSel + d, 0, ENS.days.length - 1); drawSpread(); }); // a day per notch
   $("#spSeg").addEventListener("click", e => { const b = e.target.closest("button"); if (b) { spView = b.dataset.v; drawSpread(); } });
   addEventListener("resize", () => { if ($("#dlgSpread").open) drawSpread(); });
 })();
@@ -1558,7 +1578,7 @@ function drawMoons() {
   drawBigMoon(cv, X.moon.phase, X.moon.south);
   drawStrip(st, X.moonOff || 0, X.moon.base, X.moon.south);
 }
-let moonAnim = 0, moonSnapT;
+let moonAnim = 0;
 function moonGlide(to) {
   cancelAnimationFrame(moonAnim);
   X.moonTarget = to;
@@ -1580,12 +1600,7 @@ function bindMoonScrub() {
     addEventListener("pointermove", move); addEventListener("pointerup", end); addEventListener("pointercancel", end);
   };
   box.addEventListener("pointerdown", down); cv.addEventListener("pointerdown", down);
-  box.addEventListener("wheel", e => {
-    e.preventDefault(); cancelAnimationFrame(moonAnim); X.moonTarget = null;
-    const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
-    updateMoon(X.moonOff + d / 40);
-    clearTimeout(moonSnapT); moonSnapT = setTimeout(() => moonGlide(Math.round(X.moonOff)), 160);
-  }, { passive: false });
+  wheelStep(box, s => moonGlide(clamp((X.moonTarget ?? Math.round(X.moonOff)) + s, -MOON_RANGE, MOON_RANGE))); // a day per notch
   box.addEventListener("keydown", e => {
     const cur = X.moonTarget ?? Math.round(X.moonOff); // keep counting from where a running glide is heading
     const to = { ArrowRight: cur + 1, ArrowUp: cur + 1, ArrowLeft: cur - 1, ArrowDown: cur - 1, PageUp: cur + 7, PageDown: cur - 7, Home: 0 }[e.key];
@@ -1653,7 +1668,7 @@ function bindSunCard() {
     band.classList.add("grab"); updateSun(tAt(e));
     addEventListener("pointermove", move); addEventListener("pointerup", end); addEventListener("pointercancel", end);
   });
-  band.addEventListener("wheel", e => { e.preventDefault(); const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY; updateSun(cur() + d * 6e4 * 1.5); }, { passive: false });
+  wheelStep(band, s => updateSun(cur() + s * 15 * 6e4)); // a quarter of an hour per notch, as the arrow keys
   band.addEventListener("keydown", e => {
     const step = { ArrowRight: 15, ArrowUp: 15, ArrowLeft: -15, ArrowDown: -15, PageUp: 60, PageDown: -60 }[e.key];
     if (e.key === "Home") { e.preventDefault(); updateSun(null); return; }
@@ -1756,7 +1771,7 @@ function bindYear() {
   const move = perFrame(e => updateYear(at(e)));
   const end = () => { box.classList.remove("grab"); removeEventListener("pointermove", move); removeEventListener("pointerup", end); removeEventListener("pointercancel", end); };
   box.addEventListener("pointerdown", e => { if (e.button !== 0) return; box.classList.add("grab"); updateYear(at(e)); addEventListener("pointermove", move); addEventListener("pointerup", end); addEventListener("pointercancel", end); });
-  box.addEventListener("wheel", e => { const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : 0; if (!d) return; e.preventDefault(); updateYear(X.year.cur + d / 12); }, { passive: false });
+  wheelStep(box, s => updateYear(X.year.cur + s)); // a day per notch
   box.addEventListener("keydown", e => {
     const step = { ArrowRight: 1, ArrowLeft: -1, ArrowUp: 1, ArrowDown: -1, PageUp: 30, PageDown: -30 }[e.key];
     if (e.key === "Home") { e.preventDefault(); updateYear(X.year.today); return; }
@@ -2086,6 +2101,7 @@ async function initRadar() {
     const rMove = perFrame(e => scrubTo(frameAt(e.clientX)));
     rt.addEventListener("pointermove", e => { if (rt.hasPointerCapture(e.pointerId)) rMove(e); });
     for (const ev of ["pointerup", "pointercancel"]) rt.addEventListener(ev, () => rt.classList.remove("grab"));
+    wheelStep(rt, d => { if (!frames.length) return; stopLoop(); show(fi + d); }); // a frame per notch
     rt.addEventListener("keydown", e => { const d = { ArrowRight: 1, ArrowLeft: -1 }[e.key]; if (d && frames.length) { e.preventDefault(); stopLoop(); show(fi + d); rt.children[fi].focus(); } });
   } else { map.setView(ll, map.getZoom()); marker.setLatLng(ll); base.setUrl(esri("Base")); }
   placeCities();
