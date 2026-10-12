@@ -140,6 +140,10 @@ async function run(engine, name, viewport, variant = "normal") {
       const when = await page.textContent("#heroWhen");
       check("scrubbing the sun shows another hour", when !== "Now", `still "${when}"; arc at ${Math.round(arc.x)},${Math.round(arc.y)} ${Math.round(arc.width)}×${Math.round(arc.height)}`);
     }
+    // daylight through the year: one column per day, and the arrow keys move through it
+    check("daylight chart covers the whole year", await page.evaluate(() => { const n = +document.querySelector("#yrChart").getAttribute("aria-valuemax"); return n === 365 || n === 366; }));
+    await page.focus("#yrChart"); const before = await page.textContent("#yrDate"); await page.keyboard.press("PageUp");
+    check("moving through the year shows another day", (await page.textContent("#yrDate")) !== before);
     // swipe between the two saved places (here with the arrow keys)
     check("two place dots", (await page.locator("#pdots i").count()) === 2);
     await page.evaluate(() => document.activeElement && document.activeElement.blur()); // the sun slider uses the arrow keys itself

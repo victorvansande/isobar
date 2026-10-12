@@ -142,18 +142,35 @@ html.standalone[data-mode="day"] body::before{content:"";position:fixed;left:0;r
    "hourly hourly hourly hourly"
    "uv humid air air"
    "moon moon sun sun"
+   "year year year year"
    "radar radar press vis"
    "radar radar rain clouds"
    "pollen pollen pollen pollen"
    "src src src src";}
 @media (max-width:1000px){
   .board{grid-template-columns:repeat(2,minmax(0,1fr));
-   grid-template-areas:"hero hero" "now now" "wind feels" "hourly hourly" "uv humid" "air air" "moon moon" "sun sun" "press vis" "rain clouds" "pollen pollen" "radar radar" "src src";}
+   grid-template-areas:"hero hero" "now now" "wind feels" "hourly hourly" "uv humid" "air air" "moon moon" "sun sun" "year year" "press vis" "rain clouds" "pollen pollen" "radar radar" "src src";}
 }
 .a-hero{grid-area:hero}.a-now{grid-area:now}.a-wind{grid-area:wind}.a-feels{grid-area:feels}.a-hourly{grid-area:hourly}
 .a-days{grid-area:days}.a-uv{grid-area:uv}.a-humid{grid-area:humid}.a-air{grid-area:air}.a-moon{grid-area:moon}
 .a-radar{grid-area:radar}.a-sun{grid-area:sun}.a-press{grid-area:press}.a-vis{grid-area:vis}.a-rain{grid-area:rain}
 .a-clouds{grid-area:clouds}.a-pollen{grid-area:pollen}.a-src{grid-area:src}
+/* daylight through the year */
+.a-year{min-height:0}
+.yr-read{display:flex;align-items:baseline;gap:12px;margin-top:2px}
+.yr-read b{font-weight:600;font-size:15px}
+.yr-read .num{font-size:28px;font-weight:300;letter-spacing:-.02em}
+.yr-read .mono{margin-left:auto}
+.yr-sub{margin:4px 0 12px;font-size:13px;line-height:1.45;color:var(--ink-2);min-height:2.9em}
+.yr-chart{position:relative;height:190px;border-radius:16px;overflow:hidden;cursor:grab;touch-action:pan-y;-webkit-user-select:none;user-select:none}
+.yr-chart.grab{cursor:grabbing}
+.yr-chart canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.yr-chart .yr-h{position:absolute;left:8px;transform:translateY(-50%);color:rgba(255,255,255,.88);text-shadow:0 0 3px rgba(18,10,58,.7),0 0 1px rgba(18,10,58,.6);pointer-events:none}
+.yr-today,.yr-sel{position:absolute;top:0;bottom:0;width:2px;margin-left:-1px;pointer-events:none}
+.yr-today{background:var(--signal);opacity:.85}
+.yr-sel{background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.18)}
+.yr-axis{display:grid;grid-template-columns:repeat(12,1fr);margin-top:8px;text-align:center}
+.a-year{grid-area:year}
 
 /* ---------- card base ---------- */
 .card{position:relative;isolation:isolate;overflow:hidden;border-radius:var(--r-card);padding:18px 20px 20px;min-width:0;min-height:190px;display:flex;flex-direction:column}

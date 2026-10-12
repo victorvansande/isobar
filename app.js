@@ -1401,6 +1401,85 @@ function bindSunCard() {
   $("#sunNow").onclick = () => updateSun(null);
 }
 
+/* ---------------- daylight through the year (glass) ---------------- */
+/* Every day of this year as a thin column: down is the clock (0 at the top, 24 at the bottom), coloured as on the sun
+   card: night, twilight, golden hour and daylight. Times are on the place's own clock, so the jumps where it switches
+   between winter and summer time show as a step. Drag across it (or use the arrow keys) to read any day. */
+const YEAR_COL = { night: "#120a3a", tw: "#6a3fe0", gold: "#ff8a3c", day: "#ffe6b0" };
+function yearData() {
+  const year = +new Date(Date.now() + OFF * 1000).toISOString().slice(0, 4), fmt = new Intl.DateTimeFormat("en-GB", { timeZone: TZ, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+  const offH = d => { const p = Object.fromEntries(fmt.formatToParts(d).map(x => [x.type, x.value])); return (Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute) - d.valueOf()) / 36e5; };
+  const days = [], n = (Date.UTC(year + 1, 0, 1) - Date.UTC(year, 0, 1)) / 864e5;
+  for (let i = 0; i < n; i++) {
+    const noonUTC = new Date(Date.UTC(year, 0, 1 + i, 12) - OFF * 1000), off = offH(noonUTC), st = sunTimes(noonUTC, X.lat, X.lon);
+    const h = t => t && !isNaN(t) ? (((t.valueOf() / 36e5 + off) % 24) + 24) % 24 : null; // a moment as hours on the local clock
+    const up = sunAlt(st.noon, X.lat, X.lon) > 0;
+    days.push({ key: new Date(Date.UTC(year, 0, 1 + i)).toISOString().slice(0, 10), off, up,
+      dawn: h(st.dawn), rise: h(st.rise), ge: h(st.goldenEnd), noon: h(st.noon), gold: h(st.golden), set: h(st.set), dusk: h(st.dusk),
+      rise_t: st.rise, set_t: st.set, len: !isNaN(st.rise) && !isNaN(st.set) ? (st.set - st.rise) / 6e4 : up ? 1440 : 0 });
+  }
+  const minOff = Math.min(...days.map(d => d.off));
+  days.forEach(d => { d.summer = d.off > minOff; });
+  const today = days.findIndex(d => d.key === X.todayKey);
+  return { year, days, today: today < 0 ? 0 : today };
+}
+function renderYear() {
+  const el = card("c-year"), Y = (X.year = yearData());
+  el.innerHTML = `${head("Daylight", `Through ${Y.year}`)}
+    <button class="hero-now" id="yrNow" hidden>Today</button>
+    <div class="yr-read"><b id="yrDate"></b><span class="num" id="yrLen"></span><span class="mono" id="yrDst"></span></div>
+    <p class="yr-sub" id="yrSub"></p>
+    <div class="yr-chart" id="yrChart" role="slider" tabindex="0" aria-label="Day of the year. Drag or use the arrow keys to see the daylight on another day." aria-valuemin="1" aria-valuemax="${Y.days.length}">
+      <canvas id="yrCv" aria-hidden="true"></canvas>
+      <span class="yr-h mono" style="top:25%">06</span><span class="yr-h mono" style="top:50%">12</span><span class="yr-h mono" style="top:75%">18</span>
+      <span class="yr-today" style="left:${((Y.today + .5) / Y.days.length * 100).toFixed(2)}%"></span><span class="yr-sel" id="yrSel"></span></div>
+    <div class="yr-axis mono">${["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"].map(m => `<span>${m}</span>`).join("")}</div>`;
+  drawYear();
+  updateYear(Y.today);
+  bindYear();
+}
+function drawYear() {
+  const Y = X.year, cv = $("#yrCv"); if (!Y || !cv) return;
+  const s = sizeCanvas(cv); if (!s) return;
+  const { ctx, w, h } = s, n = Y.days.length, cw = w / n;
+  Y.days.forEach((d, i) => {
+    const g = ctx.createLinearGradient(0, 0, 0, h), add = (hr, col) => { if (hr != null) g.addColorStop(clamp(hr / 24, 0, 1), col); };
+    if (d.rise == null || d.set == null) { add(0, d.up ? YEAR_COL.day : YEAR_COL.night); add(24, d.up ? YEAR_COL.day : YEAR_COL.night); }
+    else { add(0, YEAR_COL.night); add(d.dawn ?? d.rise, YEAR_COL.night); add(d.rise, YEAR_COL.tw); add(d.ge ?? d.rise, YEAR_COL.gold); add(d.noon, YEAR_COL.day); add(d.gold ?? d.set, YEAR_COL.gold); add(d.set, YEAR_COL.tw); add(d.dusk ?? d.set, YEAR_COL.night); add(24, YEAR_COL.night); }
+    ctx.fillStyle = g; ctx.fillRect(Math.floor(i * cw), 0, Math.ceil(cw) + 1, h);
+  });
+}
+const hm = mins => `${Math.floor(mins / 60)}h ${String(Math.round(mins % 60)).padStart(2, "0")}m`;
+function updateYear(i) {
+  const Y = X.year; if (!Y) return;
+  i = clamp(Math.round(i), 0, Y.days.length - 1); Y.cur = i;
+  const d = Y.days[i], prev = Y.days[i - 1] || d, today = Y.days[Y.today], isToday = i === Y.today;
+  const step = d.len - prev.len, longest = Y.days.reduce((a, b) => b.len > a.len ? b : a), shortest = Y.days.reduce((a, b) => b.len < a.len ? b : a);
+  $("#yrSel").style.left = `${((i + .5) / Y.days.length * 100).toFixed(2)}%`;
+  $("#yrDate").textContent = isToday ? "Today" : `${wd(d.key)} ${dm_(d.key)}`;
+  $("#yrLen").textContent = hm(d.len);
+  const note = d === longest ? "the longest day" : d === shortest ? "the shortest day"
+    : Math.abs(step) < .5 ? "about as long as the day before" : `${Math.abs(step) < 1 ? Math.round(Math.abs(step) * 60) + " s" : Math.round(Math.abs(step)) + " min"} ${step > 0 ? "longer" : "shorter"} than the day before`;
+  const vs = isToday ? "" : ` · ${d.len >= today.len ? "+" : "−"}${hm(Math.abs(d.len - today.len))} vs today`;
+  $("#yrSub").textContent = d.rise_t && !isNaN(d.rise_t) ? `Sunrise ${fmtT(d.rise_t)} · Sunset ${fmtT(d.set_t)} · ${note}${vs}` : d.up ? "The sun doesn't set" : "The sun doesn't rise";
+  $("#yrDst").textContent = Y.days.some(x => x.summer) ? (d.summer ? "Summer time" : "Winter time") : "";
+  $("#yrNow").hidden = isToday;
+  const box = $("#yrChart"); box.setAttribute("aria-valuenow", i + 1); box.setAttribute("aria-valuetext", `${$("#yrDate").textContent}, ${hm(d.len)} of daylight`);
+}
+function bindYear() {
+  const box = $("#yrChart"), at = e => { const r = box.getBoundingClientRect(); return (e.clientX - r.left) / r.width * X.year.days.length - .5; };
+  const move = perFrame(e => updateYear(at(e)));
+  const end = () => { box.classList.remove("grab"); removeEventListener("pointermove", move); removeEventListener("pointerup", end); removeEventListener("pointercancel", end); };
+  box.addEventListener("pointerdown", e => { if (e.button !== 0) return; box.classList.add("grab"); updateYear(at(e)); addEventListener("pointermove", move); addEventListener("pointerup", end); addEventListener("pointercancel", end); });
+  box.addEventListener("wheel", e => { const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : 0; if (!d) return; e.preventDefault(); updateYear(X.year.cur + d / 12); }, { passive: false });
+  box.addEventListener("keydown", e => {
+    const step = { ArrowRight: 1, ArrowLeft: -1, ArrowUp: 1, ArrowDown: -1, PageUp: 30, PageDown: -30 }[e.key];
+    if (e.key === "Home") { e.preventDefault(); updateYear(X.year.today); return; }
+    if (step == null) return; e.preventDefault(); updateYear(X.year.cur + step);
+  });
+  $("#yrNow").onclick = () => updateYear(X.year.today);
+}
+
 /* ---------------- pressure (glass) ---------------- */
 function renderPress() {
   const { c, H, hi } = X, el = card("c-press");
@@ -1731,7 +1810,7 @@ function renderPlace() {
 }
 function renderAll() {
   derive(); applyMode(); renderPlace(); renderClock();
-  const parts = [renderSummary, renderHero, renderNow, renderWind, renderFeels, renderHourly, renderDays, renderUV, renderHumid, renderAir, renderMoon, renderSun, renderPress, renderVis, renderRain, renderClouds, renderPollen, renderSrc];
+  const parts = [renderSummary, renderHero, renderNow, renderWind, renderFeels, renderHourly, renderDays, renderUV, renderHumid, renderAir, renderMoon, renderSun, renderYear, renderPress, renderVis, renderRain, renderClouds, renderPollen, renderSrc];
   for (const f of parts) { try { f(); } catch (e) { console.error(f.name, e); } }
   initRadar();
 }
@@ -2051,7 +2130,7 @@ window.addEventListener("resize", () => {
   rT = setTimeout(() => {
     if (innerWidth === lastW) { if (map) map.invalidateSize(); return; }
     lastW = innerWidth;
-    drawMoons(); if (map) map.invalidateSize();
+    drawMoons(); drawYear(); if (map) map.invalidateSize();
     // canvas effects are drawn at a fixed pixel size, so redraw them (instantly) at the new size
     const hf = $("#heroFrost"); if (hf) frostRim(hf);
     const hc = $("#humidCv"); if (hc) startCondensation(hc);
