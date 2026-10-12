@@ -2016,11 +2016,19 @@ function renderPollen() {
   const lvl = (v, t) => v < 1 ? [0, "None"] : v < t[0] ? [1, "Low"] : v < t[1] ? [2, "Moderate"] : v < t[2] ? [3, "High"] : [4, "Very high"];
   const items = POLLEN.filter(([k]) => a[k] != null).map(([k, n, t]) => { const v = a[k], [l, ln] = lvl(v, t); return { n, v, l, ln }; });
   const top = items.reduce((m, i) => i.l > m.l ? i : m, items[0]);
-  // nothing in the air at all: one quiet line instead of a wall of zeros
+  const grid = `<div class="pgrid" id="polGrid">${items.map(i => `<div class="tile"><span class="mono">${i.n}</span><b>${i.v < 10 ? i.v.toFixed(1) : Math.round(i.v)}</b><span class="dots" role="img" aria-label="${i.ln}">${[1, 2, 3, 4].map(q => `<i class="${q <= i.l ? "on" : ""}"></i>`).join("")}</span></div>`).join("")}</div>`;
+  // nothing in the air at all: one quiet line instead of a wall of zeros, which still opens to show each type
   el.classList.toggle("slim", top.l === 0);
-  if (top.l === 0) { el.innerHTML = `<div class="ch-row">${head("Pollen", "Nothing in the air")}<span class="mono">All ${items.length} types at zero</span></div>`; return; }
-  el.innerHTML = `<div class="ch-row">${head("Pollen", top.l === 0 ? "Nothing in the air" : `${top.n} is ${top.ln.toLowerCase()}`)}</div>
-    <div class="pgrid">${items.map(i => `<div class="tile"><span class="mono">${i.n}</span><b>${i.v < 10 ? i.v.toFixed(1) : Math.round(i.v)}</b><span class="dots" role="img" aria-label="${i.ln}">${[1, 2, 3, 4].map(q => `<i class="${q <= i.l ? "on" : ""}"></i>`).join("")}</span></div>`).join("")}</div>`;
+  if (top.l === 0) {
+    const open = store.get("polOpen", false);
+    el.classList.toggle("open", open);
+    el.innerHTML = `<div class="ch-row">${head("Pollen", "Nothing in the air")}<button class="air-more mono" id="polMore" aria-expanded="${open}" aria-controls="polGrid">All ${items.length} types at zero<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9.5l6 6 6-6"/></svg></button></div>${grid}`;
+    $("#polMore").onclick = () => { const on = !el.classList.contains("open"); el.classList.toggle("open", on); $("#polMore").setAttribute("aria-expanded", on); store.set("polOpen", on); };
+    return;
+  }
+  el.classList.remove("open");
+  el.innerHTML = `<div class="ch-row">${head("Pollen", `${top.n} is ${top.ln.toLowerCase()}`)}</div>
+    ${grid}`;
 }
 
 /* ---------------- source ---------------- */
