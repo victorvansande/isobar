@@ -840,7 +840,7 @@ function renderHero() {
     <span class="hero-upd mono" id="heroUpd"${Date.now() - fetchedAt < 30 * 6e4 ? " hidden" : ""}>Updated ${updLabel(fetchedAt)}</span>
     <button class="hero-now" id="heroNow" hidden>Back to now</button>
     <div class="hero-temp" id="heroTemp" data-v="${R(c.temperature_2m)}" role="img" aria-label="${R(c.temperature_2m)} degrees">${dm(String(R(c.temperature_2m)), { deg: true })}</div>
-    <div class="hero-meta"><span id="heroFeels">Feels like ${R(c.apparent_temperature)}°</span><span>High ${R(Dy.temperature_2m_max[di])}° · Low ${R(Dy.temperature_2m_min[di])}°</span></div>
+    <div class="hero-meta"><span id="heroFeels">Feels like ${R(c.apparent_temperature)}°</span><span>High ${R(Dy.temperature_2m_max[di])}° · Low ${R(Dy.temperature_2m_min[di])}°</span><span id="heroClim" class="clim"${climLine() ? "" : " hidden"}>${esc(climLine())}</span></div>
     <div class="arc"><div class="arc-in" id="arcIn"${scrub ? ` role="slider" tabindex="0" aria-label="Time of day. Drag the sun or use the arrow keys to see the temperature at that hour." aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(f * 100)}" aria-valuetext="Now"` : ""}>${arc}</div></div>
     <div class="hero-foot">
       <div><b>${fmtT(a0)}</b><span>${mp ? "Moonrise" : "Sunrise"}</span></div>
@@ -1181,8 +1181,9 @@ function weatherFx(n, kind, pop, sumMm) {
 function renderDays() {
   const { Dy, di, c } = X, el = card("c-days");
   const idx = []; for (let i = di; i < Dy.time.length && idx.length < 14; i++) idx.push(i);
-  const lo = Math.min(...idx.map(i => Dy.temperature_2m_min[i]).filter(v => v != null));
-  const hi = Math.max(...idx.map(i => Dy.temperature_2m_max[i]).filter(v => v != null));
+  const cl = idx.map(i => climFor(Dy.time[i])); // normals and records per day, once they're in
+  const lo = Math.min(...idx.map(i => Dy.temperature_2m_min[i]).filter(v => v != null), ...cl.filter(Boolean).map(x => fromC(x.lo)));
+  const hi = Math.max(...idx.map(i => Dy.temperature_2m_max[i]).filter(v => v != null), ...cl.filter(Boolean).map(x => fromC(x.hi)));
   const P = v => ((v - lo) / ((hi - lo) || 1) * 100).toFixed(1);
   const open = store.get("openDay", 0);
   const items = idx.map((i, n) => {
@@ -1197,7 +1198,7 @@ function renderDays() {
         <span class="dn"><b>${n === 0 ? "Today" : wd(key)}</b><i>${n === 0 ? wd(key) + " " : ""}${dm_(key)}</i></span>
         ${icon(kind, true)}
         <span class="dp">${pop != null && pop >= 10 ? pop + "%" : ""}</span>
-        <span class="dr"><em>${R(mn)}°</em><span class="bar"><span class="fill" style="left:${P(mn)}%;right:${(100 - P(mx)).toFixed(1)}%;--lo:${tc(mn)};--hi:${tc(mx)}"></span>${n === 0 && c.temperature_2m != null ? `<span class="nd" style="left:${P(clamp(c.temperature_2m, lo, hi))}%"></span>` : ""}</span><em class="hiT" style="--tc:${tc(mx)}">${R(mx)}°</em></span>
+        <span class="dr"><em>${R(mn)}°</em><span class="bar">${cl[n] ? `<span class="nrm" style="left:${P(fromC(cl[n].lo))}%;right:${(100 - P(fromC(cl[n].hi))).toFixed(1)}%"></span>` : ""}<span class="fill" style="left:${P(mn)}%;right:${(100 - P(mx)).toFixed(1)}%;--lo:${tc(mn)};--hi:${tc(mx)}"></span>${n === 0 && c.temperature_2m != null ? `<span class="nd" style="left:${P(clamp(c.temperature_2m, lo, hi))}%"></span>` : ""}</span><em class="hiT" style="--tc:${tc(mx)}">${R(mx)}°</em></span>
       </button>
       <div class="day-b"><div class="day-bi"><div class="day-grid">
         <div class="say">${esc(label)}${pop != null ? `, ${pop}% chance of rain` : ""}.</div>
@@ -1210,6 +1211,9 @@ function renderDays() {
         ${tile("Sunrise", fmtT(rise))}
         ${tile("Sunset", fmtT(set))}
         ${tile("Sunshine", Dy.sunshine_duration[i] != null ? (Dy.sunshine_duration[i] / 3600).toFixed(1) + " h" : "–")}
+        ${cl[n] ? tile("Normal", `${R(fromC(cl[n].lo))}° / ${R(fromC(cl[n].hi))}°`) : ""}
+        ${cl[n] && cl[n].rh ? tile("Record high", `${R(fromC(cl[n].rh[0]))}° <small>${cl[n].rh[1]}</small>`) : ""}
+        ${cl[n] && cl[n].rl ? tile("Record low", `${R(fromC(cl[n].rl[0]))}° <small>${cl[n].rl[1]}</small>`) : ""}
         ${U && U[key] ? tile("Confidence", `${cap1(U[key].conf)} · ${U[key].deg < 1 ? "models agree" : `models differ by up to ${Math.max(1, Math.round(U[key].deg * (S.temp === "f" ? 1.8 : 1)))}°`}${U[key].lead >= 6 ? " · far ahead" : ""}`) : ""}
       </div></div></div>
     </article>`;
@@ -1673,6 +1677,7 @@ function renderSrc() {
     <p><b>Air and pollen</b> Copernicus CAMS.</p>
     <p><b>Rain radar</b> RainViewer, on Esri map tiles (Esri, HERE, Garmin, © OpenStreetMap).</p>
     <p><b>Weather warnings</b> MeteoAlarm (EUMETNET) and the national weather services, such as KMI. Region outlines © EuroGeographics.</p>
+    <p><b>Normals and records</b> ERA5 reanalysis (Copernicus), for the area around this spot: normals over 1991–2020, records since 1950.</p>
     <p><b>Moon</b> NASA LRO imagery. Phases, sunrise and twilight are calculated on this device.</p>`;
   // where the forecast is for: coordinates, height above sea level and time zone
   const ll = (v, p, n) => `${Math.abs(v).toFixed(2)}° ${v >= 0 ? p : n}`;
@@ -1894,6 +1899,74 @@ function renderAll() {
   const parts = [renderSummary, renderHero, renderNow, renderWind, renderFeels, renderHourly, renderDays, renderUV, renderHumid, renderAir, renderMoon, renderSun, renderYear, renderPress, renderVis, renderRain, renderClouds, renderPollen, renderSrc];
   for (const f of parts) { try { f(); } catch (e) { console.error(f.name, e); } }
   initRadar();
+  loadClimate();
+}
+
+/* ---------------- climate: what's normal here, and the records ---------------- */
+/* Every day since 1950 at this spot, from the ERA5 reanalysis (Copernicus), fetched once per place and boiled down
+   to one small table per calendar day: the normal high and low (1991–2020, averaged over a fortnight around the
+   date so the curve is smooth) and the warmest high and coldest low on that date, with their years. All in °C. */
+const CLIM_FROM = 1950, CLIM_TO = new Date().getFullYear() - 1;
+let CLIM = null;
+const climKey = (lat, lon) => `clim:${lat.toFixed(1)},${lon.toFixed(1)}:${CLIM_TO}`;
+const climIdx = key => { const [, m, d] = key.split("-").map(Number); return (Date.UTC(2024, m - 1, d) - Date.UTC(2024, 0, 1)) / dayMs; }; // day of a leap year: 0–365
+const fromC = c => S.temp === "f" ? c * 9 / 5 + 32 : c;
+let climBusy = "";
+async function loadClimate() {
+  if (!X.lat && X.lat !== 0) return;
+  const key = climKey(X.lat, X.lon);
+  if (CLIM && CLIM.key === key) return;
+  const kept = store.get(key, null);
+  if (kept) { CLIM = kept; return climUpdate(); }
+  if (climBusy === key || !navigator.onLine) return;
+  climBusy = key;
+  try {
+    const u = `https://archive-api.open-meteo.com/v1/archive?latitude=${X.lat}&longitude=${X.lon}&start_date=${CLIM_FROM}-01-01&end_date=${CLIM_TO}-12-31&daily=temperature_2m_max,temperature_2m_min&timezone=auto&timeformat=unixtime`;
+    const j = await (await fetch(u)).json(), t = j.daily && j.daily.time;
+    if (!t || !t.length) return;
+    const mx = j.daily.temperature_2m_max, mn = j.daily.temperature_2m_min, shift = (j.utc_offset_seconds || 0) * 1000 + 6 * 36e5; // lands mid-morning, so the date is right in summer and winter time
+    const sh = new Float64Array(366), sl = new Float64Array(366), n = new Uint16Array(366);
+    const rh = Array(366).fill(null), rl = Array(366).fill(null);
+    t.forEach((s, i) => {
+      if (mx[i] == null || mn[i] == null) return;
+      const d = new Date(s * 1000 + shift), y = d.getUTCFullYear();
+      const k = (Date.UTC(2024, d.getUTCMonth(), d.getUTCDate()) - Date.UTC(2024, 0, 1)) / dayMs;
+      if (y >= 1991 && y <= 2020) { sh[k] += mx[i]; sl[k] += mn[i]; n[k]++; }
+      if (!rh[k] || mx[i] > rh[k][0]) rh[k] = [mx[i], y];
+      if (!rl[k] || mn[i] < rl[k][0]) rl[k] = [mn[i], y];
+    });
+    const nh = [], nl = [];
+    for (let k = 0; k < 366; k++) {
+      let a = 0, b = 0, c = 0;
+      for (let w = -7; w <= 7; w++) { const q = (k + w + 366) % 366; a += sh[q]; b += sl[q]; c += n[q]; }
+      nh.push(c ? +(a / c).toFixed(1) : null); nl.push(c ? +(b / c).toFixed(1) : null);
+    }
+    CLIM = { key, nh, nl, rh, rl, from: Math.max(CLIM_FROM, new Date(t[0] * 1000 + shift).getUTCFullYear()) };
+    store.set(key, CLIM);
+    climUpdate();
+  } catch { /* no climate today: the cards simply leave it out */ } finally { climBusy = ""; }
+}
+/* The normals and records for a forecast day (key "YYYY-MM-DD"), in °C; null until the table is in. */
+function climFor(key) {
+  if (!CLIM || CLIM.key !== climKey(X.lat, X.lon)) return null;
+  const k = climIdx(key);
+  return CLIM.nh[k] == null ? null : { hi: CLIM.nh[k], lo: CLIM.nl[k], rh: CLIM.rh[k], rl: CLIM.rl[k], from: CLIM.from };
+}
+/* One quiet line on the main card: how today's high compares with normal, or a record when one is forecast. */
+function climLine() {
+  const cl = climFor(X.todayKey); if (!cl) return "";
+  const hi = X.Dy.temperature_2m_max[X.di], lo = X.Dy.temperature_2m_min[X.di];
+  const date = dm_(X.todayKey);
+  if (hi != null && cl.rh && toC(hi) > cl.rh[0]) return `Warmest ${date} since ${cl.from}`;
+  if (lo != null && cl.rl && toC(lo) < cl.rl[0]) return `Coldest ${date} since ${cl.from}`;
+  if (hi == null) return "";
+  const diff = (toC(hi) - cl.hi) * (S.temp === "f" ? 1.8 : 1), a = Math.round(Math.abs(diff));
+  return a < 2 ? "About normal for the time of year" : `${a}° ${diff > 0 ? "warmer" : "colder"} than normal`;
+}
+function climUpdate() {
+  const el = $("#heroClim");
+  if (el) { const s = climLine(); el.textContent = s; el.hidden = !s; }
+  if ($("#dlgDays").open) renderDays();
 }
 function showError(msg) {
   const el = card("c-hero");
