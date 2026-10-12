@@ -863,12 +863,8 @@ html.wall .a-moon .strip canvas{height:46px}
 @media (prefers-reduced-motion:reduce){.rainbow{animation:none;opacity:1}}
 
 /* on a wide screen the dock sits in the bottom-right corner, clear of the cards */
-/* wide screens: the dock stands as a slim rail at the right edge, beside the board, so it never covers a card */
-@media (min-width:900px){
-  .dock{left:auto;right:16px;top:50%;bottom:auto;transform:translateY(-50%);flex-direction:column}
-  .dock .pill{flex-direction:column;min-width:0;width:48px;height:auto;padding:12px 0 10px;gap:6px;border-radius:24px;font-size:11px}
-  .app{max-width:1312px;padding-right:92px}
-}
+/* wide screens: the dock floats at the bottom right; cards scroll by under its glass */
+@media (min-width:900px){.dock{left:auto;right:24px;transform:none}}
 
 /* ---------- the 14-day sheet, in step with the board ---------- */
 /* No overlapping deck any more: separate rows with a small gap, in the board's own glass. */
