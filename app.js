@@ -1300,13 +1300,20 @@ function renderAir() {
   if (HA) { const start = HA.time.findIndex(t => T(t) >= new Date(Date.now() - 36e5)); for (let k = Math.max(0, start); k < Math.min(HA.time.length, start + 24); k++) if ((HA.european_aqi[k] ?? 0) > peak) { peak = HA.european_aqi[k]; peakT = T(HA.time[k]); } }
   const rows = [["PM2.5", a.pm2_5, 15], ["PM10", a.pm10, 45], ["O₃", a.ozone, 100], ["NO₂", a.nitrogen_dioxide, 25], ["SO₂", a.sulphur_dioxide, 40]].filter(r => r[1] != null);
   const scale = EAQ.map((_, i) => `<i class="${i <= li ? "on" : ""}"></i>`).join("");
-  el.innerHTML = `${v >= 60 ? `<span class="smog" aria-hidden="true"></span>` : ""}<div class="air"><div class="air-l">${head("Air quality", L[1])}
+  // the pollutant figures are for the curious: folded away behind a small toggle, which remembers its state
+  const open = store.get("airOpen", false);
+  el.innerHTML = `${v >= 60 ? `<span class="smog" aria-hidden="true"></span>` : ""}<div class="air${open ? " open" : ""}"><div class="air-l">${head("Air quality", L[1])}
       ${dm(String(Math.round(v)))}
       <span class="mono">European AQI${a.us_aqi != null ? ` · US AQI ${Math.round(a.us_aqi)}` : ""}</span>
       <div class="scale" aria-hidden="true">${scale}<span class="tri" style="left:${clamp(v / 120 * 100, 2, 98)}%"></span></div>
-      <span class="mono" style="margin-top:8px">${peakT ? `Peaks at ${Math.round(peak)} around ${fmtT(peakT)}` : "Steady over the next 24 h"}</span></div>
-    <div class="pol tile">${rows.map(([n, val, lim]) => `<div class="pol-r"><span class="mono">${n}</span><div class="mbar"><div class="fill" style="width:${clamp(val / (lim * 2) * 100, 2, 100)}%"></div><span class="lim" style="left:50%"></span></div><span class="v">${val < 10 ? val.toFixed(1) : Math.round(val)}<small>µg/m³</small></span></div>`).join("")}
-      <span class="mono lim-key"><i aria-hidden="true"></i>WHO daily guideline</span></div></div>`;
+      <div class="air-foot"><span class="mono">${peakT ? `Peaks at ${Math.round(peak)} around ${fmtT(peakT)}` : "Steady over the next 24 h"}</span>
+      <button class="air-more mono" id="airMore" aria-expanded="${open}" aria-controls="airPol">Pollutants<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9.5l6 6 6-6"/></svg></button></div></div>
+    <div class="pol-wrap" id="airPol"><div><div class="pol tile">${rows.map(([n, val, lim]) => `<div class="pol-r"><span class="mono">${n}</span><div class="mbar"><div class="fill" style="width:${clamp(val / (lim * 2) * 100, 2, 100)}%"></div><span class="lim" style="left:50%"></span></div><span class="v">${val < 10 ? val.toFixed(1) : Math.round(val)}<small>µg/m³</small></span></div>`).join("")}
+      <span class="mono lim-key"><i aria-hidden="true"></i>WHO daily guideline</span></div></div></div></div>`;
+  $("#airMore").onclick = () => {
+    const box = el.querySelector(".air"), on = !box.classList.contains("open");
+    box.classList.toggle("open", on); $("#airMore").setAttribute("aria-expanded", on); store.set("airOpen", on);
+  };
 }
 
 /* ---------------- moon ---------------- */

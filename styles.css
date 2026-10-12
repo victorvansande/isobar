@@ -510,13 +510,23 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .a-humid .num{margin-bottom:auto}
 
 /* ---------- air ---------- */
-.air{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:20px;flex:1}
+.air{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:0 20px;flex:1}
 .air-l{display:flex;flex-direction:column}
 .air-l .dm{height:58px;margin:8px 0 6px;align-self:flex-start}
 .scale{display:grid;grid-template-columns:repeat(6,1fr);gap:3px;margin-top:auto;position:relative;padding-top:14px}
 .scale i{height:5px;border-radius:3px;background:rgba(255,255,255,.28)}
 .scale i.on{background:#fff}
 .scale .tri{top:0}
+.air:not(.open){grid-template-columns:minmax(0,1fr)}
+.air-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:8px}
+.air-more{display:inline-flex;align-items:center;gap:4px;padding:6px 2px 6px 10px;margin:-6px -2px -6px 0;border:0;background:none;color:var(--ink);font:500 11px/1 var(--f-mono);letter-spacing:.05em;text-transform:uppercase;cursor:pointer;white-space:nowrap}
+.air-more svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:transform .3s}
+.air.open .air-more svg{transform:rotate(180deg)}
+/* the pollutant panel folds open smoothly (0fr → 1fr) */
+.pol-wrap{display:grid;grid-template-rows:0fr;transition:grid-template-rows .35s ease}
+.pol-wrap>div{min-height:0;overflow:hidden;display:grid}
+.air.open .pol-wrap{grid-template-rows:1fr}
+.air:not(.open) .pol-wrap{visibility:hidden;transition:grid-template-rows .35s ease,visibility 0s .35s}
 .pol{gap:9px;align-content:center;padding:14px 16px;border-radius:18px}
 .pol-r{display:grid;grid-template-columns:44px 1fr 62px;gap:10px;align-items:center}
 .pol-r .mono{color:var(--ink)}
@@ -717,6 +727,7 @@ body.net-off .toast{bottom:calc(140px + env(safe-area-inset-bottom,0px))}
   .card{padding:16px 16px 18px;min-height:170px}
   .hero{min-height:500px}
   .air{grid-template-columns:1fr}
+  .air .pol{margin-top:16px}
   .moon{grid-template-columns:110px minmax(0,1fr);gap:14px}
   .day-h{grid-template-columns:minmax(0,1fr) 24px 34px minmax(0,1.6fr);gap:8px;padding:13px 14px 34px}
   .dn i{display:none}
