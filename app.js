@@ -829,7 +829,7 @@ function renderHero() {
       <div class="r"><b>${fmtT(set)}</b><span>Sunset</span></div>
     </div>`;
   $("#tbIc").innerHTML = icon(kind, isDay);
-  $("#tbTemp").textContent = `${R(c.temperature_2m)}°`;
+  const tbT = $("#tbTemp"); tbT.innerHTML = dm(String(R(c.temperature_2m)), { deg: true }); tbT.setAttribute("aria-label", `${R(c.temperature_2m)} degrees`);
   if (scrub) bindSunScrub();
   // below 0° the card frosts over at the rim (fades in the first time only); from 28° it shimmers
   if (cold) frostRim($("#heroFrost"), 17, !heroFrostGrown);
