@@ -1562,13 +1562,26 @@ function renderClouds() {
   const cc = c.cloud_cover ?? 0;
   const lab = cc <= 12 ? "Clear" : cc <= 37 ? "Few clouds" : cc <= 62 ? "Scattered" : cc <= 87 ? "Broken" : "Overcast";
   const cols = 14, rows = 6, total = cols * rows, lit = Math.round(cc / 100 * total);
-  // seeded order that clusters lit dots into soft cloud banks
-  const order = Array.from({ length: total }, (_, i) => { const x = i % cols, y = Math.floor(i / cols); return [i, Math.sin(x * .7 + y * 1.3) * Math.cos(x * .35 - y * .9) + ((i * 9301 + 49297) % 233280) / 233280 * .5]; }).sort((a, b) => b[1] - a[1]).map(a => a[0]);
+  // a smooth field that wraps around the width, so the lit dots form cloud banks that can drift and come back round
+  const T = 2 * PI / cols;
+  const order = Array.from({ length: total }, (_, i) => { const x = i % cols, y = Math.floor(i / cols); return [i, sin(x * T + y * .55) + .6 * sin(2 * x * T + 1.7 - y * .8) + .35 * sin(3 * x * T + 4.1 + y * 1.1) + ((i * 9301 + 49297) % 233280) / 233280 * .45]; }).sort((a, b) => b[1] - a[1]).map(a => a[0]);
   const on = new Set(order.slice(0, lit));
-  let dots = ""; for (let i = 0; i < total; i++) { const x = i % cols, y = Math.floor(i / cols); dots += `<circle cx="${x * 17 + 8}" cy="${y * 13 + 7}" r="${on.has(i) ? 4.6 : 2}" fill="currentColor" opacity="${on.has(i) ? .95 : .24}"/>`; }
+  let dots = ""; for (let i = 0; i < total; i++) { const x = i % cols, y = Math.floor(i / cols); dots += `<circle cx="${x * 17 + 8}" cy="${y * 13 + 7}" r="4.6" fill="currentColor"${on.has(i) ? "" : ' class="off"'}/>`; }
+  if (el._drift) clearInterval(el._drift);
   el.innerHTML = `${head("Cloud cover", lab)}
     <div class="num big">${R(cc)}<small>%</small></div>
     <div class="field"><svg viewBox="0 0 238 78" aria-hidden="true">${dots}</svg></div>`;
+  if (!lit || lit === total || calmMotion.matches) return;
+  // the banks drift left to right one column at a time, like a dot-matrix ticker; quicker in a stronger wind
+  const dotEls = el.querySelectorAll(".field circle"), ms = toMs(c.wind_speed_10m ?? 0);
+  const step = clamp(1500 - ms * 70, 520, 1500);
+  el.style.setProperty("--drift", `${Math.min(450, step * .7) | 0}ms`);
+  let shift = 0;
+  el._drift = setInterval(() => {
+    if (document.hidden || offscreen("c-clouds")) return;
+    shift = (shift + 1) % cols;
+    dotEls.forEach((d, i) => { const x = i % cols, y = Math.floor(i / cols); d.classList.toggle("off", !on.has(y * cols + (x - shift + cols) % cols)); });
+  }, step);
 }
 
 /* ---------------- pollen ---------------- */
