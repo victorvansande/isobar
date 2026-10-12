@@ -1572,9 +1572,10 @@ function renderClouds() {
     <div class="num big">${R(cc)}<small>%</small></div>
     <div class="field"><svg viewBox="0 0 238 78" aria-hidden="true">${dots}</svg></div>`;
   if (!lit || lit === total || calmMotion.matches) return;
-  // the banks drift left to right one column at a time, like a dot-matrix ticker; quicker in a stronger wind
+  // the banks drift left to right one column at a time, like a dot-matrix ticker, at the pace of the wind:
+  // a step every ~3 s when it's calm, ~1 s in a moderate breeze (5 m/s), a quarter second in a gale
   const dotEls = el.querySelectorAll(".field circle"), ms = toMs(c.wind_speed_10m ?? 0);
-  const step = clamp(1500 - ms * 70, 520, 1500);
+  const step = clamp(3200 / (1 + ms / 2.5), 230, 3200);
   el.style.setProperty("--drift", `${Math.min(450, step * .7) | 0}ms`);
   let shift = 0;
   el._drift = setInterval(() => {
