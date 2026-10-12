@@ -350,7 +350,7 @@ function drawStrip(cv, off, base, mirror) {
     if (placed.some(o => Math.abs(o.x - t.x) < (o.w + t.w) / 2 + 6)) continue;
     placed.push(t); ctx.fillStyle = `rgba(255,255,255,${(.75 * t.a).toFixed(3)})`; ctx.fillText(t.tag, t.x, h - 4);
   }
-  ctx.fillStyle = Palette.SIGNAL; ctx.beginPath(); ctx.moveTo(mid - 5, cy + r + 10); ctx.lineTo(mid + 5, cy + r + 10); ctx.lineTo(mid, cy + r + 4); ctx.fill();
+  ctx.fillStyle = Palette.SIGNAL; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(mid - 2, cy + r + 3, 4, 10, 2) : ctx.rect(mid - 2, cy + r + 3, 4, 10); ctx.fill(); // the capsule needle
 }
 
 /* ---------------- data ---------------- */
@@ -1098,8 +1098,8 @@ function renderWind() {
     ticks += `<line x1="${100 + r1 * sin(a)}" y1="${100 - r1 * cos(a)}" x2="${100 + r2 * sin(a)}" y2="${100 - r2 * cos(a)}" stroke="currentColor" stroke-opacity="${major ? .95 : mid ? .6 : .32}" stroke-width="${major ? 1.8 : 1}" stroke-linecap="round"/>`;
   }
   const lab = ["N", "E", "S", "W"].map((t, i) => { const a = i * 90 * rad; return `<text x="${100 + 68 * sin(a)}" y="${100 - 68 * cos(a) + 3.5}" text-anchor="middle" font-family="Geist Mono, monospace" font-size="14" fill="currentColor" fill-opacity=".75">${t}</text>`; }).join("");
-  const a = dir * rad, tip = 78, base = 97, w = 6 * rad;
-  const tri = `<path d="M${100 + tip * sin(a)} ${100 - tip * cos(a)} L${100 + base * sin(a - w)} ${100 - base * cos(a - w)} L${100 + base * sin(a + w)} ${100 - base * cos(a + w)}Z" fill="var(--signal)"/>`;
+  const a = dir * rad, tip = 81, base = 95;
+  const tri = `<line x1="${100 + tip * sin(a)}" y1="${100 - tip * cos(a)}" x2="${100 + base * sin(a)}" y2="${100 - base * cos(a)}" stroke="var(--signal)" stroke-width="6.5" stroke-linecap="round"/>`; // a capsule needle on the ring
 
   const spTxt = sp == null ? "–" : String(Math.round(sp)).padStart(2, "0");
   // streaks flow across the card from the side the wind comes from, scaled to its strength
@@ -1466,7 +1466,7 @@ function renderUV() {
   let ticks = "";
   for (let v = 0; v <= 12; v++) { const th = PI * (1 - v / 12); ticks += `<line x1="${100 + 86 * cos(th)}" y1="${100 - 86 * sin(th)}" x2="${100 + (v % 3 ? 90 : 94) * cos(th)}" y2="${100 - (v % 3 ? 90 : 94) * sin(th)}" stroke="currentColor" stroke-opacity="${v % 3 ? .38 : .75}" stroke-linecap="round"/>`; }
   const th = PI * (1 - clamp(uv, 0, 12) / 12), mx_ = 100 + 80 * cos(th), my_ = 100 - 80 * sin(th);
-  const tri = `<path d="M${100 + 76 * cos(th)} ${100 - 76 * sin(th)} L${100 + 90 * cos(th + .07)} ${100 - 90 * sin(th + .07)} L${100 + 90 * cos(th - .07)} ${100 - 90 * sin(th - .07)}Z" fill="var(--signal)"/>`;
+  const tri = `<line x1="${100 + 78 * cos(th)}" y1="${100 - 78 * sin(th)}" x2="${100 + 89 * cos(th)}" y2="${100 - 89 * sin(th)}" stroke="var(--signal)" stroke-width="6.5" stroke-linecap="round"/>`; // the capsule needle
   const sub = uv < 3 && peak >= 3 && from ? `Protection ${fmtT(from)}–${fmtT(new Date(to.valueOf() + 36e5))}` : peak > uv ? `Peak ${peak.toFixed(0)} at ${fmtT(peakT)}` : `Today's max ${R(Dy.uv_index_max[di])}`;
   el.innerHTML = `${head("UV index", L[1])}
     <div class="gauge"><svg viewBox="0 0 200 108" aria-hidden="true">${ticks}
@@ -1820,12 +1820,12 @@ function renderPress() {
   const pt = (a, r) => [100 + r * cos(a), 100 + r * sin(a)];
   let ticks = "";
   for (let v = 960; v <= 1060; v += 5) { const a = A(v), big = v % 20 === 0, [x1, y1] = pt(a, 86), [x2, y2] = pt(a, big ? 74 : 80); ticks += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="currentColor" stroke-opacity="${big ? .8 : .32}" stroke-width="${big ? 1.6 : 1}" stroke-linecap="round"/>`; }
-  const a = A(p ?? 1013), [tx, ty] = pt(a, 70), [b1x, b1y] = pt(a - .08, 88), [b2x, b2y] = pt(a + .08, 88);
+  const a = A(p ?? 1013), [tx, ty] = pt(a, 72), [bx, by] = pt(a, 86);
   const [s1x, s1y] = pt(A(960), 94), [s2x, s2y] = pt(A(1060), 94);
   el.innerHTML = `${head("Pressure", trend)}
     <div class="dial"><svg viewBox="0 0 200 188" aria-hidden="true">${ticks}
       <path d="M${s1x} ${s1y} A94 94 0 1 1 ${s2x} ${s2y}" fill="none" stroke="currentColor" stroke-opacity=".16" stroke-width="1"/>
-      <path${fast ? ` class="tremble"` : ""} d="M${tx} ${ty} L${b1x} ${b1y} L${b2x} ${b2y}Z" fill="var(--signal)" stroke="rgba(0,0,0,.35)" stroke-width=".8"/>
+      <line${fast ? ` class="tremble"` : ""} x1="${tx}" y1="${ty}" x2="${bx}" y2="${by}" stroke="var(--signal)" stroke-width="6.5" stroke-linecap="round"/>
       <circle cx="${pt(A(1013.25), 94)[0].toFixed(1)}" cy="${pt(A(1013.25), 94)[1].toFixed(1)}" r="2.6" fill="currentColor"><title>Standard pressure, 1013 hPa</title></circle></svg>
       <div class="dial-v" role="img" aria-label="${val} ${inHg ? "inches of mercury" : "hectopascals"}">${dm(String(val))}<span class="mono">${inHg ? "inHg" : "hPa"}</span></div></div>
     <div class="foot"><span>Last 3 hours</span><b>${dp == null ? "–" : `${dp >= 0 ? "+" : "−"}${Math.abs(inHg ? dp * 0.02953 : dp).toFixed(inHg ? 2 : 1)}`}</b></div>`;

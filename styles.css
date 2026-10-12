@@ -266,7 +266,8 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .foot b{color:var(--ink);font-weight:550}
 .muted{color:var(--ink-2)}
 .empty{margin:auto 0;color:var(--ink-2);font-size:14px;max-width:34ch}
-.tri{position:absolute;width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:11px solid var(--signal);margin-left:-7px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.35))}
+/* the app's pointer: a short raspberry capsule standing across the scale, like a needle */
+.tri{position:absolute;width:5px;height:12px;border-radius:3px;background:var(--signal);margin-left:-2.5px;box-shadow:0 1px 3px rgba(0,0,0,.3)}
 
 /* dot matrix numerals */
 .dm{display:block;overflow:visible}
