@@ -781,3 +781,28 @@ body.net-off .toast{bottom:calc(140px + env(safe-area-inset-bottom,0px))}
 .a-hourly[data-view="d"] .dscroll.hv-d{display:flex}
 .dscroll i{width:4px;height:4px;border-radius:50%;background:var(--ink-3);transform:scale(.7);transition:background .2s,transform .2s}
 .dscroll i.on{background:var(--ink-2);transform:none}
+
+/* ---------- wall view: every card on one screen, for a spare monitor ---------- */
+/* The app is laid out at a fixed, large size (--wall-w × --wall-h, see fitWall) and scaled as one piece to fit the window. */
+html.wall,html.wall body{height:100%;overflow:hidden}
+html.wall .dock,html.wall .topbar,html.wall .a-src,html.wall .ptr{display:none}
+html.wall .app{position:fixed;left:0;top:0;width:var(--wall-w);height:var(--wall-h);max-width:none;margin:0;padding:30px 36px;box-sizing:border-box;display:flex;flex-direction:column;transform-origin:0 0;transform:translate(var(--wall-x),var(--wall-y)) scale(var(--wall-s))}
+html.wall .summary{margin:-4px 4px 16px;max-width:none}
+html.wall .board{flex:1;min-height:0;gap:16px;grid-template-columns:repeat(9,minmax(0,1fr));grid-template-rows:repeat(4,minmax(0,1fr));
+  grid-template-areas:
+   "hero hero hourly hourly hourly hourly hourly wind feels"
+   "hero hero radar radar radar now now uv humid"
+   "moon moon radar radar radar sun sun press vis"
+   "air air year year year pollen pollen rain clouds"}
+html.wall .board>.card{min-height:0}
+.wall-x{position:fixed;top:14px;right:14px;z-index:1100;opacity:0;transition:opacity .3s}
+html.wall .wall-x:hover,html.wall .wall-x:focus-visible{opacity:1}
+html:not(.wall) .wall-x{display:none}
+.wall-link{display:block;margin-top:18px;padding:0;font-size:12.5px;color:var(--ink-2);text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--ink-3)}
+@media (max-width:899px){.wall-link{display:none}}
+html.wall .a-pollen .pgrid{grid-template-columns:repeat(3,minmax(0,1fr))} /* pollen keeps a small corner: two rows of three */
+/* the moon card a touch more compact, so it fits its row */
+html.wall .moon-stats{gap:8px}
+html.wall .a-moon .strip{margin-top:4px}
+html.wall .a-moon{padding-top:14px}
+html.wall .a-moon .strip canvas{height:46px}

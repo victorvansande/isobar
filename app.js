@@ -1900,7 +1900,9 @@ function renderSrc() {
     <p><b>Rain radar</b> RainViewer, on Esri map tiles (Esri, HERE, Garmin, © OpenStreetMap).</p>
     <p><b>Weather warnings</b> MeteoAlarm (EUMETNET) and the national weather services, such as KMI. Region outlines © EuroGeographics.</p>
     <p><b>Normals and records</b> ERA5 reanalysis (Copernicus), for the area around this spot: normals over 1991–2020, records since 1950.</p>
-    <p><b>Moon</b> NASA LRO imagery. Phases, sunrise and twilight are calculated on this device.</p>`;
+    <p><b>Moon</b> NASA LRO imagery. Phases, sunrise and twilight are calculated on this device.</p>
+    <button class="wall-link" id="wallBtn">Show every card on one screen</button>`;
+  $("#wallBtn").onclick = () => { $("#dlgInfo").close(); setWall(true); };
   // where the forecast is for: coordinates, height above sea level and time zone
   const ll = (v, p, n) => `${Math.abs(v).toFixed(2)}° ${v >= 0 ? p : n}`;
   const elev = D.elevation ?? 0, elevTxt = S.precip === "inch" ? `${Math.round(elev * 3.281)} ft` : `${Math.round(elev)} m`;
@@ -2537,6 +2539,31 @@ if ("IntersectionObserver" in window) {
   document.querySelectorAll("#board > .card").forEach(el => io.observe(el));
 }
 
+/* ---------------- wall view ---------------- */
+/* Every card on one screen, just for fun on a spare monitor: the app is laid out at a fixed 2720 px width (and as tall as
+   the window's shape asks) in a 9 × 4 grid, then scaled as one piece to fit the window. Opened from the link at the
+   bottom of About the data, with the W key or with ?wall in the address; W, Esc or the corner × close it. */
+let wallOn = false;
+function fitWall() {
+  const W = 2720, H = Math.max(1330, Math.round(W * innerHeight / innerWidth)), s = Math.min(innerWidth / W, innerHeight / H), r = document.documentElement.style;
+  r.setProperty("--wall-w", `${W}px`); r.setProperty("--wall-h", `${H}px`); r.setProperty("--wall-s", s.toFixed(4));
+  r.setProperty("--wall-x", `${((innerWidth - W * s) / 2).toFixed(1)}px`); r.setProperty("--wall-y", `${((innerHeight - H * s) / 2).toFixed(1)}px`);
+}
+function setWall(on) {
+  if (on === wallOn) return; wallOn = on;
+  document.documentElement.classList.toggle("wall", on);
+  if (on) { fitWall(); scrollTo(0, 0); }
+  if (D) renderAll(); // the canvases and the cloud field size themselves to their new cards
+  if (map) setTimeout(() => map.invalidateSize(), 60);
+}
+$("#wallX").onclick = () => setWall(false);
+document.addEventListener("keydown", e => {
+  if (e.altKey || e.ctrlKey || e.metaKey || document.querySelector("dialog[open]") || (e.target.closest && e.target.closest("input,textarea"))) return;
+  if (e.key === "w" || e.key === "W") setWall(!wallOn);
+  else if (e.key === "Escape" && wallOn) setWall(false);
+});
+if (new URLSearchParams(location.search).has("wall")) setWall(true);
+
 /* ---------------- lifecycle ---------------- */
 document.querySelectorAll("[data-fam]").forEach(el => paint(el, FAM[el.dataset.fam]));
 // stagger the slow inflow so the cards don't pulse in unison
@@ -2547,7 +2574,9 @@ let rT;
 let lastW = innerWidth;
 window.addEventListener("resize", () => {
   clearTimeout(rT);
+  if (wallOn) fitWall(); // the wall view rescales at once, and redraws its cards once the window settles
   rT = setTimeout(() => {
+    if (wallOn) { if (D) renderAll(); if (map) map.invalidateSize(); return; }
     if (innerWidth === lastW) { if (map) map.invalidateSize(); return; }
     lastW = innerWidth;
     drawMoons(); drawYear(); if (map) map.invalidateSize();
