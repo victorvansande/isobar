@@ -1349,8 +1349,8 @@ function renderSun() {
   else { add(0, night); add(fr(st.dawn), night); add(fr(st.rise), tw); add(fr(st.goldenEnd), gold); add(fr(st.noon), day); add(fr(st.golden), gold); add(fr(st.set), tw); add(fr(st.dusk), night); add(1, night); }
   const grad = stops.sort((a, b) => a[0] - b[0]).map(([f, c]) => `<stop offset="${(f * 100).toFixed(2)}%" stop-color="${c}"/>`).join("");
   const sunsh = Dy.sunshine_duration[di];
-  X.sunCard = { mid0, daylight: `${dur(dl)} of daylight`, t: null };
-  el.innerHTML = `<div class="ch-row"><header class="ch"><h3 id="sunWhen">Sun</h3><p id="sunSub">${esc(X.sunCard.daylight)}</p></header><span class="mono" id="sunChange" style="text-align:right">${esc(chTxt)}</span></div>
+  X.sunCard = { mid0, t: null };
+  el.innerHTML = `<div class="ch-row"><header class="ch"><h3 id="sunWhen">Sun</h3><p id="sunSub" hidden></p></header><span class="mono" id="sunChange" style="text-align:right">${esc(chTxt)}</span></div>
     <button class="hero-now" id="sunNow" hidden>Back to now</button>
     <div class="band" id="sunBand" role="slider" tabindex="0" aria-label="Time of day. Drag, scroll or use the arrow keys to see the sun at another hour." aria-valuemin="0" aria-valuemax="1440"><svg viewBox="0 0 1000 30" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="sb">${grad}</linearGradient></defs><rect width="1000" height="30" fill="url(#sb)"/></svg><span class="tri" id="sunTri"></span>
       <div class="band-axis mono"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div></div>
@@ -1375,7 +1375,7 @@ function updateSun(t) {
   $("#sunTri").style.left = `${(f * 100).toFixed(2)}%`;
   const state = alt > 6 ? `Sun ${Math.round(alt)}° high` : alt > -.8 ? "Golden hour" : alt > -6 ? "Twilight" : "Night";
   $("#sunWhen").textContent = live ? "Sun" : fmtT(at);
-  $("#sunSub").textContent = live ? s.daylight : state;
+  $("#sunSub").textContent = state; $("#sunSub").hidden = live; // the length of the day lives in the Daylight card
   $("#sunChange").hidden = !live; $("#sunNow").hidden = live;
   const band = $("#sunBand");
   band.setAttribute("aria-valuenow", Math.round(f * 1440));
