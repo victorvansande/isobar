@@ -1643,8 +1643,14 @@ function yearData() {
   const fmt = new Intl.DateTimeFormat("en-GB", { timeZone: TZ, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
   const offH = d => { const p = Object.fromEntries(fmt.formatToParts(d).map(x => [x.type, x.value])); return (Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute) - d.valueOf()) / 36e5; };
   const days = [], n = (Date.UTC(year + 1, 0, 1) - Date.UTC(year, 0, 1)) / 864e5;
+  // the clock offset, asked weekly (asking is slow, in Safari above all) and day by day only in a week where it changes
+  const noonOf = i => new Date(Date.UTC(year, 0, 1 + i, 12) - OFF * 1000), offs = [];
+  for (let a = 0; a < n - 1; a += 7) {
+    const b = Math.min(a + 7, n - 1), oa = offs[a] ?? (offs[a] = offH(noonOf(a))), ob = offs[b] = offH(noonOf(b));
+    for (let i = a + 1; i < b; i++) offs[i] = oa === ob ? oa : offH(noonOf(i));
+  }
   for (let i = 0; i < n; i++) {
-    const noonUTC = new Date(Date.UTC(year, 0, 1 + i, 12) - OFF * 1000), off = offH(noonUTC), st = sunTimes(noonUTC, X.lat, X.lon);
+    const noonUTC = noonOf(i), off = offs[i], st = sunTimes(noonUTC, X.lat, X.lon);
     const h = t => t && !isNaN(t) ? (((t.valueOf() / 36e5 + off) % 24) + 24) % 24 : null; // a moment as hours on the local clock
     const up = sunAlt(st.noon, X.lat, X.lon) > 0;
     days.push({ key: new Date(Date.UTC(year, 0, 1 + i)).toISOString().slice(0, 10), off, up,

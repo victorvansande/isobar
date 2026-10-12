@@ -108,7 +108,7 @@ async function run(engine, name, viewport, variant = "normal") {
     warn: !document.querySelector("#warn").hidden && document.querySelector("#warnT").textContent
   }));
   check("main card renders", s.hero);
-  check("all 16 cards present", s.cards === 16, `${s.cards}`);
+  check("all 17 cards present", s.cards === 17, `${s.cards}`);
   check("no card left loading", s.skeletons === 0, `${s.skeletons} placeholders`);
   check("summary written", s.summary.length > 10, s.summary);
   check("nothing sticks out sideways", s.overflow <= 0, `${s.overflow}px too wide`);
@@ -147,9 +147,9 @@ async function run(engine, name, viewport, variant = "normal") {
     // swipe between the two saved places (here with the arrow keys)
     check("two place dots", (await page.locator("#pdots i").count()) === 2);
     await page.evaluate(() => document.activeElement && document.activeElement.blur()); // the sun slider uses the arrow keys itself
-    await page.keyboard.press("ArrowRight"); await page.waitForTimeout(1500);
+    await page.keyboard.press("ArrowRight"); await page.waitForFunction(() => document.querySelector("#placeName").textContent === "Antwerp" && !document.querySelector("#refreshBtn").classList.contains("spin"), null, { timeout: 6000 }).catch(() => {});
     check("next place with the arrow key", (await page.textContent("#placeName")) === "Antwerp", await page.textContent("#placeName"));
-    await page.keyboard.press("ArrowLeft"); await page.waitForTimeout(1500);
+    await page.keyboard.press("ArrowLeft"); await page.waitForFunction(() => document.querySelector("#placeName").textContent === "Herentals" && !document.querySelector("#refreshBtn").classList.contains("spin"), null, { timeout: 6000 }).catch(() => {});
     check("and back", (await page.textContent("#placeName")) === "Herentals", await page.textContent("#placeName"));
     // the radar: zoom in and out (this once ran Safari out of memory)
     await page.locator("#c-radar").scrollIntoViewIfNeeded();
