@@ -540,8 +540,8 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 /* ---------- humidity ---------- */
 /* humidity as a water level: the card fills like a glass, with a slowly moving surface; the dotted line on top is 100%: saturated air, where water starts to condense out as dew, mist or fog */
 .water{position:absolute;left:0;right:0;bottom:0;height:var(--h);z-index:-1;pointer-events:none;transition:height 1.2s cubic-bezier(.3,.7,.2,1)}
-.water .body{position:absolute;left:0;right:0;top:12px;bottom:0;background:linear-gradient(rgba(175,200,255,.24),rgba(130,165,255,.12))}
-.water svg{position:absolute;left:0;top:0;width:200%;height:12px;animation:wave 11s linear infinite}
+.water .body{position:absolute;left:0;right:0;top:11.6px;bottom:0;background:linear-gradient(rgba(175,200,255,.24),rgba(130,165,255,.12))}
+.water svg{position:absolute;left:0;top:0;width:200%;height:12px;animation:wave 11s linear infinite} /* the body tucks just under the surface edge: no dark hairline seam on fractional screen scales */
 @keyframes wave{to{transform:translateX(-50%)}}
 .sat{position:absolute;left:0;right:0;top:7px;border-top:1px dotted rgba(255,255,255,.4);pointer-events:none}
 .sat span{position:absolute;right:16px;top:4px;font:500 12px/1 var(--f-label);color:rgba(255,255,255,.55)}
