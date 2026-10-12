@@ -267,7 +267,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .muted{color:var(--ink-2)}
 .empty{margin:auto 0;color:var(--ink-2);font-size:14px;max-width:34ch}
 /* the app's pointer: a short raspberry capsule standing across the scale, like a needle */
-.tri{position:absolute;width:5px;height:12px;border-radius:3px;background:var(--signal);margin-left:-2.5px;box-shadow:0 0 0 1.5px rgba(255,255,255,.92),0 1px 4px rgba(0,0,0,.3)} /* a thin white rim keeps it clear on any colour */
+.tri{position:absolute;width:5px;height:12px;border-radius:3px;background:var(--signal);margin-left:-2.5px;box-shadow:0 1px 3px rgba(0,0,0,.3)}
 
 /* dot matrix numerals */
 .dm{display:block;overflow:visible}
@@ -568,7 +568,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .band.grab .tri,.hero:has(.grab),.a-sun:has(.grab){transition:none}
 .a-sun{transition:background-color .5s}
 .band svg{width:100%;height:30px;display:block;border-radius:15px}
-.band .tri{top:-14px;height:14px}
+.band .tri{top:-7px;height:21px} /* reaches well into the band, so it stands out against the orange card */
 .band-axis{display:flex;justify-content:space-between;margin-top:6px}
 .kv5{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:auto;padding-top:14px}
 .kv5 div{display:grid;gap:2px}
