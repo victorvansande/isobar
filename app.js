@@ -370,16 +370,21 @@ const qs = o => Object.entries(o).map(([k, v]) => `${k}=${encodeURIComponent(v)}
 const SPREAD_MODELS = ["ecmwf_ifs025", "gfs_seamless", "gem_seamless", "icon_seamless"];
 function confidence(u) {
   if (!u || !u.daily || !u.daily.time) return null;
+  // Four models agreeing on one later day is often luck. Looking further ahead never makes a forecast surer, so the
+  // uncertainty only holds or grows from day to day: a day is at least as unsure (and as fuzzy) as the one before it.
   const out = {}, d = u.daily;
+  let was = 0, wasFz = 0;
   d.time.forEach((day, i) => {
     const hi = SPREAD_MODELS.map(m => (d[`temperature_2m_max_${m}`] || [])[i]).filter(v => v != null);
     const mm = SPREAD_MODELS.map(m => (d[`precipitation_sum_${m}`] || [])[i]).filter(v => v != null);
     if (hi.length < 2) return;
     const deg = Math.max(...hi) - Math.min(...hi), split = mm.some(v => v >= 1) && mm.some(v => v < .2);
-    let level = deg <= 2 ? 0 : deg <= 4.5 ? 1 : 2;
-    if (split) level = Math.min(2, level + 1);
-    if (i >= 6) level = Math.max(1, level);
-    out[day] = { deg, fz: Math.max(deg, i * .45), lead: i, conf: ["high", "medium", "low"][level] };
+    let tl = deg <= 2 ? 0 : deg <= 4.5 ? 1 : 2; // from the temperatures: carried on to the days after
+    if (i >= 6) tl = Math.max(1, tl);
+    tl = was = Math.max(tl, was);
+    const level = split ? Math.min(2, tl + 1) : tl; // models split over rain: only this day is less sure
+    const fz = wasFz = Math.max(deg, i * .45, wasFz);
+    out[day] = { deg, fz, lead: i, conf: ["high", "medium", "low"][level] };
   });
   return out;
 }
@@ -828,7 +833,7 @@ function renderHero() {
     <line x1="0" y1="95" x2="300" y2="95" stroke="rgba(255,255,255,.45)" stroke-width="1.6" stroke-dasharray="0 6" stroke-linecap="round"/>
     ${segs.filter(g => g.type).map(g => `<path class="awx awx-${g.type}" d="${arcPath(g.f0, g.f1)}"/>`).join("")}
     <path id="arcDone" d="${arcPath(0, f)}" fill="none" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/>
-    <path id="arcLeft" d="${arcPath(f, 1)}" fill="none" stroke="rgba(255,255,255,.38)" stroke-width="1.2" stroke-dasharray="2 4"/>
+    <path id="arcLeft" d="${arcPath(f, 1)}" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1.8" stroke-dasharray="0 5.5" stroke-linecap="round"/>
     <line id="arcDrop" x1="${px}" y1="${py}" x2="${px}" y2="95" stroke="rgba(255,255,255,.55)" stroke-width="1" stroke-dasharray="1 3"/>
     <circle cx="30" cy="95" r="2.6" fill="#fff"/><circle cx="150" cy="95" r="2.6" fill="#fff"/><circle cx="270" cy="95" r="2.6" fill="#fff"/>
     ${dot}
@@ -1072,10 +1077,12 @@ function renderFeels() {
   const lo = Math.min(t, f) - 6, hi = Math.max(t, f) + 6, P = v => ((v - lo) / (hi - lo) * 100).toFixed(1);
   // when it feels the same as the thermometer (to the degree), the marker sits right on it with no gap to fill
   const same = R(f) === R(t), fp = same ? t : f;
+  // the scale as a row of dots; the stretch between the thermometer and how it feels lights up
+  const N = 25, a = +P(Math.min(t, f)), b = +P(Math.max(t, f));
+  let fdots = ""; for (let k = 0; k < N; k++) { const x = k / (N - 1) * 100; fdots += `<i${!same && x >= a - 2 && x <= b + 2 ? ' class="on"' : ""}></i>`; }
   el.innerHTML = `${head("Feels like", sub)}
     <div class="num big">${R(f)}°</div>
-    <div class="ftrack" aria-hidden="true"><div class="line"></div>
-      ${same ? "" : `<div class="seg" style="left:${P(Math.min(t, f))}%;width:${(Math.abs(t - f) / (hi - lo) * 100).toFixed(1)}%"></div>`}
+    <div class="ftrack" aria-hidden="true"><div class="fdots">${fdots}</div>
       <div class="tick" style="left:${P(t)}%"></div><div class="tri" style="left:${P(fp)}%"></div>
       <span class="lab" style="left:${P(t)}%">Measured: ${R(t)}°</span></div>
     <p class="feels-why">${esc(why)}</p>`;
@@ -1136,7 +1143,31 @@ function renderHourly() {
       <span class="hv-d hlinks"><button class="hall" id="hAll">Full forecast<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4.5 2.5L8 6l-3.5 3.5"/></svg></button><button class="hall" id="hSure">How sure?<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4.5 2.5L8 6l-3.5 3.5"/></svg></button></span></header>
       <div class="hseg" role="tablist" aria-label="Forecast range"><button role="tab" data-v="h" aria-selected="${view === "h"}">48 h</button><button role="tab" data-v="d" aria-selected="${view === "d"}">14 days</button></div></div>
     <div class="hscroll hv-h" tabindex="0" aria-label="Hourly forecast, scroll sideways"><div class="hin" style="grid-template-columns:repeat(${n},${colW}px);width:${W}px">${track}${cols.join("")}${svg}</div></div>
-    <div class="hscroll hv-d" id="hDays" tabindex="0" aria-label="Daily forecast, scroll sideways">${view === "d" ? dayStrip() : ""}</div>`; // the hidden view is built when it is first opened
+    <div class="dscroll hv-h" aria-hidden="true"></div>
+    <div class="hscroll hv-d" id="hDays" tabindex="0" aria-label="Daily forecast, scroll sideways">${view === "d" ? dayStrip() : ""}</div>
+    <div class="dscroll hv-d" aria-hidden="true"></div>`; // the hidden view is built when it is first opened
+  for (const v of ["h", "d"]) dotScroll(el.querySelector(`.hscroll.hv-${v}`), el.querySelector(`.dscroll.hv-${v}`));
+}
+/* A sideways strip shows a row of dots under it instead of a scrollbar: a few lit dots travel along as it scrolls, like a
+   dot-matrix display, and dragging along the dots scrolls the strip. */
+function dotScroll(sc, bar) {
+  if (!sc || !bar) return;
+  let n = 0, shown = "";
+  const draw = () => {
+    const W = bar.clientWidth, max = sc.scrollWidth - sc.clientWidth; if (!W) return;
+    const N = Math.max(8, Math.floor(W / 9));
+    if (N !== n) { n = N; shown = ""; bar.innerHTML = "<i></i>".repeat(N); }
+    bar.style.visibility = max > 1 ? "" : "hidden";
+    const size = clamp(Math.round(N * sc.clientWidth / sc.scrollWidth), 2, N), at = max > 0 ? Math.round((N - size) * sc.scrollLeft / max) : 0;
+    if (shown === `${size},${at}`) return; shown = `${size},${at}`;
+    [...bar.children].forEach((d, k) => d.classList.toggle("on", k >= at && k < at + size));
+  };
+  sc.addEventListener("scroll", perFrame(draw), { passive: true });
+  if ("ResizeObserver" in window) new ResizeObserver(() => draw()).observe(sc);
+  const go = e => { const r = bar.getBoundingClientRect(); sc.scrollLeft = clamp((e.clientX - r.left) / r.width, 0, 1) * (sc.scrollWidth - sc.clientWidth); };
+  bar.addEventListener("pointerdown", e => { if (e.button) return; bar.setPointerCapture(e.pointerId); go(e); });
+  bar.addEventListener("pointermove", e => { if (bar.hasPointerCapture(e.pointerId)) go(e); });
+  whenMeasured(draw);
 }
 /* The next 14 days as columns: each day's low-to-high range as a bar on one shared scale, coloured by temperature,
    with the chance of rain in dots. Tapping a day opens the full forecast with that day unfolded. */
@@ -1659,6 +1690,15 @@ function yearData() {
   }
   const minOff = Math.min(...days.map(d => d.off));
   days.forEach(d => { d.summer = d.off > minOff; });
+  // the moments the clocks change: found to the minute between the noons either side, as wall-clock times before and after
+  const dst = [];
+  for (let i = 1; i < n; i++) if (days[i].off !== days[i - 1].off) {
+    let a = noonOf(i - 1).valueOf(), b = noonOf(i).valueOf();
+    while (b - a > 6e4) { const m = Math.round((a + b) / 2 / 6e4) * 6e4; if (offH(new Date(m)) === days[i - 1].off) a = m; else b = m; }
+    const t = b, wall = off => { const w = new Date(t + off * 36e5); return [w.getUTCHours(), w.getUTCMinutes()]; };
+    dst.push({ i, key: days[i].key, from: wall(days[i - 1].off), to: wall(days[i].off), fwd: days[i].off > days[i - 1].off });
+  }
+  days.dst = dst;
   yearKept = { k: yk, days };
   const today = days.findIndex(d => d.key === X.todayKey);
   return { year, days, today: today < 0 ? 0 : today };
@@ -1672,6 +1712,7 @@ function renderYear() {
     <div class="yr-chart" id="yrChart" role="slider" tabindex="0" aria-label="Day of the year. Drag or use the arrow keys to see the daylight on another day." aria-valuemin="1" aria-valuemax="${Y.days.length}">
       <canvas id="yrCv" aria-hidden="true"></canvas>
       <span class="yr-h mono" style="top:25%">06</span><span class="yr-h mono" style="top:50%">12</span><span class="yr-h mono" style="top:75%">18</span>
+      ${(Y.days.dst || []).map(c => { const x = (c.i / Y.days.length * 100); return `<span class="yr-dst${x > 55 ? " r" : ""}${c === Y.days.dst[0] ? " up" : ""}" style="left:${x.toFixed(2)}%"><b class="mono">${dm_(c.key)} · ${wallClock(c.from)} → ${wallClock(c.to)}</b></span>`; }).join("")}
       <span class="yr-today" style="left:${((Y.today + .5) / Y.days.length * 100).toFixed(2)}%"></span><span class="yr-sel" id="yrSel"></span></div>
     <div class="yr-axis mono">${["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"].map(m => `<span>${m}</span>`).join("")}</div>`;
   drawYear();
@@ -1691,6 +1732,8 @@ function drawYear() {
   });
 }
 const hm = mins => `${Math.floor(mins / 60)}h ${String(Math.round(mins % 60)).padStart(2, "0")}m`;
+// a wall-clock time [hours, minutes] in the chosen clock style
+const wallClock = ([h, m]) => S.clock === "12" ? `${h % 12 || 12}${m ? ":" + String(m).padStart(2, "0") : ""} ${h < 12 ? "am" : "pm"}` : `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 function updateYear(i) {
   const Y = X.year; if (!Y) return;
   i = clamp(Math.round(i), 0, Y.days.length - 1); Y.cur = i;
@@ -1701,7 +1744,8 @@ function updateYear(i) {
   $("#yrLen").textContent = hm(d.len);
   // one short line: the sun's hours, which clock time it is, and only the special days get a word
   const clock = Y.days.some(x => x.summer) ? (d.summer ? "summer time" : "winter time") : "";
-  const special = d === longest ? "longest day" : d === shortest ? "shortest day" : "";
+  const change = (Y.days.dst || []).find(c => c.i === i);
+  const special = change ? `clocks go ${change.fwd ? "forward" : "back"} at ${wallClock(change.from)}` : d === longest ? "longest day" : d === shortest ? "shortest day" : "";
   $("#yrSub").textContent = d.rise_t && !isNaN(d.rise_t) ? [`${fmtT(d.rise_t)} – ${fmtT(d.set_t)}`, clock, special].filter(Boolean).join(" · ") : d.up ? "The sun doesn't set" : "The sun doesn't rise";
   $("#yrNow").hidden = isToday;
   const box = $("#yrChart"); box.setAttribute("aria-valuenow", i + 1); box.setAttribute("aria-valuetext", `${$("#yrDate").textContent}, ${hm(d.len)} of daylight, sunrise to sunset ${$("#yrSub").textContent}`);

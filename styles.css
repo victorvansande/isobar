@@ -166,6 +166,11 @@ html.standalone[data-mode="day"] body::before{content:"";position:fixed;left:0;r
 .yr-today,.yr-sel{position:absolute;top:0;bottom:0;width:2px;margin-left:-1px;pointer-events:none}
 .yr-today{background:var(--signal);opacity:.85}
 .yr-sel{background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.18)}
+/* when the clocks change: a faint dotted line at the step, with the date and the wall-clock jump at its foot */
+.yr-dst{position:absolute;top:0;bottom:0;width:0;border-left:1px dotted rgba(255,255,255,.4);pointer-events:none}
+.yr-dst b{position:absolute;bottom:7px;left:6px;white-space:nowrap;font-size:11px;font-weight:500;color:rgba(255,255,255,.72);text-shadow:0 0 3px rgba(18,10,58,.8)}
+.yr-dst.r b{left:auto;right:6px}
+.yr-dst.up b{bottom:auto;top:7px}
 .yr-axis{display:grid;grid-template-columns:repeat(12,1fr);margin-top:8px;text-align:center}
 .a-year{grid-area:year}
 
@@ -321,8 +326,10 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 
 /* ---------- feels ---------- */
 .ftrack{position:relative;height:46px;margin:16px 4px 6px}
-.ftrack .line{position:absolute;left:0;right:0;top:22px;height:2px;border-radius:2px;background:rgba(255,255,255,.3)}
-.ftrack .seg{position:absolute;top:21px;height:4px;border-radius:4px;background:#fff}
+/* the scale as a row of dots: faint along the way, lit between the thermometer and how it feels */
+.ftrack .fdots{position:absolute;left:-2.5px;right:-2.5px;top:20px;height:6px;display:flex;justify-content:space-between;align-items:center}
+.ftrack .fdots i{width:5px;height:5px;border-radius:50%;background:var(--ink-3);transform:scale(.62)}
+.ftrack .fdots i.on{background:var(--ink);transform:none}
 .ftrack .tick{position:absolute;top:12px;width:2px;height:22px;margin-left:-1px;background:#fff;border-radius:2px;opacity:.8}
 .ftrack .tri{top:4px}
 .ftrack .lab{position:absolute;top:36px;transform:translateX(-50%);font:500 11px/1 var(--f-mono);letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;color:var(--ink-2)}
@@ -331,7 +338,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 /* ---------- hourly (glass) ---------- */
 .a-hourly{min-height:0;padding:18px 0 14px}
 .a-hourly .ch-row{padding:0 20px}
-.hscroll{overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;scrollbar-color:var(--ink-3) transparent;padding:0 14px 6px;-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 14px,#000 calc(100% - 24px),transparent);mask-image:linear-gradient(90deg,transparent 0,#000 14px,#000 calc(100% - 24px),transparent)}
+.hscroll{overflow-x:auto;overflow-y:hidden;scrollbar-width:none;padding:0 14px 6px;-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 14px,#000 calc(100% - 24px),transparent);mask-image:linear-gradient(90deg,transparent 0,#000 14px,#000 calc(100% - 24px),transparent)}
 .hin{position:relative;display:grid;padding-top:30px}
 /* sun and moon track: sunlight turning to night and back at the real sunset and sunrise */
 .htrack{position:absolute;left:0;top:6px;height:4px;border-radius:4px}
@@ -605,6 +612,9 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .a-radar .ch{position:absolute;z-index:500;top:14px;left:14px;pointer-events:none;padding:10px 14px;border-radius:18px}
 .here-pin{border-radius:50%;background:var(--signal);box-shadow:0 0 0 2.5px #fff,0 1px 4px rgba(0,0,0,.3)}
 #radarMap{position:absolute;inset:6px;border-radius:calc(var(--r-card) - 6px);overflow:hidden;background:#474749}
+/* Leaflet adds map tiles together ("plus-lighter"); on a screen with a fractional pixel ratio their antialiased edges
+   then add up to thin light lines. Normal blending with a half-pixel overlap joins them without a seam. */
+#radarMap img.leaflet-tile{mix-blend-mode:normal;width:256.5px!important;height:256.5px!important}
 :root[data-mode="day"] #radarMap{background:#efefef}
 @supports (corner-shape:squircle){#radarMap{border-radius:48px;corner-shape:squircle}}
 .leaflet-container{font:11px var(--f-mono)}
@@ -619,9 +629,11 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .rbar .round svg{fill:#fff;stroke:none}
 .rticks{flex:1;display:flex;gap:3px;align-items:center;height:34px;margin:-7px 0;cursor:grab;touch-action:pan-y}
 .rticks.grab{cursor:grabbing}
-.rticks button{flex:1;height:14px;border-radius:3px;background:rgba(255,255,255,.26)}
-.rticks button.cur{background:var(--signal);height:20px}
-.rticks button.fut{background:rgba(143,176,255,.45)}
+/* one dot per radar frame, on the same dot grid as the rest of the app; the whole height stays tappable */
+.rticks button{flex:1;height:34px;position:relative;background:none;border-radius:0}
+.rticks button::after{content:"";position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:rgba(255,255,255,.34);transition:transform .2s,background .2s}
+.rticks button.cur::after{background:var(--signal);transform:scale(1.75)}
+.rticks button.fut::after{background:rgba(143,176,255,.62)}
 .rtime{font:500 11px/1 var(--f-mono);letter-spacing:.05em;min-width:70px;text-align:right}
 .zoomer{position:absolute;z-index:500;right:16px;top:16px;display:grid;gap:6px}
 .ch.lens.dark h3{color:#fff}.ch.lens.dark p{color:rgba(255,255,255,.65)}
@@ -760,3 +772,11 @@ body.net-off .toast{bottom:calc(140px + env(safe-area-inset-bottom,0px))}
 .tile-go{position:relative;text-align:left;cursor:pointer;font:inherit;color:inherit}
 .tile-go svg{position:absolute;right:10px;top:11px;width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;opacity:.6}
 .tile-go:hover svg{opacity:1}
+
+/* ---------- dot scrollbars ---------- */
+/* sideways strips: no system scrollbar, a row of dots instead in which a few lit dots travel along (see dotScroll) */
+.hscroll::-webkit-scrollbar{display:none}
+.dscroll{display:flex;justify-content:space-between;align-items:center;height:14px;margin:2px 24px 0;cursor:pointer;touch-action:none}
+.a-hourly[data-view="d"] .dscroll.hv-d{display:flex}
+.dscroll i{width:4px;height:4px;border-radius:50%;background:var(--ink-3);transform:scale(.7);transition:background .2s,transform .2s}
+.dscroll i.on{background:var(--ink-2);transform:none}
