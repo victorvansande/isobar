@@ -324,12 +324,19 @@ function drawStrip(cv, off, base, mirror) {
   ctx.font = "500 9px 'Geist Mono', ui-monospace, monospace"; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
   const d0 = Math.floor(off - mid / step) - 1, d1 = Math.ceil(off + mid / step) + 1;
   let prev = phaseOn(d0 - 1);
+  const tags = [];
   for (let d = d0; d <= d1; d++) {
     const p = phaseOn(d), x = mid + (d - off) * step, a = clamp(1 - Math.pow(Math.abs(x - mid) / mid, 2) * .85, 0, 1);
     moonShape(ctx, x, cy, r, p, mirror, `rgba(255,255,255,${(.94 * a).toFixed(3)})`, `rgba(255,255,255,${(.14 * a).toFixed(3)})`);
     const tag = d === 0 ? "Today" : prev < .5 && p >= .5 ? "Full" : prev > .8 && p < .2 ? "New" : "";
-    if (tag) { ctx.fillStyle = `rgba(255,255,255,${(.75 * a).toFixed(3)})`; ctx.fillText(tag, x, h - 4); }
+    if (tag) tags.push({ tag, x, a, w: ctx.measureText(tag).width, first: d === 0 });
     prev = p;
+  }
+  // labels never overlap: "Today" goes first, a new or full moon right next to it gives way
+  const placed = [];
+  for (const t of tags.sort((m, n) => n.first - m.first)) {
+    if (placed.some(o => Math.abs(o.x - t.x) < (o.w + t.w) / 2 + 6)) continue;
+    placed.push(t); ctx.fillStyle = `rgba(255,255,255,${(.75 * t.a).toFixed(3)})`; ctx.fillText(t.tag, t.x, h - 4);
   }
   ctx.fillStyle = Palette.SIGNAL; ctx.beginPath(); ctx.moveTo(mid - 5, cy + r + 10); ctx.lineTo(mid + 5, cy + r + 10); ctx.lineTo(mid, cy + r + 4); ctx.fill();
 }
