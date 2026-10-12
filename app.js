@@ -829,7 +829,6 @@ function renderHero() {
   paint(el, pal);
   el.classList.toggle("light", lum(pal.mid) > .42); // a pale sky (snow, fog) takes dark text
   const au = $("#aurora"); paint(au, pal);
-  au.style.setProperty("--x", (tC < 13 ? FAM.coral : FAM.cobalt).mid);
   const rise = Dy.sunrise[di] ? T(Dy.sunrise[di]) : null, set = Dy.sunset[di] ? T(Dy.sunset[di]) : null;
   const st = sunTimes(dayOf(X.todayKey), X.lat, X.lon);
   const now = Date.now();
@@ -842,14 +841,20 @@ function renderHero() {
     else if (now > set) { const nr = Dy.sunrise[di + 1] ? T(Dy.sunrise[di + 1]) : null; mid = nr ? `Sunrise in ${inMins((nr - now) / 6e4)}` : "After sunset"; }
     else mid = `Solar noon ${fmtT(st.noon)}`;
   } else mid = up ? "Midnight sun" : "Polar night";
-  // By day the arc follows the sun. After dark it follows the moon while the moon is up, from moonrise to moonset,
-  // as high as the moon climbs tonight; with no moon in the sky the sun waits, dimmed, for the morning.
-  const mp = up ? null : moonPass(new Date(now));
+  // By day the arc is the sun's path. After dark the arc is the night itself, from sunset to sunrise, as tall as the sun
+  // sinks tonight (a short summer night is a low arc, a long winter night a tall one); the dot shows how far the night
+  // has come, and rain or fog stay on it. The moon keeps a path of its own, so it shows apart, in the corner of the sky.
   let a0 = rise, a1 = set, body = "sun";
-  if (mp) { a0 = mp.rise; a1 = mp.set; body = "moon"; f = clamp((now - a0) / (a1 - a0), 0, 1); }
-  arcDay = mp ? { peak: mp.peak } : sunDay ? { peak: Math.max(0, sunAlt(st.noon, X.lat, X.lon)) } : null; // peak: the highest point on today's path
+  if (sunDay && !up) {
+    const ps = Dy.sunset[di - 1] ? T(Dy.sunset[di - 1]) : null, nr = Dy.sunrise[di + 1] ? T(Dy.sunrise[di + 1]) : null;
+    const [n0, n1] = now < rise ? [ps, rise] : [set, nr];
+    if (n0 && n1 && !isNaN(n0) && !isNaN(n1)) { a0 = n0; a1 = n1; body = "night"; f = clamp((now - a0) / (a1 - a0), 0, 1); } // a night next to a midnight sun keeps the day arc
+  }
+  const night = body === "night";
+  arcDay = night ? { peak: Math.max(0, -sunAlt(new Date((a0.valueOf() + a1.valueOf()) / 2), X.lat, X.lon)) } // peak: the highest point on the path
+    : sunDay ? { peak: Math.max(0, sunAlt(st.noon, X.lat, X.lon)) } : null;
   const [px, py] = arcPoint(f).map(v => v.toFixed(1));
-  const scrub = !!(mp || sunDay);
+  const scrub = sunDay;
   // the weather along the path: rain or snow hours as a soft band under the arc, heavy cloud as a faint one
   const segs = scrub ? arcWeather(a0, a1) : [];
   if (body === "sun" && up && sunDay) {
@@ -861,9 +866,11 @@ function renderHero() {
   const rb = body === "sun" ? rainbowChance() : null;
   if (rb) mid = `Rainbow possible to the ${now < st.noon ? "west" : "east"}`; // always opposite the sun
   X.sun = scrub ? { rise: a0, set: a1, f, cur: f, body } : null;
-  const mi = mp && moonIllum(new Date(now));
-  const dot = mp
-    ? `<g id="sunDot" class="sun-dot" transform="translate(${px} ${py})"><circle r="9" fill="none" stroke="currentColor" stroke-opacity=".6" stroke-width="1"/><circle r="6.5" fill="currentColor" fill-opacity=".2"/><path d="${moonSvg(mi.phase, 6.5)}" fill="currentColor"${X.moon && X.moon.south ? ' transform="scale(-1 1)"' : ""}/></g>`
+  // the moon, while it is up after dark: small, with tonight's phase, apart from the arc
+  const mAlt = up ? -1 : moonAlt(new Date(now), X.lat, X.lon) / rad, mi = mAlt > 0 && moonIllum(new Date(now));
+  const moon = mi ? `<span class="hero-moon" id="heroMoon" role="img" aria-label="Moon up, ${Math.round(mi.fraction * 100)}% lit"><svg viewBox="-12 -12 24 24"><circle r="8" fill="currentColor" fill-opacity=".16"/><path d="${moonSvg(mi.phase, 8)}" fill="currentColor"${X.lat < 0 ? ' transform="scale(-1 1)"' : ""}/></svg></span>` : "";
+  const dot = night
+    ? `<g id="sunDot" class="sun-dot" transform="translate(${px} ${py})"><circle r="9" fill="none" stroke="currentColor" stroke-opacity=".6" stroke-width="1"/><circle r="2.8" fill="currentColor"/></g>`
     : `<g id="sunDot" class="sun-dot" transform="translate(${px} ${py})" opacity="${up ? 1 : .5}"><circle r="9" fill="none" stroke="currentColor" stroke-opacity=".6" stroke-width="1"/><circle r="4" fill="currentColor"/></g>`;
   const arc = `<svg viewBox="0 0 300 108" aria-hidden="true">
     <line x1="0" y1="95" x2="300" y2="95" stroke="currentColor" stroke-opacity=".45" stroke-width="1.6" stroke-dasharray="0 6" stroke-linecap="round"/>
@@ -899,15 +906,15 @@ function renderHero() {
   const cold = tC < 0;
   el.innerHTML = `${sky}${cold ? `<canvas class="frost" id="heroFrost"></canvas>${frostGlints(41, 14)}` : ""}
     <header class="ch"><h3 id="heroWhen">Now</h3><p id="heroSub">${esc(label)}</p></header>
-    <span class="hero-upd mono" id="heroUpd"${Date.now() - fetchedAt < 30 * 6e4 ? " hidden" : ""}>Updated ${updLabel(fetchedAt)}</span>
+    <span class="hero-upd mono" id="heroUpd"${Date.now() - fetchedAt < 30 * 6e4 ? " hidden" : ""}>Updated ${updLabel(fetchedAt)}</span>${moon}
     <button class="hero-now" id="heroNow" hidden>Back to now</button>
     <div class="hero-temp" id="heroTemp" data-v="${R(c.temperature_2m)}" role="img" aria-label="${R(c.temperature_2m)} degrees">${dm(String(R(c.temperature_2m)), { deg: true })}</div>
     <div class="hero-meta"><span id="heroFeels">Feels like ${R(c.apparent_temperature)}°</span><span>High ${R(Dy.temperature_2m_max[di])}° · Low ${R(Dy.temperature_2m_min[di])}°</span><span id="heroClim" class="clim"${climLine() ? "" : " hidden"}>${esc(climLine())}</span></div>
     <div class="arc"><div class="arc-in" id="arcIn"${scrub ? ` role="slider" tabindex="0" aria-label="Time of day. Drag the sun or use the arrow keys to see the temperature at that hour." aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(f * 100)}" aria-valuetext="Now"` : ""}>${arc}</div></div>
     <div class="hero-foot">
-      <div><b>${fmtT(a0)}</b><span>${mp ? "Moonrise" : "Sunrise"}</span></div>
+      <div><b>${fmtT(a0)}</b><span>${night ? "Sunset" : "Sunrise"}</span></div>
       <div class="mid"><span id="heroMid">${esc(mid)}</span></div>
-      <div class="r"><b>${fmtT(a1)}</b><span>${mp ? "Moonset" : "Sunset"}</span></div>
+      <div class="r"><b>${fmtT(a1)}</b><span>${night ? "Sunrise" : "Sunset"}</span></div>
     </div>`;
   glowAt(f);
   // the rainbow stands on the horizon line of the arc below
@@ -955,19 +962,6 @@ const arcPath = (f0, f1) => {
   for (let i = 0; i <= n; i++) { const [x, y] = arcPoint(f0 + (f1 - f0) * i / n); d += `${i ? "L" : "M"}${x.toFixed(1)} ${y.toFixed(1)}`; }
   return d;
 };
-/* The moon's current trip across the sky (null while it is down): rise and set to the minute, and its highest point. */
-function moonPass(t) {
-  const hc = .133 * rad, up = x => moonAlt(new Date(x), X.lat, X.lon) > hc, now = t.valueOf(), step = 6e5, lim = 30 * 36e5;
-  if (!up(now)) return null;
-  let a = now, b = now;
-  while (now - a < lim && up(a - step)) a -= step;
-  while (b - now < lim && up(b + step)) b += step;
-  if (now - a >= lim || b - now >= lim) return null; // a moon that never sets has no arc to draw
-  const edge = (out, inn) => { for (let i = 0; i < 7; i++) { const m = (out + inn) / 2; if (up(m)) inn = m; else out = m; } return (out + inn) / 2; };
-  a = edge(a - step, a); b = edge(b + step, b);
-  let peak = 0; for (let x = a; x <= b; x += step) peak = Math.max(peak, moonAlt(new Date(x), X.lat, X.lon));
-  return { rise: new Date(a), set: new Date(b), peak };
-}
 /* The lit part of the moon as an SVG path around 0,0 (same shape as moonLitPath on the moon card). */
 function moonSvg(p, r) {
   const k = cos(2 * PI * p), rx = Math.max(r * Math.abs(k), .01).toFixed(2), sw = k > 0 ? 0 : 1;
@@ -1024,8 +1018,9 @@ function scrubSun(f) {
   $("#heroWhen").textContent = fmtT(t);
   $("#heroSub").textContent = label;
   $("#heroFeels").textContent = `Feels like ${R(h.feels)}°`;
-  const moon = s.body === "moon";
-  $("#heroMid").textContent = `${moon ? "Moon" : "Sun"} ${Math.max(0, Math.round((moon ? moonAlt : sunAlt)(t, X.lat, X.lon) / rad))}° above the horizon`;
+  const alt = Math.round(sunAlt(t, X.lat, X.lon) / rad); // after dark: how deep the sun has sunk
+  $("#heroMid").textContent = alt ? `Sun ${Math.abs(alt)}° ${alt > 0 ? "above" : "below"} the horizon` : "Sun on the horizon";
+  const hm = $("#heroMoon"); if (hm) hm.hidden = true; // the moon in the corner is the moon of now
   const hp = heroPal(Math.round(sunAlt(t, X.lat, X.lon) / rad * 2) / 2, kind, Math.round(toC(h.temp) * 2) / 2); // the sky at that hour; half steps keep repaints rare
   paint(card("c-hero"), hp); card("c-hero").classList.toggle("light", lum(hp.mid) > .42);
   glowAt(f);
@@ -1081,7 +1076,7 @@ function renderNow() {
     const period = (5.6 - Math.min(lit, 8) * .3).toFixed(2), stepT = period * .024;
     const start = 2.4 + ((i * 7919) % 97) / 97 * period;
     for (let k = 0; k < rows; k++) {
-      if (k >= lit) { grid += `<circle cx="${cx}" cy="${cyOf(k)}" r="2.1" fill="currentColor" opacity=".13"/>`; continue; }
+      if (k >= lit) { grid += `<circle cx="${cx}" cy="${cyOf(k)}" r="2.1" fill="currentColor" opacity=".07"/>`; continue; }
       const tone = (.95 - (k / Math.max(lit - 1, 1)) * .4 * (lit / rows)).toFixed(2);
       const fill = `--d:${(.25 + i * .035 + k * .09).toFixed(2)}s`;
       const top = k === lit - 1 && lit < rows;
@@ -1091,7 +1086,7 @@ function renderNow() {
       wet += `<circle class="drip" cx="${cx}" cy="${cyOf(rows - 1 - j)}" r="2.5" fill="var(--rain)" style="--p:${period}s;--w:${(start + j * stepT).toFixed(2)}s"/>`;
   });
   const dots = `${grid}<g filter="url(#bloom)">${wet}</g>`;
-  const axis = Array.from({ length: 6 }, (_, k) => times[k * 4] ? `<span class="mono">${k ? (S.clock === "12" ? fmtT(times[k * 4]).replace(/\s/g, "").toLowerCase() : fmtT(times[k * 4])) : "Now"}</span>` : "<span></span>").join("");
+  const axis = Array.from({ length: 6 }, (_, k) => times[k * 4] ? `<span class="tm">${k ? (S.clock === "12" ? fmtT(times[k * 4]).replace(/\s/g, "").toLowerCase() : fmtT(times[k * 4])) : "Now"}</span>` : "<span></span>").join("");
   el.innerHTML = `<div class="ch-row">${head("Precipitation", sub)}${total > 0 ? `<span class="mono">${fmtP(total)} <span class="u">${PU()}</span> total</span>` : ""}</div>
     <div class="now-say">${esc(say)}</div>
     <div class="now-chart"><svg viewBox="0 0 ${n * sp} ${rows * sp}" role="img" aria-label="Precipitation per 15 minutes"><defs><filter id="bloom" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.3" result="b"/><feComponentTransfer in="b" result="s"><feFuncA type="linear" slope=".55"/></feComponentTransfer><feMerge><feMergeNode in="s"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>${dots}</svg></div>
@@ -1688,7 +1683,7 @@ function renderSun() {
   el.innerHTML = `<div class="ch-row"><header class="ch"><h3 id="sunWhen">Sun</h3><p id="sunSub" hidden></p></header><span class="mono" id="sunChange" style="text-align:right">${chTxt}</span></div>
     <button class="hero-now" id="sunNow" hidden>Back to now</button>
     <div class="band" id="sunBand" role="slider" tabindex="0" aria-label="Time of day. Drag, scroll or use the arrow keys to see the sun at another hour." aria-valuemin="0" aria-valuemax="1440"><svg viewBox="0 0 1000 30" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="sb">${grad}</linearGradient></defs><rect width="1000" height="30" fill="url(#sb)"/></svg><span class="tri" id="sunTri"></span>
-      <div class="band-axis mono"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div></div>
+      <div class="band-axis tm"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div></div>
     <div class="kv5">
       <div><span class="mono">First light</span><b>${fmtT(st.dawn)}</b></div>
       <div><span class="mono">Sunrise</span><b>${fmtT(Dy.sunrise[di] ? T(Dy.sunrise[di]) : null)}</b></div>
@@ -1790,10 +1785,10 @@ function renderYear() {
     <p class="yr-sub" id="yrSub"></p>
     <div class="yr-chart" id="yrChart" role="slider" tabindex="0" aria-label="Day of the year. Drag or use the arrow keys to see the daylight on another day." aria-valuemin="1" aria-valuemax="${Y.days.length}">
       <canvas id="yrCv" aria-hidden="true"></canvas>
-      <span class="yr-h mono" style="top:25%">06</span><span class="yr-h mono" style="top:50%">12</span><span class="yr-h mono" style="top:75%">18</span>
+      <span class="yr-h tm" style="top:25%">06</span><span class="yr-h tm" style="top:50%">12</span><span class="yr-h tm" style="top:75%">18</span>
       ${(Y.days.dst || []).map(c => { const x = (c.i / Y.days.length * 100); return `<span class="yr-dst${x > 55 ? " r" : ""}${c === Y.days.dst[0] ? " up" : ""}" style="left:${x.toFixed(2)}%"><b class="mono">${dm_(c.key)} · ${wallClock(c.from)} → ${wallClock(c.to)}</b></span>`; }).join("")}
       <span class="yr-today" style="left:${((Y.today + .5) / Y.days.length * 100).toFixed(2)}%"></span><span class="yr-sel" id="yrSel"></span></div>
-    <div class="yr-axis mono">${["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"].map(m => `<span>${m}</span>`).join("")}</div>`;
+    <div class="yr-axis tm">${["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"].map(m => `<span>${m}</span>`).join("")}</div>`;
   drawYear();
   updateYear(Y.today);
   bindYear();
@@ -2239,7 +2234,7 @@ function renderClock() {
   const shown = `${hh}:${mm}${ap}`;
   if (shown === clockShown && el.dataset.len) return;
   clockShown = shown;
-  if (+el.dataset.len !== chars.length) { el.innerHTML = chars.map(() => `<span class="ck"></span>`).join("") + `<span class="mono ck-ap"></span>`; el.dataset.len = chars.length; }
+  if (+el.dataset.len !== chars.length) { el.innerHTML = chars.map(() => `<span class="ck"></span>`).join("") + `<span class="tm ck-ap"></span>`; el.dataset.len = chars.length; }
   el.querySelectorAll(".ck").forEach((slot, i) => { if (slot.dataset.c !== chars[i]) { slot.dataset.c = chars[i]; slot.innerHTML = dm(chars[i]); } });
   el.querySelector(".ck-ap").textContent = ap;
   el.setAttribute("aria-label", `Local time ${hh}:${mm}${ap ? " " + ap : ""}`);
