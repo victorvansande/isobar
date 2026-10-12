@@ -1529,7 +1529,7 @@ function renderVis() {
     for (let x = 0; x <= W * 2; x += 8) p += ` L${x} ${(base - amp * (.8 * sin(x / W * 2 * PI * (1 + (i % 2)) + ph) + .2 * sin(x / W * 6 * PI + ph * 2))).toFixed(1)}`;
     // colour by distance (dark near, blue-grey far), then washed into the haze by how far out of sight it is
     const col = `color-mix(in oklab,color-mix(in oklab,var(--v-near),var(--v-far) ${Math.round(i / (RIDGES.length - 1) * 100)}%) ${Math.round(v * 100)}%,var(--v-haze))`;
-    paths += `<path d="${p} L${W * 2} ${Hh}Z" style="fill:${col};--t:${(38 + i * 22)}s;--b:${(5 + i * 1.7).toFixed(1)}s;--dl:${(-i * 7.3).toFixed(1)}s"/>`;
+    paths += `<path d="${p} L${W * 2} ${Hh}Z" style="fill:${col};--t:${(17 + i * 9)}s;--b:${(3.6 + i * 1.2).toFixed(1)}s;--dl:${(-i * 7.3).toFixed(1)}s"/>`;
   }
   // clarity 0 (thick fog, under 0.5 km) to 1 (30 km and more): how blue the sky is and how much haze hangs over it all
   const clear = km == null ? .5 : clamp((lg(km) - lg(.5)) / (lg(30) - lg(.5)), 0, 1);
