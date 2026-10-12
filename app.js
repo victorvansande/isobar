@@ -1683,8 +1683,9 @@ function renderSun() {
   const fr = d => d && !isNaN(d) ? clamp((d - mid0) / dayMs, 0, 1) : null;
   const dl = Dy.daylight_duration[di], dly = di > 0 ? Dy.daylight_duration[di - 1] : null;
   const ch = dl != null && dly != null ? dl - dly : null;
-  // the change in day length, with its units written as units (not in the mono capitals around them)
-  const chTxt = ch == null ? "" : `${ch >= 0 ? "+" : "−"}${Math.floor(Math.abs(ch) / 60)} <span class="u">min</span> ${Math.round(Math.abs(ch) % 60)} <span class="u">s</span> vs yesterday`;
+  // the change in day length since yesterday, with its units written small
+  const chTxt = ch == null ? "–" : `${ch >= 0 ? "+" : "−"}${Math.floor(Math.abs(ch) / 60)}<span class="u"> min </span>${Math.round(Math.abs(ch) % 60)}<span class="u"> s</span>`;
+  const view = store.get("sunView", "day");
   const night = "#120a3a", tw = "#6a3fe0", gold = "#ff8a3c", day = "#ffe6b0";
   const stops = [];
   const add = (f, col) => { if (f != null) stops.push([f, col]); };
@@ -1693,8 +1694,12 @@ function renderSun() {
   const grad = stops.sort((a, b) => a[0] - b[0]).map(([f, c]) => `<stop offset="${(f * 100).toFixed(2)}%" stop-color="${c}"/>`).join("");
   const sunsh = Dy.sunshine_duration[di];
   X.sunCard = { mid0, t: null };
-  el.innerHTML = `<div class="ch-row"><header class="ch"><h3 id="sunWhen">Sun</h3><p id="sunSub"></p></header><span class="mono" id="sunChange" style="text-align:right">${chTxt}</span></div>
+  // two views, as in the hours card: today's sun, or the daylight through the whole year
+  el.dataset.view = view;
+  el.innerHTML = `<div class="ch-row"><header class="ch"><h3 id="sunWhen">Sun</h3><p id="sunSub"></p></header>
+      <div class="hseg sseg" role="tablist" aria-label="Sun view"><button role="tab" data-v="day" aria-selected="${view === "day"}">Day</button><button role="tab" data-v="year" aria-selected="${view === "year"}">Year</button></div></div>
     <button class="hero-now" id="sunNow" hidden>Back to now</button>
+    <div class="sun-day">
     <div class="band" id="sunBand" role="slider" tabindex="0" aria-label="Time of day. Drag, scroll or use the arrow keys to see the sun at another hour." aria-valuemin="0" aria-valuemax="1440"><svg viewBox="0 0 1000 30" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="sb">${grad}</linearGradient></defs><rect width="1000" height="30" fill="url(#sb)"/></svg><span class="tri" id="sunTri"></span>
       <div class="band-axis tm"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div></div>
     <div class="kv5">
@@ -1703,11 +1708,20 @@ function renderSun() {
       <div><span class="mono">Golden hour</span><b>${fmtT(st.golden)}</b></div>
       <div><span class="mono">Sunset</span><b>${fmtT(Dy.sunset[di] ? T(Dy.sunset[di]) : null)}</b></div>
       <div><span class="mono">Last light</span><b>${fmtT(st.dusk)}</b></div>
+      <div><span class="mono">vs yesterday</span><b id="sunChange">${chTxt}</b></div>
     </div>
     <div class="foot" style="margin-top:14px"><span>Sunshine expected <b>${dur(sunsh)}</b></span><span>Solar noon <b>${fmtT(st.noon)}</b></span></div>
+    </div>
     <div class="sun-year" id="c-year"></div>`; // the daylight through the year fills this (renderYear runs right after)
   updateSun(null);
   bindSunCard();
+}
+/* Switches the sun card between today (day) and the daylight through the year (year), and remembers the choice. */
+function setSunView(v) {
+  const el = card("c-sun"); store.set("sunView", v); el.dataset.view = v;
+  el.querySelectorAll(".sseg button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.v === v)));
+  updateSun(null); // back to now in the day view; in the year view this only resets the hidden band
+  if (v === "year") { drawYear(); if (X.year) updateYear(X.year.cur ?? X.year.today); }
 }
 /* Moves the sun card to a time today (null = now). The card colour follows the sun's height at that moment. */
 function updateSun(t) {
@@ -1718,9 +1732,11 @@ function updateSun(t) {
   paint(card("c-sun"), window.Palette.skyPal(Math.round(alt * 2) / 2)); // half-degree steps: smooth to the eye, far fewer repaints
   $("#sunTri").style.left = `${(f * 100).toFixed(2)}%`;
   const state = alt > 6 ? `Sun ${Math.round(alt)}° high` : alt > -.8 ? "Golden hour" : alt > -6 ? "Twilight" : "Night";
-  $("#sunWhen").textContent = live ? "Sun" : fmtT(at);
-  $("#sunSub").textContent = state; $("#sunSub").hidden = false; // now too: golden hour, twilight, night or how high the sun stands
-  $("#sunChange").hidden = !live; $("#sunNow").hidden = live;
+  if (card("c-sun").dataset.view !== "year") { // the year view keeps its own heading
+    $("#sunWhen").textContent = live ? "Sun" : fmtT(at);
+    $("#sunSub").textContent = state; // now too: golden hour, twilight, night or how high the sun stands
+  }
+  $("#sunChange").parentElement.style.visibility = live ? "" : "hidden"; $("#sunNow").hidden = live;
   const band = $("#sunBand");
   band.setAttribute("aria-valuenow", Math.round(f * 1440));
   band.setAttribute("aria-valuetext", `${fmtT(at)}, ${state}`);
@@ -1743,6 +1759,7 @@ function bindSunCard() {
     if (step == null) return; e.preventDefault(); updateSun(cur() + step * 6e4);
   });
   $("#sunNow").onclick = () => updateSun(null);
+  card("c-sun").querySelector(".sseg").onclick = e => { const b = e.target.closest("button"); if (b) setSunView(b.dataset.v); };
 }
 
 /* ---------------- daylight through the year (glass) ---------------- */
@@ -1832,6 +1849,7 @@ function updateYear(i) {
   const longest = Y.days.reduce((a, b) => b.len > a.len ? b : a), shortest = Y.days.reduce((a, b) => b.len < a.len ? b : a);
   $("#yrSel").style.left = `${((i + .5) / Y.days.length * 100).toFixed(2)}%`;
   $("#yrDate").textContent = isToday ? "Today" : `${wd(d.key)} ${dm_(d.key)}`;
+  if (card("c-sun").dataset.view === "year") { $("#sunWhen").textContent = "Daylight"; $("#sunSub").textContent = $("#yrDate").textContent; }
   // today uses the forecast's own sunrise, sunset and day length, so it matches the sun card to the minute
   const api = isToday && X.Dy.sunrise[X.di] ? { rise: T(X.Dy.sunrise[X.di]), set: T(X.Dy.sunset[X.di]), len: X.Dy.daylight_duration[X.di] / 60 } : null;
   const riseT = api ? api.rise : d.rise_t, setT = api ? api.set : d.set_t, len = api && api.len ? api.len : d.len;

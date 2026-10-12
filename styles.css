@@ -168,9 +168,14 @@ dialog:focus-visible,.sheet:focus-visible{outline:none} /* opening a sheet focus
 .a-pollen.slim .ch{margin:0}
 .a-pollen.slim .ch-row{align-items:center}
 @media (min-width:1001px){.board:has(.a-pollen.slim){grid-template-areas:"hero hero now now" "hero hero wind feels" "hourly hourly hourly hourly" "radar radar rain uv" "radar radar humid press" "radar radar vis clouds" "air air moon moon" "pollen pollen pollen pollen" "sun sun sun sun" "src src src src"}}
-/* daylight through the year, in the lower half of the sun card */
-.sun-year{position:relative;margin-top:18px;padding-top:16px;border-top:1px solid color-mix(in oklab,currentColor 16%,transparent)}
-.sun-year .hero-now{top:12px;right:0}
+/* the sun card has two views, switched like the hours card: today (day) and the daylight through the year (year) */
+.a-sun[data-view="year"] .sun-day,.a-sun:not([data-view="year"]) .sun-year{display:none}
+.a-sun .sun-day{display:flex;flex-direction:column;flex:1}
+.sun-year{position:relative}
+.sun-year > .ch{display:none} /* its heading shows in the card's own header */
+.sun-year .hero-now{top:2px;right:0}
+.a-sun:has(#sunNow:not([hidden])) .sseg{visibility:hidden} /* "Back to now" takes the corner while scrubbing */
+.kv5 b .u{font:500 12px var(--f-label);letter-spacing:0;color:var(--ink-2)}
 .yr-read{font-size:30px;font-weight:300;letter-spacing:-.02em;line-height:1.1;margin-top:2px}
 .yr-sub{margin:4px 0 12px;font-size:13px;color:var(--ink-2)}
 .yr-chart{position:relative;height:190px;border-radius:16px;overflow:hidden;cursor:grab;touch-action:pan-y;-webkit-user-select:none;user-select:none}
@@ -594,10 +599,10 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .band svg{width:100%;height:30px;display:block;border-radius:15px}
 .band .tri{top:-7px;height:21px} /* reaches well into the band, so it stands out against the orange card */
 .band-axis{display:flex;justify-content:space-between;margin-top:6px}
-.kv5{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:auto;padding-top:14px}
+.kv5{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-top:auto;padding-top:14px}
 .kv5 div{display:grid;gap:2px}
 .kv5 b{font:400 18px/1.05 var(--f-num);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
-@media (max-width:560px){.kv5{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:800px){.kv5{grid-template-columns:repeat(3,minmax(0,1fr))}}
 
 /* ---------- pressure / visibility / rain / clouds ---------- */
 .dial{position:relative;width:min(100%,190px);margin:0 auto;color:var(--ink)}
