@@ -954,8 +954,7 @@ html.wall .a-moon .strip canvas{height:46px}
 .a-pollen.open .air-more svg{transform:rotate(180deg)}
 @media (min-width:1001px){.a-pollen.slim .pgrid{grid-template-columns:repeat(6,minmax(0,1fr))}}
 /* no rain coming: the sun or moon in the rain grid glows softly, as if the dots give light */
-.dry-glow{animation:dryglow 3.6s ease-in-out infinite alternate}
-@keyframes dryglow{from{opacity:.55}to{opacity:1}}
+.dry-glow{opacity:.32} /* the sun or moon on a dry grid: a quiet, still hint, not a drawing */
 @media (prefers-reduced-motion:reduce){.dry-glow{animation:none}}
 /* swiping between places: the next place's name slides in at the edge it comes from, and lights up once letting go
    will switch to it */

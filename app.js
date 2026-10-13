@@ -1158,7 +1158,7 @@ function renderNow() {
   // Heavier rain drips more often; every column keeps its own rhythm.
   let grid = "", wet = "", glow = "";
   // dry for the whole window: the empty grid shows a sun by day or a crescent moon by night, centred with as many
-  // empty rows above as below, glowing softly
+  // empty rows above as below, quiet and still
   // no rain expected, but a small chance of a shower: soft columns as tall as the chance that hour (10% a dot, 100%
   // the full height); only with not even that does the sun or moon appear
   const popAt = t => { const k = X.H.time.findIndex(s => T(s) > t) - 1; return k >= 0 ? X.H.precipitation_probability[k] ?? 0 : 0; };
@@ -1185,7 +1185,7 @@ function renderNow() {
     for (let j = 0, n = rows - lit; lit && j < n; j++)
       wet += `<circle class="drip" cx="${cx}" cy="${cyOf(rows - 1 - j)}" r="2.5" fill="var(--rain)" style="--p:${period}s;--w:${(start + j * stepT).toFixed(2)}s"/>`;
   });
-  const dots = `${grid}<g filter="url(#bloom)">${wet}</g>${glow ? `<g class="dry-glow" filter="url(#bloom)">${glow}</g>` : ""}`;
+  const dots = `${grid}<g filter="url(#bloom)">${wet}</g>${glow ? `<g class="dry-glow">${glow}</g>` : ""}`;
   // on a 12-hour clock am/pm shows only where it changes, so the labels never run into each other on a phone
   let lastAp = "";
   const axis = Array.from({ length: 6 }, (_, k) => {
