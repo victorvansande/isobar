@@ -1571,11 +1571,11 @@ function renderHumid() {
   // so cool air at 82% reads as humid rather than "dry"
   const lab = dpC == null || h == null ? "–" : dpC >= 21 ? "Oppressive" : dpC >= 18 ? "Muggy" : dpC >= 16 ? "A little muggy"
     : h >= 90 ? "Very humid" : h >= 75 ? "Humid" : h >= 45 ? "Comfortable" : h >= 25 ? "Dry" : "Very dry";
-  // the surface: two periods of a gentle swell in 400 units, so sliding it by half its width loops without a seam
-  const wave = cls => `<svg class="${cls}" viewBox="0 0 400 12" preserveAspectRatio="none" aria-hidden="true"><path d="M0 6 Q50 1 100 6 T200 6 T300 6 T400 6 V12 H0Z" fill="rgba(175,200,255,.24)"/><path d="M0 6 Q50 1 100 6 T200 6 T300 6 T400 6" fill="none" stroke="currentColor" stroke-opacity=".5" stroke-width="1" vector-effect="non-scaling-stroke"/></svg>`;
+  // a slim meter on the right edge: a column of dots from 0% at the bottom to 100% (saturated air) at the top, lit up
+  // to the humidity now, with the needle on the level
+  const lvl = clamp(h ?? 0, 0, 100), NG = 21, gauge = Array.from({ length: NG }, (_, k) => `<i class="${(NG - 1 - k) / (NG - 1) * 100 <= lvl ? "on" : ""}"></i>`).join("");
   const wet = (h ?? 0) >= 85; // condensation beads up on the card on very humid days
-  el.innerHTML = `<span class="water" style="--h:${clamp(h ?? 0, 0, 100)}%">${wave("w1")}<span class="body"></span></span>
-    <span class="sat" aria-hidden="true"><span>100%</span></span>
+  el.innerHTML = `<div class="hgauge" aria-hidden="true"><span class="hg-top">100%</span><div class="hg-col">${gauge}<span class="tri" style="bottom:calc(2.5px + (100% - 5px) * ${(lvl / 100).toFixed(3)})"></span></div></div>
     ${wet ? `<canvas class="condense" id="humidCv" aria-hidden="true"></canvas>` : ""}${head("Humidity", lab)}
     <div class="num big">${R(h)}<small>%</small></div>
     <div class="foot"><span>Dew point <b>${R(dp)}°</b></span><button class="info-i" id="humidInfo" aria-label="How humidity, dew and fog work"><svg viewBox="0 0 12 12"><path d="M6 5.4v3.6"/><path d="M6 3h.01"/></svg></button></div>`;

@@ -235,8 +235,6 @@ dialog:focus-visible,.sheet:focus-visible{outline:none} /* opening a sheet focus
 :root[data-mode="day"] .pig:not(.sky) .ftrack .line,:root[data-mode="day"] .pig:not(.sky) .scale i,:root[data-mode="day"] .pig:not(.sky) .mbar,:root[data-mode="day"] .pig:not(.sky) .dots i{background:var(--ink-3)}
 :root[data-mode="day"] .pig:not(.sky) .ftrack .seg,:root[data-mode="day"] .pig:not(.sky) .ftrack .tick,:root[data-mode="day"] .pig:not(.sky) .scale i.on,:root[data-mode="day"] .pig:not(.sky) .mbar .fill,:root[data-mode="day"] .pig:not(.sky) .dots i.on{background:var(--ink)}
 :root[data-mode="day"] .pig:not(.sky) .wlines path{stroke:var(--ink)}
-:root[data-mode="day"] .pig:not(.sky) .sat{border-top-color:var(--ink-3)}
-:root[data-mode="day"] .pig:not(.sky) .sat span{color:var(--ink-2)}
 :root[data-mode="day"] .glass{background:rgba(255,255,255,.84);box-shadow:inset 0 0 0 1px rgba(20,10,60,.06),0 1px 2px rgba(30,20,60,.06),0 10px 28px -14px rgba(30,20,60,.18)}
 /* Inflow: the bright rim colours drift slowly toward the dark core and get swallowed by it, then ease back out. */
 @property --hx{syntax:"<percentage>";inherits:false;initial-value:6%}
@@ -544,14 +542,6 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .gauge-v{position:absolute;left:0;right:0;bottom:0;text-align:center}
 .gauge-v .dm{height:40px;margin:0 auto 4px}
 
-/* ---------- humidity ---------- */
-/* humidity as a water level: the card fills like a glass, with a slowly moving surface; the dotted line on top is 100%: saturated air, where water starts to condense out as dew, mist or fog */
-.water{position:absolute;left:0;right:0;bottom:0;height:var(--h);z-index:-1;pointer-events:none;transition:height 1.2s cubic-bezier(.3,.7,.2,1)}
-.water .body{position:absolute;left:0;right:0;top:11.6px;bottom:0;background:linear-gradient(rgba(175,200,255,.24),rgba(130,165,255,.12))}
-.water svg{position:absolute;left:0;top:0;width:200%;height:12px;animation:wave 11s linear infinite} /* the body tucks just under the surface edge: no dark hairline seam on fractional screen scales */
-@keyframes wave{to{transform:translateX(-50%)}}
-.sat{position:absolute;left:0;right:0;top:7px;border-top:1px dotted rgba(255,255,255,.4);pointer-events:none}
-.sat span{position:absolute;right:16px;top:4px;font:500 12px/1 var(--f-label);color:rgba(255,255,255,.55)}
 .a-humid .num{margin-bottom:auto}
 
 /* ---------- air ---------- */
@@ -929,3 +919,11 @@ html.wall .a-moon .strip canvas{height:46px}
   #dlgPlaces .sheet{top:calc(env(safe-area-inset-top,0px) + 10px);bottom:auto;transform:translateX(-50%);
     max-height:calc(var(--vvh,100dvh) - env(safe-area-inset-top,0px) - 20px)}
 }
+/* humidity meter on the right edge: 100% (saturated air, where dew and fog form) at the top */
+.hgauge{position:absolute;right:16px;top:18px;bottom:58px;width:22px;display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none}
+.hg-top{font:500 11px/1 var(--f-label);color:var(--ink-2)}
+.hg-col{position:relative;flex:1;width:6px;display:flex;flex-direction:column;justify-content:space-between;align-items:center}
+.hg-col i{width:5px;height:5px;border-radius:50%;background:var(--ink-3);transform:scale(.62);opacity:.7}
+.hg-col i.on{background:var(--ink);transform:none;opacity:.85}
+.hg-col .tri{left:50%;width:14px;height:5px;margin:0 0 -2.5px -7px;border-radius:3px} /* lying across the column */
+:root[data-mode="day"] .pig:not(.sky) .hg-col i.on{background:var(--ink)}
