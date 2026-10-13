@@ -546,7 +546,8 @@ function fallDrops(seedN, kind, count, strength) {
   return `<span class="fx${{ snow: " snow", hail: " hail", drizzle: " drizzle", thunder: " storm" }[kind] || ""}" aria-hidden="true">${drops}</span>`;
 }
 
-/* Wind lines: a few long, soft lines that ripple across the card and curl at the end, like the classic wind symbol.
+/* Wind lines: a few long, soft lines that ripple across the card and lift at the end in a small open flick, a quiet nod
+   to the classic wind symbol without its busy loops.
    They always travel across the card, never straight down (that reads as rain): left to right or right to left by the
    wind's east-west lean, tilted a little by its north-south part. The compass marker gives the exact direction.
    `n` lines, each crossing in about `dur` seconds at opacity `o`. */
@@ -556,10 +557,10 @@ function windLines(dir, n, dur, o, seed) {
   let out = "";
   for (let i = 0; i < n; i++) {
     const y = 14 + (i + rnd() * .8) * (172 / n), a = 4 + rnd() * 5, end = 140 + rnd() * 45, t = dur * (.8 + rnd() * .45);
-    // the curl: three curves that meet with the same direction, so it rolls in smoothly like a real eddy, no corners
+    // the flick: one open curve that leaves the line in its own direction, up or down, never a loop
     const up = rnd() < .5 ? -1 : 1, Y = v => (v * up).toFixed(0);
-    const curl = `c8 0 13 ${Y(4)} 13 ${Y(9)} c0 ${Y(5)} -4 ${Y(8)} -8 ${Y(8)} c-4 0 -6 ${Y(-3)} -5 ${Y(-6)}`;
-    out += `<path pathLength="400" d="M-70 ${y.toFixed(1)} C-20 ${(y - a).toFixed(1)} 20 ${(y + a).toFixed(1)} ${(end - 90).toFixed(0)} ${y.toFixed(1)} S${(end - 20).toFixed(0)} ${(y - a * .6).toFixed(1)} ${end.toFixed(0)} ${y.toFixed(1)} ${curl}" style="--t:${t.toFixed(2)}s;--w:${(-rnd() * t).toFixed(2)}s;--o:${(o * (.7 + rnd() * .3)).toFixed(2)}"/>`;
+    const flick = `c7 0 12 ${Y(-2)} 15 ${Y(-7)}`;
+    out += `<path pathLength="400" d="M-70 ${y.toFixed(1)} C-20 ${(y - a).toFixed(1)} 20 ${(y + a).toFixed(1)} ${(end - 90).toFixed(0)} ${y.toFixed(1)} S${(end - 20).toFixed(0)} ${(y - a * .6).toFixed(1)} ${end.toFixed(0)} ${y.toFixed(1)} ${flick}" style="--t:${t.toFixed(2)}s;--w:${(-rnd() * t).toFixed(2)}s;--o:${(o * (.7 + rnd() * .3)).toFixed(2)}"/>`;
   }
   return `<svg class="wlines" viewBox="0 0 200 200" preserveAspectRatio="none" aria-hidden="true"><g transform="rotate(${tilt.toFixed(1)} 100 100)${toEast ? "" : " translate(200 0) scale(-1 1)"}">${out}</g></svg>`;
 }
