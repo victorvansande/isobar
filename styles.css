@@ -363,8 +363,8 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .ftrack .fdots{position:absolute;left:-2.5px;right:-2.5px;top:20px;height:6px;display:flex;justify-content:space-between;align-items:center}
 .ftrack .fdots i{width:5px;height:5px;border-radius:50%;background:var(--ink-3);transform:scale(.62);opacity:.7}
 .ftrack .fdots i.on{background:var(--ink);transform:none;opacity:1}
-.ftrack .tick{position:absolute;top:12px;width:2px;height:22px;margin-left:-1px;background:#fff;border-radius:2px;opacity:.8}
-.ftrack .tri{top:4px}
+.ftrack .tick{position:absolute;top:15px;width:2px;height:16px;margin-left:-1px;background:#fff;border-radius:2px;opacity:.8} /* centred on the dot row (y 23) */
+.ftrack .tri{top:12px;height:22px;width:5px;margin-left:-2.5px;border-radius:3px} /* the needle crosses the dot row, centred on its dot */
 .ftrack .lab{position:absolute;top:36px;transform:translateX(-50%);font:500 12px/1 var(--f-label);white-space:nowrap;color:var(--ink-2)}
 .feels-why{font-size:13px;color:var(--ink-2);margin:auto 0 0;max-width:30ch}
 

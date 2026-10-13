@@ -1181,15 +1181,21 @@ function renderFeels() {
     sub = `${d}° warmer${humid ? " · humid" : sun ? " · sun" : ""}`; why = (c.relative_humidity_2m ?? 0) > 55 && toC(t) >= 20 ? `Humidity makes it feel ${d}° warmer.` : c.is_day && (c.cloud_cover ?? 100) < 50 ? `Sunshine and still air make it feel ${d}° warmer.` : `Feels ${d}° warmer than measured.`; }
   const lo = Math.min(t, f) - 6, hi = Math.max(t, f) + 6, P = v => ((v - lo) / (hi - lo) * 100).toFixed(1);
   // when it feels the same as the thermometer (to the degree), the marker sits right on it with no gap to fill
-  const same = R(f) === R(t), fp = same ? t : f;
-  // the scale as a row of dots; the stretch between the thermometer and how it feels lights up
-  const N = 25, a = +P(Math.min(t, f)), b = +P(Math.max(t, f));
-  let fdots = ""; for (let k = 0; k < N; k++) { const x = k / (N - 1) * 100; fdots += `<i${!same && x >= a - 2 && x <= b + 2 ? ' class="on"' : ""}></i>`; }
+  const same = R(f) === R(t);
+  // one line nothing else says: how cold and how warm today feels at its extremes (from the hourly feels-like)
+  const ft = X.H.time.map((s, k) => s.startsWith(X.todayKey) ? X.H.apparent_temperature[k] : null).filter(v => v != null);
+  const range = ft.length ? `<div class="foot"><span>Today feels <b>${R(Math.min(...ft))}°</b> to <b>${R(Math.max(...ft))}°</b></span></div>` : "";
+  // the scale as a row of dots; the thermometer mark and the needle both sit exactly on a dot, and the dots between
+  // them light up
+  const N = 25, at = v => clamp(Math.round(+P(v) / 100 * (N - 1)), 0, N - 1), pos = k => (k / (N - 1) * 100).toFixed(2);
+  const ti = at(t), fi = same ? ti : at(f), k0 = Math.min(ti, fi), k1 = Math.max(ti, fi);
+  let fdots = ""; for (let k = 0; k < N; k++) fdots += `<i${!same && k >= k0 && k <= k1 ? ' class="on"' : ""}></i>`;
   el.innerHTML = `${head("Feels like", sub)}
     <div class="num big">${R(f)}°</div>
     <div class="ftrack" aria-hidden="true"><div class="fdots">${fdots}</div>
-      <div class="tick" style="left:${P(t)}%"></div><div class="tri" style="left:${P(fp)}%"></div>
-      <span class="lab" style="left:${P(t)}%">Actual ${R(t)}°</span></div>`;
+      ${ti === fi ? "" : `<div class="tick" style="left:${pos(ti)}%"></div>`}<div class="tri" style="left:${pos(fi)}%"></div>
+      <span class="lab" style="left:${pos(ti)}%">Actual ${R(t)}°</span></div>
+    ${range}`;
   el.querySelector(".num").setAttribute("aria-label", `${R(f)} degrees. ${why}`); // the longer explanation stays for screen readers
 }
 
