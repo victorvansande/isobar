@@ -287,7 +287,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .learn .now{padding:12px 14px;border-radius:16px;background:rgba(255,255,255,.07);color:var(--ink)}
 .foot b{color:var(--ink);font-weight:550}
 /* the wind foot: gusts and the Beaufort name each stay whole, and drop under each other on a narrow card */
-.a-wind .foot{flex-wrap:wrap;row-gap:2px}
+.a-wind .foot{flex-wrap:wrap;row-gap:2px;padding-top:6px} /* a little air between the compass and the line under it */
 .a-wind .foot span{white-space:nowrap}
 .muted{color:var(--ink-2)}
 .empty{margin:auto 0;color:var(--ink-2);font-size:14px;max-width:34ch}
