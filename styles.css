@@ -398,7 +398,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 /* the soft fade at both ends sits on a card-wide wrapper, not on the very wide scrolling strip itself: a mask on a
    scroller makes Chrome composite the whole strip as one huge layer, which it sometimes failed to paint (a white block) */
 .hfade{-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 14px,#000 calc(100% - 24px),transparent);mask-image:linear-gradient(90deg,transparent 0,#000 14px,#000 calc(100% - 24px),transparent)}
-.a-hourly{contain:paint} /* and nothing in this card may ever paint outside it */
+.a-hourly{contain:paint;clip-path:inset(0 round var(--r-card))} /* and nothing in this card may ever paint outside it, its own layers included (Chrome can let a moved layer escape the plain clip) */
 .hin{position:relative;display:grid;padding-top:30px}
 /* sun and moon track: sunlight turning to night and back at the real sunset and sunrise */
 .htrack{position:absolute;left:0;top:6px;height:4px;border-radius:999px}
