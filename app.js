@@ -791,13 +791,21 @@ function startCondensation(cv) {
   const frame = run => { ctx.clearRect(0, 0, w, h); ctx.drawImage(mist, 0, 0, w, h); ctx.drawImage(beadC, 0, 0, w, h); if (run) drawBead(ctx, run.x, run.y, run.r); };
   frame();
   if (calmMotion.matches) return;
-  let raf = 0, timer = 0, run = null, stopped = false;
-  const next = () => { timer = setTimeout(startRun, 3500 + rnd() * 5000); };
+  // A run comes soon after the card scrolls into view (so someone scrolling past at an ordinary pace is likely to see
+  // one), then every few seconds while it stays in view; it never runs unseen.
+  let raf = 0, timer = 0, run = null, stopped = false, lastRun = 0;
+  const next = (ms = 2500 + rnd() * 3000) => { clearTimeout(timer); timer = setTimeout(startRun, ms); };
+  const seen = new IntersectionObserver(([e]) => { if (e.isIntersecting && !run && performance.now() - lastRun > 2500) next(500 + rnd() * 700); }, { threshold: .4 });
+  seen.observe(cv);
   const startRun = () => {
-    if (offscreen("c-humid")) return next(); // nobody is looking: try again later
-    const big = beads.filter(b => b.r > 3.4 && b.y < h * .6);
-    if (!big.length) return;
+    if (run || offscreen("c-humid")) return; // out of view: the observer starts the next one when it's back
+    let big = beads.filter(b => b.r > 3.4 && b.y < h * .6);
+    if (!big.length) { // the big beads have all run off: one grows again, as condensation keeps gathering
+      const r = 3.6 + rnd() * 1.6; beads.push({ x: r + rnd() * (w - 2 * r), y: r + rnd() * h * .4, r }); paintBeads();
+      big = beads.filter(b => b.r > 3.4 && b.y < h * .6);
+    }
     const b = big[Math.floor(rnd() * big.length)];
+    lastRun = performance.now();
     beads.splice(beads.indexOf(b), 1); paintBeads();
     run = { x: b.x, y: b.y, r: b.r, v: .15, x0: b.x, lastBead: b.y };
     raf = requestAnimationFrame(slide);
@@ -817,7 +825,7 @@ function startCondensation(cv) {
     frame(run); raf = requestAnimationFrame(slide);
   };
   next();
-  condStop = () => { stopped = true; cancelAnimationFrame(raf); clearTimeout(timer); };
+  condStop = () => { stopped = true; cancelAnimationFrame(raf); clearTimeout(timer); seen.disconnect(); };
 }
 
 /* ---------------- hero ---------------- */
