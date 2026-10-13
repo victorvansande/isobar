@@ -358,6 +358,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .hero-foot b{font:400 20px/1 var(--f-num);letter-spacing:-.02em}
 .hero-foot span{font-size:12px;color:var(--ink-2)}
 .hero-foot .mid{text-align:center;justify-items:center;max-width:15ch;justify-self:center;text-wrap:balance} /* its own short block between the two times, never running into them */
+.hero-foot .mid span{transition:opacity .4s}.hero-foot .mid span.fade{opacity:0} /* the one-time drag tip fades in and out */
 .hero-foot .r{text-align:right}
 
 /* ---------- rain next hours (glass) ---------- */

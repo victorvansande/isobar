@@ -947,7 +947,7 @@ function renderHero() {
   $("#tbIc").innerHTML = icon(kind, isDay);
   $("#tbIc").classList.toggle("lift", kind === "cloudy" || kind === "partly"); // cloud icons sit high to leave room for rain; alone in the bar they are centred
   const tbT = $("#tbTemp"); tbT.innerHTML = dm(String(R(c.temperature_2m)), { deg: true }); tbT.setAttribute("aria-label", `${R(c.temperature_2m)} degrees`);
-  if (scrub) bindSunScrub();
+  if (scrub) { bindSunScrub(); arcTip(); }
   // below 0° the card frosts over at the rim (fades in the first time only); from 28° it shimmers
   if (cold) { const grow = !heroFrostGrown; whenMeasured(() => frostRim($("#heroFrost"), 17, grow)); }
   heroFrostGrown = cold;
@@ -1036,6 +1036,7 @@ function hourAt(t) {
 /* Redraws only what changed; the dot-matrix number is rebuilt when the whole degree changes, which replays its dot animation. */
 function scrubSun(f) {
   const s = X.sun; if (!s) return;
+  if (!arcHinted) { arcHinted = true; store.set("arcHinted", true); } // once tried, the hint is not needed
   f = clamp(f, 0, 1); s.cur = f;
   const t = new Date(s.rise.valueOf() + f * (s.set - s.rise));
   const [px, py] = arcPoint(f).map(v => v.toFixed(1));
@@ -1058,6 +1059,20 @@ function scrubSun(f) {
   glowAt(f);
   $("#heroUpd").hidden = true; $("#heroNow").hidden = false;
   const box2 = $("#arcIn"); box2.setAttribute("aria-valuenow", Math.round(f * 100)); box2.setAttribute("aria-valuetext", `${fmtT(t)}, ${v} degrees, ${label}`);
+}
+/* The one hint that the sun can be dragged: the first time the app opens, the line under the arc says so for a few
+   seconds, then gives its place back. It never shows again, nor after the sun has once been dragged. */
+let arcHinted = store.get("arcHinted", false);
+function arcTip() {
+  if (arcHinted) return;
+  const swap = (el, text) => { el.classList.add("fade"); setTimeout(() => { if (X.sun && X.sun.cur === X.sun.f) el.textContent = text; el.classList.remove("fade"); }, 400); }; // a drag meanwhile wins
+  setTimeout(() => {
+    const el = $("#heroMid"), s = X.sun; if (!el || !s || arcHinted || document.hidden) return;
+    arcHinted = true; store.set("arcHinted", true);
+    const was = el.textContent, tip = s.body === "night" ? "Drag the moon through the night" : "Drag the sun through the day";
+    swap(el, tip);
+    setTimeout(() => { if (el.isConnected && el.textContent === tip) swap(el, was); }, 6400);
+  }, 1200);
 }
 function bindSunScrub() {
   const box = $("#arcIn");
