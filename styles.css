@@ -954,6 +954,3 @@ html.wall .a-moon .strip canvas{height:46px}
 .hg-col i.on{background:var(--ink);transform:none;opacity:.85}
 .hg-col .tri{left:50%;width:14px;height:5px;margin:0 0 -2.5px -7px;border-radius:3px} /* lying across the column */
 :root[data-mode="day"] .pig:not(.sky) .hg-col i.on{background:var(--ink)}
-/* the arc's drag hint: two faint chevrons beside the sun or moon */
-.sun-dot .drag-cue{fill:none;stroke:currentColor;stroke-width:1.1;stroke-linecap:round;stroke-linejoin:round;opacity:.4}
-.arc-in.grab .sun-dot .drag-cue{opacity:0} /* out of the way while dragging */
