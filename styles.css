@@ -5,6 +5,7 @@
 /* the round Urbanist figures for small labels, from the same font file the big numbers already load */
 @font-face{font-family:"Isobar Digits";src:url(https://fonts.gstatic.com/s/urbanist/v18/L0x-DF02iFML4hGCyMqlbS0.woff2) format("woff2");font-weight:100 900;font-display:swap;unicode-range:U+0030-0039,U+0025,U+002B,U+002E,U+00B0,U+2212}
 :root{
+  --dock-b:max(12px,calc(env(safe-area-inset-bottom,0px) - 8px)); /* the dock sits partly in the home-indicator strip, as iOS's own floating bars do */
   --bg:#0b1120;
   --ink:#f4f4f7;
   --ink-2:rgba(244,244,247,.6);
@@ -93,7 +94,7 @@ dialog:focus-visible,.sheet:focus-visible{outline:none} /* opening a sheet focus
   background:radial-gradient(150% 62% at 50% -6%,var(--mid,#222) 0%,color-mix(in oklab,var(--mid,#222) 40%,transparent) 42%,transparent 78%),
     radial-gradient(130% 42% at 50% 108%,color-mix(in oklab,var(--hi,#333) 55%,transparent),transparent 72%)}
 
-.app{max-width:1240px;margin:0 auto;padding:calc(18px + env(safe-area-inset-top,0px)) 20px calc(100px + env(safe-area-inset-bottom,0px))} /* just clears the floating dock */
+.app{max-width:1240px;margin:0 auto;padding:calc(18px + env(safe-area-inset-top,0px)) 20px calc(82px + var(--dock-b))} /* just clears the floating dock */
 
 /* ---------- top ---------- */
 .top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin:8px 4px 22px}
@@ -690,7 +691,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .btn{font-weight:600;font-size:14px;padding:11px 18px;border-radius:999px;background:var(--signal);color:var(--signal-ink)}
 
 /* ---------- floating chrome ---------- */
-.dock{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:1000;display:flex;gap:8px;align-items:center;padding:7px;border-radius:999px;color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12),0 18px 40px -16px rgba(0,0,0,.45)}
+.dock{position:fixed;left:50%;bottom:var(--dock-b);transform:translateX(-50%);z-index:1000;display:flex;gap:8px;align-items:center;padding:7px;border-radius:999px;color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12),0 18px 40px -16px rgba(0,0,0,.45)}
 .dock .round{width:48px;height:48px;background:rgba(255,255,255,.1)}
 .dock .round svg{width:20px;height:20px}
 .pill{height:48px;min-width:128px;padding:0 22px;border-radius:999px;display:flex;align-items:center;justify-content:center;gap:9px;font-weight:650;font-size:14px;letter-spacing:-.01em;color:var(--signal-ink);
@@ -752,10 +753,10 @@ dialog::backdrop{background:rgba(6,4,20,.4);-webkit-backdrop-filter:blur(8px);ba
 .models button span{font-size:12.5px;color:var(--ink-2)}
 .models button[aria-pressed="true"]{background:rgba(232,0,73,.16);box-shadow:inset 0 0 0 1px rgba(232,0,73,.7)}
 .models button:hover{background:rgba(255,255,255,.06)}
-.toast{position:fixed;left:50%;bottom:calc(94px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:1100;padding:11px 18px;border-radius:999px;font-weight:600;font-size:13.5px;max-width:calc(100% - 32px);text-align:center;color:#fff;transition:bottom .35s cubic-bezier(.2,.8,.2,1)}
-body.net-off .toast{bottom:calc(140px + env(safe-area-inset-bottom,0px))}
+.toast{position:fixed;left:50%;bottom:calc(76px + var(--dock-b));transform:translateX(-50%);z-index:1100;padding:11px 18px;border-radius:999px;font-weight:600;font-size:13.5px;max-width:calc(100% - 32px);text-align:center;color:#fff;transition:bottom .35s cubic-bezier(.2,.8,.2,1)}
+body.net-off .toast{bottom:calc(122px + var(--dock-b))}
 /* offline: the last forecast stays up and this pill says how old it is (tap to try again) */
-.netpill{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom,0px));z-index:1050;display:flex;align-items:center;gap:9px;padding:10px 16px 10px 14px;border-radius:999px;font-size:13px;color:#fff;white-space:nowrap;max-width:calc(100% - 32px);
+.netpill{position:fixed;left:50%;bottom:calc(74px + var(--dock-b));z-index:1050;display:flex;align-items:center;gap:9px;padding:10px 16px 10px 14px;border-radius:999px;font-size:13px;color:#fff;white-space:nowrap;max-width:calc(100% - 32px);
   opacity:0;transform:translate(-50%,14px) scale(.96);pointer-events:none;transition:opacity .35s,transform .45s cubic-bezier(.2,.8,.2,1)}
 .netpill.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}
 .netpill i{width:7px;height:7px;border-radius:50%;background:#ffcf5c;box-shadow:0 0 0 3px rgba(255,207,92,.2);flex:none}
@@ -868,7 +869,7 @@ html.wall .a-moon .strip canvas{height:46px}
 
 /* on a wide screen the dock sits in the bottom-right corner, clear of the cards */
 /* wide screens: the dock floats at the bottom right; cards scroll by under its glass */
-@media (min-width:900px){.dock{left:auto;right:24px;transform:none}}
+@media (min-width:900px){.dock{left:auto;right:24px;bottom:20px;transform:none}}
 
 /* ---------- the 14-day sheet, in step with the board ---------- */
 /* No overlapping deck any more: separate rows with a small gap, in the board's own glass. */
