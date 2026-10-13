@@ -503,7 +503,8 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .tile b{font:400 18px/1.05 var(--f-num);letter-spacing:-.02em}
 
 /* ---------- UV ---------- */
-.gauge{position:relative;margin-top:auto}
+.gauge{position:relative;margin:auto 0} /* centred between the title and the foot, however tall the row makes the card */
+.gauge ~ .foot{margin-top:0}
 /* heat haze: the layers ripple, but they're oversized and clipped by the card so its edge never moves */
 .a-uv.hot .gauge svg{filter:url(#haze-uv)}
 .a-hero.hot .arc svg{filter:url(#haze-hero)}
