@@ -977,14 +977,15 @@ function wheelStep(el, step) {
   }, { passive: false });
 }
 function perFrame(fn) { let last = null, id = 0; return e => { last = e; if (!id) id = requestAnimationFrame(() => { id = 0; fn(last); }); }; }
-/* Where the sun sits on the main card's arc: a smooth half-ellipse from sunrise to sunset, as tall as the sun really
-   climbs that day (90° would reach the top). So the arc is low and flat in a northern winter, tall in summer, and
-   almost a full half-circle near the equator; the dot moves along it with the time of day. */
+/* Where the sun sits on the main card's arc: a smooth sine curve from sunrise to sunset, as tall as the sun really
+   climbs that day (90° would reach the top). So the arc is low and flat in a northern winter and tall in summer and
+   near the equator; the dot moves along it with the time of day, evenly from left to right. */
 let arcDay = null;
 const arcPoint = f => {
   const h = arcDay ? clamp(arcDay.peak / (PI / 2), .12, 1) * 82 : 78; // midnight sun or polar night: a plain arc
-  const th = PI * (1 - f);
-  return [150 + 120 * cos(th), 95 - h * sin(th)];
+  // time runs evenly from left to right and the height follows a sine, as the sun's altitude does through the day:
+  // it leaves the horizon at a gentle slope instead of shooting straight up
+  return [30 + 240 * f, 95 - h * sin(PI * f)];
 };
 const arcPath = (f0, f1) => {
   const n = Math.max(2, Math.ceil(Math.abs(f1 - f0) * 48)); let d = "";
@@ -1063,7 +1064,7 @@ function scrubSun(f) {
 }
 function bindSunScrub() {
   const box = $("#arcIn");
-  const fAt = e => { const r = box.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * 300; return 1 - acos(clamp((x - 150) / 120, -1, 1)) / PI; };
+  const fAt = e => { const r = box.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * 300; return clamp((x - 30) / 240, 0, 1); };
   // track the drag on the window so it keeps working when the pointer leaves the arc
   const move = perFrame(e => scrubSun(fAt(e)));
   const end = e => { if (e.type === "pointerup") scrubSun(fAt(e)); box.classList.remove("grab"); removeEventListener("pointermove", move); removeEventListener("pointerup", end); removeEventListener("pointercancel", end); };
