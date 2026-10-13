@@ -115,7 +115,7 @@ async function run(engine, name, viewport, variant = "normal") {
   // RULES.md: one truth per quantity, and one inset for every card
   const same = await page.evaluate(() => {
     const q = sel => document.querySelector(sel), num = t => (String(t || "").match(/-?\d+/) || [""])[0];
-    const insets = [...document.querySelectorAll("#board > .card:not(.a-radar):not(.a-hero)")].map(c => {
+    const insets = [...document.querySelectorAll("#board > .card:not(.a-radar)")].map(c => {
       const h = c.querySelector(".ch h3"); return h && h.offsetParent ? Math.round(h.getBoundingClientRect().left - c.getBoundingClientRect().left) : null;
     }).filter(v => v != null);
     return { hero: num(q("#heroTemp").dataset.v), hourNow: num(q("#c-hourly svg text") && q("#c-hourly svg text").textContent),
@@ -125,7 +125,7 @@ async function run(engine, name, viewport, variant = "normal") {
   check("'now' shows the same temperature on the main card and in the hours", same.hero === same.hourNow, `${same.hero} vs ${same.hourNow}`);
   check("feels-like is the same on the main card and its own card", same.feelsHero === same.feelsCard, `${same.feelsHero} vs ${same.feelsCard}`);
   check("summary and precipitation card agree about rain soon", !(/^No rain expected/.test(same.precip) && /^(Rain|Drizzle|Snow|Sleet|Thunder|Light|Heavy)/.test(same.summary)), `"${same.summary}" / "${same.precip}"`);
-  check("every card has the same inset", same.insets.length === 1, same.insets.join(", ") + "px");
+  check("every card has the same inset", same.insets.length === 1, same.insets.join(", ") + "px"); // the radar card is a full-bleed map
   check("warning banner shows only the warning for this spot", s.warn === "Orange warning · Wind", String(s.warn));
 
   if (variant === "normal") {

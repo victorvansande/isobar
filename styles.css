@@ -82,7 +82,7 @@ html.standalone,html.standalone body{overscroll-behavior:none}
 /* the status bar sits over the page in full screen; a soft scrim keeps its white text readable on the light look */
 html.standalone[data-mode="day"] body::before{content:"";position:fixed;left:0;right:0;top:0;height:calc(env(safe-area-inset-top,0px) + 14px);z-index:1001;pointer-events:none;
   background:linear-gradient(rgba(24,18,52,.32),rgba(24,18,52,0))}
-:focus-visible{outline:2px solid var(--signal);outline-offset:3px;border-radius:12px}
+:focus-visible{outline:2px solid var(--signal);outline-offset:3px;border-radius:16px}
 dialog:focus-visible,.sheet:focus-visible{outline:none} /* opening a sheet focuses the panel itself: no ring around it, its buttons keep theirs */
 
 /* ---------- the ground: the sky of right now ---------- */
@@ -108,7 +108,7 @@ dialog:focus-visible,.sheet:focus-visible{outline:none} /* opening a sheet focus
 .warn.stale svg{display:none}
 .warn.stale{padding-right:44px}
 .warn-x:active{transform:translateY(-50%) scale(.93)}
-.warn{display:flex;align-items:center;gap:12px;width:100%;margin:0;padding:12px 16px 12px 14px;border-radius:20px;text-align:left;color:var(--ink)}
+.warn{display:flex;align-items:center;gap:12px;width:100%;margin:0;padding:12px 16px 12px 14px;border-radius:16px;text-align:left;color:var(--ink)}
 .warn[hidden]{display:none}
 .warn .wl{width:10px;height:10px;border-radius:50%;flex:none;background:var(--wc);box-shadow:0 0 0 4px color-mix(in srgb,var(--wc) 25%,transparent)}
 .warn span{flex:1;min-width:0;display:grid;gap:2px}
@@ -117,13 +117,13 @@ dialog:focus-visible,.sheet:focus-visible{outline:none} /* opening a sheet focus
 .warn svg{width:12px;height:12px;flex:none;fill:none;stroke:var(--ink-2);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .wx{padding:14px 0;border-top:1px solid rgba(255,255,255,.1)}
 .wx:first-child{border-top:0;padding-top:0}
-.wx h3{display:flex;align-items:center;gap:9px;margin:0 0 4px;font-size:16px;font-weight:700}
+.wx h3{display:flex;align-items:center;gap:8px;margin:0 0 4px;font-size:17px;font-weight:700}
 .wx h3 i{width:9px;height:9px;border-radius:50%;background:var(--wc);flex:none}
 .wx .when{margin:0 0 8px;font:500 12px/1.4 var(--f-label);color:var(--ink-2)}
-.wx p{margin:0 0 8px;font-size:14px;line-height:1.5;color:var(--ink-2)}
+.wx p{margin:0 0 8px;font-size:15px;line-height:1.5;color:var(--ink-2)}
 .wx a{color:var(--ink);font-size:13px}
 .place{display:grid;text-align:left;min-width:0}
-.place h1{margin:0;font-weight:700;font-size:clamp(34px,5.2vw,56px);letter-spacing:-.04em;line-height:1.05;display:flex;align-items:center;gap:10px;min-width:0}
+.place h1{margin:0;font-weight:700;font-size:clamp(34px,5.2vw,56px);letter-spacing:-.04em;line-height:1.05;display:flex;align-items:center;gap:12px;min-width:0}
 /* the place name always stays on one line: long names get a smaller size, and a very long one is cut with an ellipsis */
 #placeName{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .place h1.long{font-size:clamp(26px,4vw,44px)}
@@ -134,7 +134,7 @@ dialog:focus-visible,.sheet:focus-visible{outline:none} /* opening a sheet focus
 .chip{display:flex;align-items:center;gap:.6em;height:38px;font:500 12px/1 var(--f-label);letter-spacing:0;padding:0 14px;border-radius:999px;color:var(--ink-2);white-space:nowrap}
 .chip b{color:var(--ink);font-weight:500}
 /* local time in dot-matrix digits; each character has its own slot so only changed digits replay their animation */
-.clock{display:flex;align-items:center;gap:3px;height:38px;padding:0 14px;border-radius:999px;color:var(--ink)}
+.clock{display:flex;align-items:center;gap:4px;height:38px;padding:0 14px;border-radius:999px;color:var(--ink)}
 .clock:empty{display:none}
 .clock .ck{font:500 17px/1 var(--f-label);letter-spacing:-.01em;font-variant-numeric:tabular-nums}
 .clock .ck-ap{margin-left:4px;font:500 12px/1 var(--f-label);color:var(--ink-2)}
@@ -281,7 +281,7 @@ dialog:focus-visible,.sheet:focus-visible{outline:none} /* opening a sheet focus
 :root[data-mode="day"] .top .lens{background:rgba(255,255,255,.62);box-shadow:inset 0 0 0 1px rgba(20,10,60,.06)}
 html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-filter:url(#lq-lens)}
 /* flat tile inside a pigment card */
-.tile{background:rgba(255,255,255,.1);border-radius:14px}
+.tile{background:rgba(255,255,255,.1);border-radius:16px}
 
 .ch{display:grid;gap:0;margin:0 0 10px}
 .ch h3,.ch h2{margin:0;font-weight:700;font-size:17px;letter-spacing:-.02em;line-height:1.15}
@@ -289,26 +289,26 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .ch-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 .mono{font-family:var(--f-label);font-size:12px;font-weight:500;letter-spacing:-.005em;color:var(--ink-2)}
 /* times on axes: even-width figures, so they line up */
-.tm{font:500 11.5px/1 var(--f-label);font-variant-numeric:tabular-nums;color:var(--ink-2)}
+.tm{font:500 12px/1 var(--f-label);font-variant-numeric:tabular-nums;color:var(--ink-2)}
 .u{text-transform:none;letter-spacing:.01em} /* units keep their own spelling: hPa, km/h, min, m */
 .num{font-family:var(--f-num);font-weight:300;letter-spacing:-.04em;line-height:.9;font-variant-numeric:tabular-nums}
 .pig .num{text-shadow:0 .1em .22em rgba(255,255,255,.22)}
 .num small{font-family:var(--f-label);font-size:12px;letter-spacing:0;font-weight:500;margin-left:6px;color:var(--ink-2);text-shadow:none;vertical-align:.25em}
 .big{font-size:clamp(44px,5vw,62px)}
-.foot{margin-top:auto;display:flex;justify-content:space-between;gap:10px;align-items:flex-end;font-size:13px;color:var(--ink-2)}
+.foot{margin-top:auto;display:flex;justify-content:space-between;gap:12px;align-items:flex-end;font-size:13px;color:var(--ink-2)}
 /* a small, quiet "i" that opens an explainer */
 .info-i{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;color:var(--ink-2);box-shadow:inset 0 0 0 1px var(--ink-3);flex:none}
 .info-i svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
 .info-i:hover{color:var(--ink)}
 .learn h3{margin:18px 0 4px;font-size:15px;font-weight:700;letter-spacing:-.01em}
-.learn p{margin:0;font-size:14px;line-height:1.55;color:var(--ink-2)}
+.learn p{margin:0;font-size:15px;line-height:1.55;color:var(--ink-2)}
 .learn .now{padding:12px 14px;border-radius:16px;background:rgba(255,255,255,.07);color:var(--ink)}
 .foot b{color:var(--ink);font-weight:600}
 /* the wind foot: gusts and the Beaufort name each stay whole, and drop under each other on a narrow card */
 .a-wind .foot{flex-wrap:wrap;row-gap:2px;padding-top:6px} /* a little air between the compass and the line under it */
 .a-wind .foot span{white-space:nowrap}
 .muted{color:var(--ink-2)}
-.empty{margin:auto 0;color:var(--ink-2);font-size:14px;max-width:34ch}
+.empty{margin:auto 0;color:var(--ink-2);font-size:15px;max-width:34ch}
 /* the app's pointer: a short raspberry capsule standing across the scale, like a needle */
 .tri{position:absolute;width:4px;height:12px;border-radius:2px;background:var(--signal);margin-left:-2px;box-shadow:0 1px 3px rgba(0,0,0,.3)}
 
@@ -322,11 +322,11 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .ic{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;flex:none;overflow:visible} /* the sun or moon behind a cloud may reach just past the top */
 
 /* ---------- hero ---------- */
-.hero{min-height:540px;padding:22px 22px 20px}
+.hero{min-height:540px} /* the same inset as every card (RULES.md 10) */
 .hero .ch h3,.hero .ch p{font-size:20px}
-.hero-upd{position:absolute;top:24px;right:22px}
+.hero-upd{position:absolute;top:24px;right:var(--pad-x)}
 /* the moon after dark, apart from the arc: small, with its phase, in the corner of the sky */
-.hero-moon{position:absolute;top:18px;right:18px;width:34px;display:flex;flex-direction:column;align-items:center;gap:3px;color:#f3f1ff;filter:drop-shadow(0 0 6px rgba(225,225,255,.45))}
+.hero-moon{position:absolute;top:18px;right:var(--pad-x);width:34px;display:flex;flex-direction:column;align-items:center;gap:4px;color:#f3f1ff;filter:drop-shadow(0 0 6px rgba(225,225,255,.45))}
 .hero-moon svg{display:block;width:34px;height:34px}
 /* under the moon: a horizon line with an arrow, up while the moon is above the horizon, down while it is below */
 .hero-moon .hm-ind{width:12px;height:10px;fill:none;stroke:currentColor;stroke-width:1.2;stroke-linecap:round;stroke-linejoin:round;opacity:.55}
@@ -338,12 +338,12 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .hero-meta span:not(:first-child){color:var(--ink-2)}
 .hero-meta .clim{font-size:13px;font-weight:500;margin-top:2px}
 .arc{margin-top:auto;padding-top:14px}
-.arc-in{position:relative;touch-action:pan-y;border-radius:14px}
+.arc-in{position:relative;touch-action:pan-y;border-radius:16px}
 .arc-in[role="slider"]{cursor:grab}
 .arc-in.grab{cursor:grabbing}
 .sun-dot circle:first-child{transition:r .2s}
 .arc-in:hover .sun-dot circle:first-child,.arc-in.grab .sun-dot circle:first-child,.arc-in:focus-visible .sun-dot circle:first-child{r:12}
-.hero-now{position:absolute;top:18px;right:18px;padding:8px 12px;border-radius:999px;font:600 12px/1 var(--f-display);letter-spacing:0;background:var(--signal);color:var(--signal-ink)}
+.hero-now{position:absolute;top:18px;right:var(--pad-x);padding:8px 12px;border-radius:999px;font:600 12px/1 var(--f-display);letter-spacing:0;background:var(--signal);color:var(--signal-ink)}
 .pig.hero{transition:background-color .5s}
 .arc svg{width:100%;height:auto;display:block;overflow:visible}
 /* the weather along the sun or moon path: rain and snow hours as a soft band, heavy cloud as a faint one */
@@ -355,8 +355,8 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .hero.light .arc .awx-wet{stroke:#3f6fe0}
 .hero.light .arc .awx-snow{stroke:#8a96b8}
 .hero.light .arc .awx-cloud{stroke:#6a7090}
-.hero-foot{display:grid;grid-template-columns:1fr minmax(0,auto) 1fr;column-gap:14px;align-items:end;margin-top:4px}
-.hero-foot div{display:grid;gap:1px}
+.hero-foot{display:grid;grid-template-columns:1fr minmax(0,auto) 1fr;column-gap:16px;align-items:end;margin-top:4px}
+.hero-foot div{display:grid;gap:2px}
 .hero-foot b{font:400 20px/1 var(--f-num);letter-spacing:-.02em}
 .hero-foot span{font-size:12px;color:var(--ink-2)}
 .hero-foot .mid{text-align:center;justify-items:center;max-width:15ch;justify-self:center;text-wrap:balance} /* its own short block between the two times, never running into them */
@@ -376,7 +376,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 /* ---------- wind ---------- */
 .compass{position:relative;width:min(100%,200px);aspect-ratio:1;margin:0 auto}
 .compass svg{position:relative;width:100%;height:100%;display:block}
-.compass-c{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:6px}
+.compass-c{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:8px}
 .compass-c .dm{height:42px}
 
 /* ---------- feels ---------- */
@@ -399,7 +399,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .a-hourly{contain:paint} /* and nothing in this card may ever paint outside it */
 .hin{position:relative;display:grid;padding-top:30px}
 /* sun and moon track: sunlight turning to night and back at the real sunset and sunrise */
-.htrack{position:absolute;left:0;top:6px;height:4px;border-radius:4px}
+.htrack{position:absolute;left:0;top:6px;height:4px;border-radius:999px}
 .hev{position:absolute;top:14px;transform:translateX(-50%);display:flex;align-items:center;gap:4px;font:500 11px/1 var(--f-label);font-variant-numeric:tabular-nums;color:var(--ink-2);white-space:nowrap}
 .hev svg{width:15px;height:12px;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
 .hcol{display:grid;grid-template-rows:22px 32px 78px 46px 10px;justify-items:center;align-items:center;padding:6px 0 4px}
@@ -408,7 +408,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .htime.mid{color:var(--ink);font-weight:600}
 .hpop{display:grid;justify-items:center;gap:4px;align-self:end}
 .hpop svg{width:8px;height:30px}
-.hpop span{font:500 11.5px/1 var(--f-label);color:var(--rain)}
+.hpop span{font:500 12px/1 var(--f-label);color:var(--rain)}
 .hcurve{position:absolute;left:0;top:96px;pointer-events:none;overflow:visible}
 .hcurve text{font:400 15px var(--f-num);fill:var(--ink);text-anchor:middle;font-variant-numeric:tabular-nums}
 /* one card, two views: the next 48 hours or the next 14 days */
@@ -418,7 +418,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .hseg button[aria-selected="true"]{background:var(--ink);color:var(--seg-on,#100f18)}
 :root[data-mode="day"] .hseg button[aria-selected="true"]{--seg-on:#fff}
 :root[data-mode="day"] .sky .hseg button[aria-selected="true"]{--seg-on:#100f18} /* sky cards keep white ink by day, so the chosen tab is white with dark text */
-.a-hourly .hall{display:inline-flex;align-items:center;gap:4px;margin-top:2px;font-size:14px;color:var(--ink-2);text-align:left}
+.a-hourly .hall{display:inline-flex;align-items:center;gap:4px;margin-top:2px;font-size:15px;color:var(--ink-2);text-align:left}
 .a-hourly .hall svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .a-hourly .hall:hover{color:var(--ink)}
 .a-hourly .hv-d{display:none}
@@ -426,16 +426,16 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .a-hourly[data-view="d"] .hv-h{display:none}
 /* under the 14 days: the full forecast as the main button, "How sure?" as a quiet link beside it */
 .a-hourly[data-view="d"] .hfoot{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:14px;padding:0 var(--pad-x) 6px} /* the same inset as the header, clear of the rounded corners */
-.a-hourly .hall-main{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 16px;border-radius:999px;font-weight:600;font-size:14px;background:var(--ink);color:var(--seg-on,#100f18)}
+.a-hourly .hall-main{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 16px;border-radius:999px;font-weight:600;font-size:15px;background:var(--ink);color:var(--seg-on,#100f18)}
 :root[data-mode="day"] .a-hourly .hall-main{--seg-on:#fff}
 .a-hourly .hall-main svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .a-hourly .hfoot .hall{margin:0;font-weight:500}
 .dstrip{display:grid;padding-top:4px}
-.dcol{display:grid;grid-template-rows:22px 32px 26px 96px 26px 46px;justify-items:center;align-items:center;padding:6px 0 4px;border-radius:18px;cursor:pointer}
+.dcol{display:grid;grid-template-rows:22px 32px 26px 96px 26px 46px;justify-items:center;align-items:center;padding:6px 0 4px;border-radius:16px;cursor:pointer}
 .dcol:hover{background:rgba(255,255,255,.06)}
 :root[data-mode="day"] .dcol:hover{background:rgba(40,30,110,.05)}
-.dbar{position:relative;width:6px;height:96px;border-radius:6px;background:var(--ink-3);background:color-mix(in srgb,var(--ink) 10%,transparent)}
-.dfill{position:absolute;left:0;right:0;border-radius:6px;background:linear-gradient(0deg,var(--lo),var(--hi))}
+.dbar{position:relative;width:6px;height:96px;border-radius:999px;background:var(--ink-3);background:color-mix(in srgb,var(--ink) 10%,transparent)}
+.dfill{position:absolute;left:0;right:0;border-radius:999px;background:linear-gradient(0deg,var(--lo),var(--hi))}
 .dcol .dhi,.dcol .dlo{font:400 15px/1 var(--f-num);font-style:normal;font-variant-numeric:tabular-nums;white-space:nowrap}
 .dcol .dlo{color:var(--ink-2)}
 /* an uncertain day: soft, fading ends instead of hard ones; on a low-confidence day the numbers step back a little */
@@ -447,7 +447,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .a-days{display:flex;flex-direction:column;min-width:0}
 .deck{display:flex;flex-direction:column;flex:1}
 /* calm rows: the temperature colour lives in the low–high bar and the high, not the card */
-.day{position:relative;border-radius:26px;overflow:hidden;isolation:isolate;--ink:#fff;--ink-2:rgba(255,255,255,.6);--ink-3:rgba(255,255,255,.32);color:#fff;
+.day{position:relative;border-radius:16px;overflow:hidden;isolation:isolate;--ink:#fff;--ink-2:rgba(255,255,255,.6);--ink-3:rgba(255,255,255,.32);color:#fff;
   background:linear-gradient(120deg,#1f2347,#141733);
   box-shadow:0 -14px 28px -14px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.1)}
 .day::after{content:"";position:absolute;inset:0;z-index:-1;background-image:var(--grain);opacity:.12;mix-blend-mode:soft-light}
@@ -477,18 +477,18 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 @keyframes snowfall-short{0%{transform:translate3d(0,0,0)}50%{transform:translate3d(5px,52px,0)}100%{transform:translate3d(-3px,104px,0)}}
 .fx.storm{animation:flash 9s linear infinite}
 @keyframes flash{0%,91%,93.5%,95.5%,100%{background:transparent}92%{background:rgba(255,255,255,.2)}94.5%{background:rgba(255,255,255,.1)}}
-.day-h{width:100%;display:grid;grid-template-columns:minmax(0,1.3fr) 28px 40px minmax(0,2.2fr);align-items:center;gap:10px;padding:14px 18px 34px;text-align:left}
-.dn{display:flex;gap:7px;align-items:baseline;min-width:0;white-space:nowrap}
+.day-h{width:100%;display:grid;grid-template-columns:minmax(0,1.3fr) 28px 40px minmax(0,2.2fr);align-items:center;gap:12px;padding:14px 18px 34px;text-align:left}
+.dn{display:flex;gap:8px;align-items:baseline;min-width:0;white-space:nowrap}
 .dn b{font-weight:700;font-size:17px;letter-spacing:-.02em}
-.dn i{font-style:normal;font-weight:600;font-size:14px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis}
+.dn i{font-style:normal;font-weight:600;font-size:15px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis}
 .dp{font:500 12px/1 var(--f-label);color:var(--ink-2);text-align:right}
 .dr{display:grid;grid-template-columns:30px 1fr 30px;align-items:center;gap:8px}
 .dr em{font:400 17px/1 var(--f-num);font-style:normal;font-variant-numeric:tabular-nums}
 .dr em:first-child{color:var(--ink-2);text-align:right}
-.bar{position:relative;height:5px;border-radius:5px;background:rgba(255,255,255,.12)}
-.bar .fill{position:absolute;top:0;bottom:0;border-radius:5px;background:linear-gradient(90deg,var(--lo),var(--hi))}
+.bar{position:relative;height:5px;border-radius:999px;background:rgba(255,255,255,.12)}
+.bar .fill{position:absolute;top:0;bottom:0;border-radius:999px;background:linear-gradient(90deg,var(--lo),var(--hi))}
 /* what is normal for that date (1991–2020): a faint outline around that stretch of the bar */
-.bar .nrm{position:absolute;top:-3px;bottom:-3px;border-radius:6px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.42)}
+.bar .nrm{position:absolute;top:-3px;bottom:-3px;border-radius:999px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.42)}
 :root[data-mode="day"] .day .bar .nrm{box-shadow:inset 0 0 0 1px rgba(40,30,110,.32)}
 .tile b small{font-size:.6em;font-weight:500;opacity:.6;margin-left:3px}
 .bar .nd{position:absolute;top:50%;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;background:var(--signal);box-shadow:0 0 0 2px rgba(0,0,0,.25)}
@@ -498,7 +498,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .day-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:6px 14px 38px}
 .day-grid .say{grid-column:1/-1;font-weight:600;font-size:15px;letter-spacing:-.01em;padding:0 4px 4px}
 .tile{display:grid;gap:4px;padding:10px 12px}
-.tile b{font:400 19px/1.05 var(--f-num);letter-spacing:-.02em}
+.tile b{font:400 18px/1.05 var(--f-num);letter-spacing:-.02em}
 
 /* ---------- UV ---------- */
 .gauge{position:relative;margin-top:auto}
@@ -584,7 +584,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .scale i.on{background:var(--ink);transform:none;opacity:1}
 .scale .tri{top:0}
 .air:not(.open){grid-template-columns:minmax(0,1fr)}
-.air-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:8px}
+.air-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:8px}
 .air-more{display:inline-flex;align-items:center;gap:4px;padding:6px 2px 6px 10px;margin:-6px -2px -6px 0;border:0;background:none;color:var(--ink);font:500 12px/1 var(--f-label);cursor:pointer;white-space:nowrap}
 .air-more svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:transform .3s}
 .air.open .air-more svg{transform:rotate(180deg)}
@@ -593,15 +593,15 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .pol-wrap>div{min-height:0;overflow:hidden;display:grid}
 .air.open .pol-wrap{grid-template-rows:1fr}
 .air:not(.open) .pol-wrap{visibility:hidden;transition:grid-template-rows .35s ease,visibility 0s .35s}
-.pol{gap:9px;align-content:center;padding:14px 16px;border-radius:18px}
-.pol-r{display:grid;grid-template-columns:44px 1fr 62px;gap:10px;align-items:center}
+.pol{gap:8px;align-content:center;padding:14px 16px;border-radius:16px}
+.pol-r{display:grid;grid-template-columns:44px 1fr 62px;gap:12px;align-items:center}
 .pol-r .mono{color:var(--ink)}
 .pol-r .v{font:400 15px/1 var(--f-num);text-align:right;font-variant-numeric:tabular-nums}
 .pol-r .v small{font:500 12px var(--f-label);color:var(--ink-2);margin-left:3px}
-.mbar{position:relative;height:4px;border-radius:4px;background:rgba(255,255,255,.24)}
-.mbar .fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:#fff}
+.mbar{position:relative;height:4px;border-radius:999px;background:rgba(255,255,255,.24)}
+.mbar .fill{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:#fff}
 .mbar .lim{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--signal);border-radius:2px}
-.lim-key{display:flex;align-items:center;gap:7px}
+.lim-key{display:flex;align-items:center;gap:8px}
 .lim-key i{width:2px;height:12px;border-radius:2px;background:var(--signal)}
 .pol-us{display:block;margin-top:8px}
 
@@ -613,23 +613,22 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .stars i{position:absolute;width:var(--s);height:var(--s);border-radius:50%;background:#fff;opacity:var(--o);animation:twinkle var(--t) ease-in-out var(--w) infinite alternate}
 @keyframes twinkle{to{opacity:calc(var(--o) * .2)}}
 .kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-.kv .tile b{font-size:18px}
-.strip{margin-top:14px;cursor:grab;touch-action:pan-y;border-radius:12px;-webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)}
+.strip{margin-top:14px;cursor:grab;touch-action:pan-y;border-radius:16px;-webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)}
 .strip canvas{width:100%;height:58px;display:block}
 .moon canvas{cursor:grab;touch-action:pan-y}
 .strip.grab,.moon canvas.grab{cursor:grabbing}
 
 /* ---------- sun ---------- */
-.band{position:relative;margin:18px 0 6px;cursor:grab;touch-action:pan-y;border-radius:15px}
+.band{position:relative;margin:18px 0 6px;cursor:grab;touch-action:pan-y;border-radius:999px}
 .band.grab{cursor:grabbing}
 .band .tri{transition:left .12s linear}
 /* while dragging, everything follows the finger directly: no easing on the marker or the card colour */
 .band.grab .tri,.hero:has(.grab),.a-sun:has(.grab){transition:none}
 .a-sun{transition:background-color .5s}
-.band svg{width:100%;height:30px;display:block;border-radius:15px}
+.band svg{width:100%;height:30px;display:block;border-radius:999px}
 .band .tri{top:-7px;height:21px} /* reaches well into the band, so it stands out against the orange card */
 .band-axis{display:flex;justify-content:space-between;margin-top:6px}
-.kv5{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-top:auto;padding-top:14px}
+.kv5{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-top:auto;padding-top:14px}
 .kv5 div{display:grid;gap:2px}
 .kv5 b{font:400 18px/1.05 var(--f-num);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
 @media (max-width:800px){.kv5{grid-template-columns:repeat(3,minmax(0,1fr))}}
@@ -662,7 +661,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .pgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:4px}
 /* on wide screens pollen spans the full width, its six types in one line */
 @media (min-width:1001px){.a-pollen .pgrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
-.pgrid .tile{gap:5px}
+.pgrid .tile{gap:4px}
 .pgrid b{font:400 22px/1 var(--f-num);letter-spacing:-.02em}
 .dots{display:flex;gap:4px}
 .dots i{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.16)}
@@ -671,7 +670,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 
 /* ---------- radar ---------- */
 .card.a-radar{padding:0;min-height:440px}
-.a-radar .ch{position:absolute;z-index:500;top:14px;left:14px;pointer-events:none;padding:10px 14px;border-radius:18px}
+.a-radar .ch{position:absolute;z-index:500;top:14px;left:14px;pointer-events:none;padding:10px 14px;border-radius:16px}
 .a-radar .ch p:empty{display:none} /* only a message (offline, unavailable) shows under the title */
 .here-pin{border-radius:50%;background:var(--signal);box-shadow:0 0 0 2.5px #fff,0 1px 4px rgba(0,0,0,.3)}
 #radarMap{position:absolute;inset:6px;border-radius:calc(var(--r-card) - 6px);overflow:hidden;background:#474749}
@@ -684,7 +683,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 /* map labels in the app's own type */
 .mlab{pointer-events:none}
 .mlab i{position:absolute;left:-2.5px;top:-2.5px;width:5px;height:5px;border-radius:50%;background:var(--ink);opacity:.5}
-.mlab span{position:absolute;left:8px;top:-7px;white-space:nowrap;font:500 11.5px/1 var(--f-display);letter-spacing:-.01em;color:var(--ink-2);text-shadow:0 0 6px var(--bg),0 0 2px var(--bg)}
+.mlab span{position:absolute;left:8px;top:-7px;white-space:nowrap;font:500 12px/1 var(--f-display);letter-spacing:-.01em;color:var(--ink-2);text-shadow:0 0 6px var(--bg),0 0 2px var(--bg)}
 .mlab.here i{display:none}
 .mlab.here span{left:12px;top:-8px;font-weight:700;font-size:13px;color:var(--ink)}
 .rbar{position:absolute;z-index:500;left:16px;right:16px;bottom:24px;display:flex;align-items:center;gap:12px;padding:7px 14px 7px 7px;border-radius:999px}
@@ -698,27 +697,27 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .rticks button.cur::after{background:var(--signal);transform:scale(1.75)}
 .rticks button.fut::after{background:rgba(143,176,255,.62)}
 .rtime{font:500 11px/1 var(--f-label);font-variant-numeric:tabular-nums;min-width:70px;text-align:right}
-.zoomer{position:absolute;z-index:500;right:16px;top:16px;display:grid;gap:6px}
+.zoomer{position:absolute;z-index:500;right:16px;top:16px;display:grid;gap:8px}
 .ch.lens.dark h3{color:#fff}.ch.lens.dark p{color:rgba(255,255,255,.65)}
 
 /* ---------- source ---------- */
 .a-src{display:flex;align-items:center;gap:12px;padding:2px 2px 0;color:var(--ink-2)}
 .src-open{display:flex;align-items:center;gap:12px;color:var(--ink-2);text-align:left}
-.a-src .mono{font-size:12.5px;line-height:1.5}
-#dlgInfo p{margin:0 0 12px;font-size:14px;line-height:1.5;color:var(--ink-2)}
+.a-src .mono{font-size:13px;line-height:1.5}
+#dlgInfo p{margin:0 0 12px;font-size:15px;line-height:1.5;color:var(--ink-2)}
 #dlgInfo p b{color:var(--ink);font-weight:600}
 
 /* ---------- loading ---------- */
-.sk{flex:1;border-radius:18px;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.08) 50%,transparent 70%) 0 0/300% 100%;animation:sk 1.6s linear infinite;min-height:80px}
+.sk{flex:1;border-radius:16px;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.08) 50%,transparent 70%) 0 0/300% 100%;animation:sk 1.6s linear infinite;min-height:80px}
 @keyframes sk{to{background-position:-300% 0}}
-.err{margin:auto;text-align:center;display:grid;gap:14px;justify-items:center;max-width:36ch}
-.btn{font-weight:600;font-size:14px;padding:11px 18px;border-radius:999px;background:var(--signal);color:var(--signal-ink)}
+.err{margin:auto;text-align:center;display:grid;gap:16px;justify-items:center;max-width:36ch}
+.btn{font-weight:600;font-size:15px;padding:11px 18px;border-radius:999px;background:var(--signal);color:var(--signal-ink)}
 
 /* ---------- floating chrome ---------- */
 .dock{position:fixed;left:50%;bottom:var(--dock-b);transform:translateX(-50%);z-index:1000;display:flex;gap:8px;align-items:center;padding:7px;border-radius:999px;color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12),0 18px 40px -16px rgba(0,0,0,.45)}
 .dock .round{width:48px;height:48px;background:rgba(255,255,255,.1)}
 .dock .round svg{width:20px;height:20px}
-.pill{height:48px;min-width:128px;padding:0 22px;border-radius:999px;display:flex;align-items:center;justify-content:center;gap:9px;font-weight:700;font-size:14px;letter-spacing:-.01em;color:var(--signal-ink);
+.pill{height:48px;min-width:128px;padding:0 22px;border-radius:999px;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:700;font-size:15px;letter-spacing:-.01em;color:var(--signal-ink);
   background:var(--signal)}
 .pill svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2.1;stroke-linecap:round}
 /* page dots under "Places" when there are several places to swipe between */
@@ -727,7 +726,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .pdots:empty{display:none}
 .pdots i{width:4px;height:4px;border-radius:50%;background:currentColor;opacity:.4;transition:opacity .2s,transform .2s}
 .pdots i.on{opacity:1;transform:scale(1.25)}
-.topbar{position:fixed;left:50%;top:calc(12px + env(safe-area-inset-top,0px));z-index:1000;display:flex;align-items:center;gap:10px;padding:8px 16px 8px 10px;border-radius:999px;
+.topbar{position:fixed;left:50%;top:calc(12px + env(safe-area-inset-top,0px));z-index:1000;display:flex;align-items:center;gap:12px;padding:8px 16px 8px 10px;border-radius:999px;
   transform:translate(-50%,-160%);transition:transform .45s cubic-bezier(.3,.8,.2,1);color:#fff;max-width:calc(100% - 32px)}
 .topbar.show{transform:translate(-50%,0)}
 .topbar .ic{width:22px;height:22px}
@@ -753,8 +752,8 @@ dialog::backdrop{background:rgba(6,4,20,.4);-webkit-backdrop-filter:blur(8px);ba
 .days-sheet .sheet-h p{margin:2px 0 0;font:500 12px/1 var(--f-label);color:var(--ink-2)}
 @media (max-width:560px){.sheet.days-sheet{max-height:88%}}
 .sheet-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
-.sheet-h h2{margin:0;font-size:22px;font-weight:700;letter-spacing:-.03em}
-.field-in{display:flex;align-items:center;gap:10px;padding:0 16px;height:52px;border-radius:18px;background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.sheet-h h2{margin:0;font-size:20px;font-weight:700;letter-spacing:-.03em}
+.field-in{display:flex;align-items:center;gap:12px;padding:0 16px;height:52px;border-radius:16px;background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
 .field-in svg{width:18px;height:18px;stroke:rgba(255,255,255,.5);fill:none;stroke-width:2;stroke-linecap:round;flex:none}
 .field-in input{flex:1;min-width:0;background:none;border:0;outline:0;color:#fff;font:500 16px var(--f-display)}
 .list{display:grid;gap:4px;margin-top:12px}
@@ -774,13 +773,13 @@ dialog::backdrop{background:rgba(6,4,20,.4);-webkit-backdrop-filter:blur(8px);ba
 #dlgSet.model-only .sheet > .label,#dlgSet.model-only .seg,#dlgSet.model-only #installBtn{display:none}
 .models button{display:grid;gap:2px;text-align:left;padding:11px 14px;border-radius:16px}
 .models button b{font-weight:600}
-.models button span{font-size:12.5px;color:var(--ink-2)}
+.models button span{font-size:13px;color:var(--ink-2)}
 .models button[aria-pressed="true"]{background:rgba(232,0,73,.16);box-shadow:inset 0 0 0 1px rgba(232,0,73,.7)}
 .models button:hover{background:rgba(255,255,255,.06)}
-.toast{position:fixed;left:50%;bottom:calc(76px + var(--dock-b));transform:translateX(-50%);z-index:1100;padding:11px 18px;border-radius:999px;font-weight:600;font-size:13.5px;max-width:calc(100% - 32px);text-align:center;color:#fff;transition:bottom .35s cubic-bezier(.2,.8,.2,1)}
+.toast{position:fixed;left:50%;bottom:calc(76px + var(--dock-b));transform:translateX(-50%);z-index:1100;padding:11px 18px;border-radius:999px;font-weight:600;font-size:13px;max-width:calc(100% - 32px);text-align:center;color:#fff;transition:bottom .35s cubic-bezier(.2,.8,.2,1)}
 body.net-off .toast{bottom:calc(122px + var(--dock-b))}
 /* offline: the last forecast stays up and this pill says how old it is (tap to try again) */
-.netpill{position:fixed;left:50%;bottom:calc(74px + var(--dock-b));z-index:1050;display:flex;align-items:center;gap:9px;padding:10px 16px 10px 14px;border-radius:999px;font-size:13px;color:#fff;white-space:nowrap;max-width:calc(100% - 32px);
+.netpill{position:fixed;left:50%;bottom:calc(74px + var(--dock-b));z-index:1050;display:flex;align-items:center;gap:8px;padding:10px 16px 10px 14px;border-radius:999px;font-size:13px;color:#fff;white-space:nowrap;max-width:calc(100% - 32px);
   opacity:0;transform:translate(-50%,14px) scale(.96);pointer-events:none;transition:opacity .35s,transform .45s cubic-bezier(.2,.8,.2,1)}
 .netpill.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}
 .netpill i{width:7px;height:7px;border-radius:50%;background:#ffcf5c;box-shadow:0 0 0 3px rgba(255,207,92,.2);flex:none}
@@ -810,7 +809,7 @@ body.net-off .toast{bottom:calc(122px + var(--dock-b))}
   .hero{min-height:500px}
   .air{grid-template-columns:1fr}
   .air .pol{margin-top:16px}
-  .moon{grid-template-columns:110px minmax(0,1fr);gap:14px}
+  .moon{grid-template-columns:110px minmax(0,1fr);gap:16px}
   .day-h{grid-template-columns:minmax(0,1fr) 24px 34px minmax(0,1.6fr);gap:8px;padding:13px 14px 34px}
   .dn i{display:none}
   .day-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -831,13 +830,13 @@ body.net-off .toast{bottom:calc(122px + var(--dock-b))}
 .sheet.spread-sheet{width:min(640px,calc(100% - 24px))}
 @media (max-width:560px){.sheet.spread-sheet{max-height:90%}}
 .sp-say{margin:16px 2px 12px;font-size:15px;font-weight:500;line-height:1.45;letter-spacing:-.01em;min-height:2.9em}
-.sp-chart{position:relative;height:230px;cursor:grab;touch-action:pan-y;-webkit-user-select:none;user-select:none;border-radius:14px}
+.sp-chart{position:relative;height:230px;cursor:grab;touch-action:pan-y;-webkit-user-select:none;user-select:none;border-radius:16px}
 .sp-chart.grab{cursor:grabbing}
 .sp-chart canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
-.sp-read{display:grid;gap:3px;margin:12px 2px 0;min-height:58px;font-size:14px;color:var(--ink-2)}
+.sp-read{display:grid;gap:4px;margin:12px 2px 0;min-height:58px;font-size:15px;color:var(--ink-2)}
 .sp-read>b{color:var(--ink);font-weight:600}
 .sp-read span b{color:var(--ink);font-weight:600}
-.sp-note{margin:14px 2px 0;font-size:12.5px;line-height:1.5;color:var(--ink-2)}
+.sp-note{margin:14px 2px 0;font-size:13px;line-height:1.5;color:var(--ink-2)}
 /* a detail tile that opens something: a small chevron in the corner */
 .tile-go{position:relative;text-align:left;cursor:pointer;font:inherit;color:inherit}
 .tile-go svg{position:absolute;right:10px;top:11px;width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;opacity:.6}
@@ -867,7 +866,7 @@ html.wall .board>.card{min-height:0}
 .wall-x{position:fixed;top:14px;right:14px;z-index:1100;opacity:.45;transition:opacity .3s} /* always findable, quietly; full strength on hover */
 html.wall .wall-x:hover,html.wall .wall-x:focus-visible{opacity:1}
 html:not(.wall) .wall-x{display:none}
-.wall-link{display:block;margin-top:18px;padding:0;font-size:12.5px;color:var(--ink-2);text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--ink-3)}
+.wall-link{display:block;margin-top:18px;padding:0;font-size:13px;color:var(--ink-2);text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--ink-3)}
 @media (max-width:899px){.wall-link{display:none}}
 html.wall .a-pollen .pgrid{grid-template-columns:repeat(3,minmax(0,1fr))} /* pollen keeps a small corner: two rows of three */
 /* the moon card a touch more compact, so it fits its row */
@@ -901,7 +900,7 @@ html.wall .a-moon .strip canvas{height:46px}
 .deck{gap:8px}
 .day + .day{margin-top:0}
 .day:not(.open){flex:0 0 auto;min-height:0} /* a closed row is just as tall as its line */
-.day{border-radius:22px;background:linear-gradient(155deg,#26253a,#1a1928);box-shadow:inset 0 1px 0 rgba(255,255,255,.09),inset 0 0 0 1px rgba(255,255,255,.05)}
+.day{border-radius:16px;background:linear-gradient(155deg,#26253a,#1a1928);box-shadow:inset 0 1px 0 rgba(255,255,255,.09),inset 0 0 0 1px rgba(255,255,255,.05)}
 .day-h{padding:16px 18px}
 .day-b{margin-top:-6px}
 .day-grid{padding:4px 14px 16px}
@@ -916,7 +915,7 @@ html.wall .a-moon .strip canvas{height:46px}
 .sheet::-webkit-scrollbar{display:none}
 /* phones: a more compact main card (about a third shorter), so the next cards show sooner */
 @media (max-width:560px){
-  .hero{min-height:0;padding:18px 18px 16px}
+  .hero{min-height:0}
   .hero-temp{margin:10px 0 6px}
   .hero-temp .dm{height:88px}
   .arc{padding-top:8px}
@@ -950,7 +949,7 @@ html.wall .a-moon .strip canvas{height:46px}
     max-height:calc(var(--vvh,100dvh) - env(safe-area-inset-top,0px) - 20px)}
 }
 /* humidity meter on the right edge: 100% (saturated air, where dew and fog form) at the top */
-.hgauge{position:absolute;right:16px;top:18px;bottom:58px;width:22px;display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none}
+.hgauge{position:absolute;right:16px;top:18px;bottom:58px;width:22px;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
 .hg-top{font:500 11px/1 var(--f-label);color:var(--ink-2)}
 .hg-col{position:relative;flex:1;width:6px;display:flex;flex-direction:column;justify-content:space-between;align-items:center}
 .hg-col i{width:5px;height:5px;border-radius:50%;background:var(--ink-3);transform:scale(.62);opacity:.7}

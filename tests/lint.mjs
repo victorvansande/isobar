@@ -26,6 +26,18 @@ for (const m of plain.matchAll(/font-weight\s*:\s*(\d+)|(?<![-\w])font\s*:\s*(\d
   if (![200, 300, 400, 500, 600, 700].includes(w)) fail("weights (15)", `font weight ${w}`);
 }
 
+// Rules 10 and 14: one scale each for type sizes, corner radii and gaps, checked rule by rule (selector and body)
+const TYPE = [11, 12, 13, 15, 17, 20, 30], RADII = [1, 2, 3, 16, 30, 999], GAPS = [2, 4, 8, 12, 16, 20];
+const noSquircle = plain.replace(/@supports \(corner-shape:squircle\)\{(?:[^{}]*\{[^{}]*\})*[^{}]*\}/g, "");
+for (const [, sel, body] of noSquircle.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+  const s = sel.trim();
+  if (!/var\(--f-num\)/.test(body) && !/\binput\b|(^|[\s,])text$/.test(s)) // big readings have their own sizes; inputs stay 16 (iOS zooms below); SVG text scales with its drawing
+    for (const m of body.matchAll(/font-size:\s*([\d.]+)px|(?<![-\w])font:[^;]*?([\d.]+)px/g)) { const v = +(m[1] || m[2]); if (!TYPE.includes(v)) fail("type scale (14)", `${s}: ${v}px (allowed ${TYPE.join(", ")})`); }
+  for (const m of body.matchAll(/border-radius:\s*([\d.]+)px/g)) if (!RADII.includes(+m[1])) fail("radii (10)", `${s}: ${m[1]}px (allowed ${RADII.join(", ")})`);
+  if (!/^(\.board|html\.wall \.board|\.rticks)$/.test(s)) // the gap between cards (rule 11) and the radar's timeline dots have their own
+    for (const m of body.matchAll(/(?<![-\w])(?:row-|column-)?gap:\s*(\d+)px(?: (\d+)px)?/g)) for (const v of [m[1], m[2]].filter(Boolean)) if (!GAPS.includes(+v)) fail("gaps (10)", `${s}: ${v}px (allowed ${GAPS.join(", ")})`);
+}
+
 // Rule 10: one inset for every card
 if (!/\.card\{[^}]*--pad-x:20px/.test(css)) fail("inset (10)", ".card no longer sets --pad-x: 20px");
 if (!/\.card\{[^}]*--pad-x:16px/.test(css)) fail("inset (10)", "the phone layout no longer sets --pad-x: 16px");
