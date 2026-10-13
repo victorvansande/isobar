@@ -1072,6 +1072,13 @@ function renderNow() {
   // skip quarter-hours that already passed (a kept forecast can be hours old); with too few left the hourly takes over
   if (M && M.precipitation && M.precipitation.some(v => v != null)) M.time.forEach((s, i) => { const t = T(s); if (t >= Date.now() - 9e5) { times.push(t); vals.push(M.precipitation[i] ?? 0); } });
   if (times.length < 8) { times = []; vals = []; for (let i = 0; i < 6; i++) { const t = X.H.time[X.hi + i]; if (!t) break; for (let q = 0; q < 4; q++) { times.push(new Date(T(t).valueOf() + q * 9e5)); vals.push((X.H.precipitation[X.hi + i] ?? 0) / 4); } } }
+  // always six hours (24 quarter-hours): when the quarter-hour forecast runs out early (an older kept copy), the hourly
+  // forecast fills the rest, so the grid keeps the same number of columns and the same dot size
+  while (times.length && times.length < 24) {
+    const t = new Date(times.at(-1).valueOf() + 9e5), k = X.H.time.findIndex(s => T(s) > t) - 1;
+    if (k < 0) break; times.push(t); vals.push((X.H.precipitation[k] ?? 0) / 4);
+  }
+  times = times.slice(0, 24); vals = vals.slice(0, 24);
   const rate = vals.map(v => toMm(v) * 4);
   const thr = 0.1, first = rate.findIndex(v => v >= thr), peak = Math.max(0, ...rate);
   const inten = r => r < 2.5 ? "Light" : r < 7.6 ? "Moderate" : r < 50 ? "Heavy" : "Violent";
