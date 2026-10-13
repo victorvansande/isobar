@@ -924,3 +924,8 @@ html.wall .a-moon .strip canvas{height:46px}
 .swpeek small{font:500 12px/1 var(--f-label);color:rgba(255,255,255,.7)}
 .swpeek.r b::after{content:" ›"}
 .swpeek.l b::before{content:"‹ "}
+/* phones: the places sheet hangs from the top and fits the space above the keyboard */
+@media (max-width:560px){
+  #dlgPlaces .sheet{top:calc(env(safe-area-inset-top,0px) + 10px);bottom:auto;transform:translateX(-50%);
+    max-height:calc(var(--vvh,100dvh) - env(safe-area-inset-top,0px) - 20px)}
+}

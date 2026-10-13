@@ -2602,7 +2602,16 @@ function renderSaved() {
   if (place) $("#saveCurT").textContent = `Save ${place.name}`;
   renderDots();
 }
-function openPlaces() { renderSaved(); $("#results").innerHTML = ""; $("#q").value = ""; results = []; dlgP.showModal(); }
+// The places sheet opens with the search field in view: on a phone it hangs from the top of the screen and is only as
+// tall as the space above the keyboard (the visible viewport), so nothing of the page shows between it and the keys
+function openPlaces() {
+  renderSaved(); $("#results").innerHTML = ""; $("#q").value = ""; results = [];
+  const sh = dlgP.querySelector(".sheet"); dlgP.showModal(); sh.scrollTop = 0; requestAnimationFrame(() => { sh.scrollTop = 0; });
+}
+if (window.visualViewport) {
+  const vv = visualViewport, fit = () => document.documentElement.style.setProperty("--vvh", `${Math.round(vv.height)}px`);
+  vv.addEventListener("resize", fit); fit();
+}
 
 /* ---------------- swipe between places ---------------- */
 // You swipe through your saved places, led by the last place you opened that isn't saved (such as the spot your
@@ -2674,6 +2683,7 @@ async function release(dir) {
 }
 let qT;
 $("#q").addEventListener("input", e => {
+  dlgP.querySelector(".sheet").scrollTop = 0; // new results start at the top, with the field in view
   clearTimeout(qT); const q = e.target.value.trim();
   if (q.length < 2) { $("#results").innerHTML = ""; results = []; return; }
   qT = setTimeout(async () => {
