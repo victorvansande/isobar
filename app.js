@@ -883,6 +883,8 @@ function renderHero() {
     const [n0, n1] = now < rise ? [ps, rise] : [set, nr];
     if (n0 && n1 && !isNaN(n0) && !isNaN(n1)) { a0 = n0; a1 = n1; body = "night"; f = clamp((now - a0) / (a1 - a0), 0, 1); } // a night next to a midnight sun keeps the day arc
   }
+  // at night the arc runs from one day's sunset to the next day's sunrise, and the labels say which day each one is,
+  // so they never seem to contradict the sun card (which shows today)
   const night = body === "night";
   arcDay = night ? { peak: Math.max(0, -sunAlt(new Date((a0.valueOf() + a1.valueOf()) / 2), X.lat, X.lon)) } // peak: the highest point on the path
     : sunDay ? { peak: Math.max(0, sunAlt(st.noon, X.lat, X.lon)) } : null;
@@ -932,9 +934,9 @@ function renderHero() {
     <div class="hero-meta"><span id="heroFeels">Feels like ${R(c.apparent_temperature)}°</span><span>High ${R(Dy.temperature_2m_max[di])}° · Low ${R(Dy.temperature_2m_min[di])}°</span><span id="heroClim" class="clim"${climLine() ? "" : " hidden"}>${esc(climLine())}</span></div>
     <div class="arc"><div class="arc-in" id="arcIn"${scrub ? ` role="slider" tabindex="0" aria-label="Time of day. Drag the sun or use the arrow keys to see the temperature at that hour." aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(f * 100)}" aria-valuetext="Now"` : ""}>${arc}</div></div>
     <div class="hero-foot">
-      <div><b>${fmtT(a0)}</b><span>${night ? "Sunset" : "Sunrise"}</span></div>
+      <div><b>${fmtT(a0)}</b><span>${night ? (now < rise ? "Sunset yesterday" : "Sunset") : "Sunrise"}</span></div>
       <div class="mid"><span id="heroMid">${esc(mid)}</span></div>
-      <div class="r"><b>${fmtT(a1)}</b><span>${night ? "Sunrise" : "Sunset"}</span></div>
+      <div class="r"><b>${fmtT(a1)}</b><span>${night ? (now < rise ? "Sunrise" : "Sunrise tomorrow") : "Sunset"}</span></div>
     </div>`;
   glowAt(f);
   // the rainbow stands on the horizon line of the arc below
