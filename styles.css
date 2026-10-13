@@ -236,6 +236,27 @@ dialog:focus-visible,.sheet:focus-visible{outline:none} /* opening a sheet focus
 :root[data-mode="day"] .pig:not(.sky) .ftrack .seg,:root[data-mode="day"] .pig:not(.sky) .ftrack .tick,:root[data-mode="day"] .pig:not(.sky) .scale i.on,:root[data-mode="day"] .pig:not(.sky) .mbar .fill,:root[data-mode="day"] .pig:not(.sky) .dots i.on{background:var(--ink)}
 :root[data-mode="day"] .pig:not(.sky) .wlines path{stroke:var(--ink)}
 :root[data-mode="day"] .glass{background:rgba(255,255,255,.84);box-shadow:inset 0 0 0 1px rgba(20,10,60,.06),0 1px 2px rgba(30,20,60,.06),0 10px 28px -14px rgba(30,20,60,.18)}
+/* ---------- night look: the mirror of the day ----------
+   At night the coloured cards become deep, muted tints of their own colour on the night blue, with text in that
+   colour's lightest tint: the day's calm, inverted. The slow inflow stays, just as dim; no glow on numbers, no shine.
+   Glass cards turn to a near-solid matte night layer. The sky cards keep their real sky colours. */
+:root:not([data-mode="day"]) .pig:not(.sky){
+  --ink:color-mix(in oklab,var(--hi) 30%,#fff);--ink-2:color-mix(in oklab,var(--ink) 66%,transparent);--ink-3:color-mix(in oklab,var(--ink) 30%,transparent);
+  color:var(--ink);background:color-mix(in oklab,var(--mid) 20%,#0f1228);
+  box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--mid) 22%,transparent),0 10px 28px -14px rgba(0,0,0,.5)}
+:root:not([data-mode="day"]) .pig:not(.sky)::before{background:
+    radial-gradient(var(--cs) calc(var(--cs) * .9) at 52% 52%,color-mix(in oklab,var(--mid) 30%,#0f1228) 0%,transparent 76%),
+    radial-gradient(var(--hs) calc(var(--hs) * .9) at var(--hx) var(--hy),color-mix(in oklab,var(--hi) 22%,#0f1228),transparent 70%),
+    radial-gradient(calc(var(--hs) + 6%) calc(var(--hs) + 4%) at var(--ax) var(--ay),color-mix(in oklab,var(--acc) 22%,#0f1228),transparent 72%),
+    color-mix(in oklab,var(--mid) 18%,#0f1228)}
+:root:not([data-mode="day"]) .pig:not(.sky)::after{opacity:.1}
+:root:not([data-mode="day"]) .pig:not(.sky) .num{text-shadow:none}
+:root:not([data-mode="day"]) .pig:not(.sky) .dm{filter:none}
+:root:not([data-mode="day"]) .pig:not(.sky) .tile{background:color-mix(in oklab,var(--hi) 8%,transparent)}
+:root:not([data-mode="day"]) .pig:not(.sky) .dots i{background:var(--ink-3)}
+:root:not([data-mode="day"]) .pig:not(.sky) .dots i.on{background:var(--ink)}
+:root:not([data-mode="day"]) .pig:not(.sky) .wlines path{stroke:var(--ink)}
+:root:not([data-mode="day"]) .glass{background:rgba(22,26,54,.9);box-shadow:inset 0 0 0 1px rgba(255,255,255,.06),0 10px 28px -14px rgba(0,0,0,.5)}
 /* Inflow: the bright rim colours drift slowly toward the dark core and get swallowed by it, then ease back out. */
 @property --hx{syntax:"<percentage>";inherits:false;initial-value:6%}
 @property --hy{syntax:"<percentage>";inherits:false;initial-value:0%}
