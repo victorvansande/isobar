@@ -646,22 +646,30 @@ function starField(seed, count, avoid) {
   return `<span class="stars" aria-hidden="true">${out}</span>`;
 }
 
-/* Heat haze. One shimmer per card (UV, main card), sharing a single animation loop. Strength 0 switches a card off. */
+/* Heat haze. One shimmer per card (UV, main card), sharing a single animation loop. Strength 0 switches a card off.
+   Phones draw SVG filters on the processor, so the costly part stays small: only the arc (or gauge) is distorted, and
+   its noise is moved 15 times a second, not 60. The card itself gets soft rising bands of warm air, a layer the
+   graphics chip moves for free. */
 const HAZE = { uv: 0, hero: 0 };
 let hazeRAF = 0;
 function setHaze(which, scale) {
   const el = card(which === "uv" ? "c-uv" : "c-hero"), on = scale > 0 && !calmMotion.matches;
   HAZE[which] = on ? scale : 0;
   el.classList.toggle("hot", on);
+  let heat = el.querySelector(":scope > .heat");
+  if (on && !heat) { heat = document.createElement("span"); heat.className = "heat"; heat.setAttribute("aria-hidden", "true"); el.prepend(heat); }
+  if (heat) { if (on) heat.style.setProperty("--hs", (scale / 14).toFixed(2)); else heat.remove(); }
   if (on) document.getElementById(`hazeMap-${which}`).setAttribute("scale", scale);
   cancelAnimationFrame(hazeRAF);
   if (!HAZE.uv && !HAZE.hero) return;
   const t0 = performance.now(), noise = { uv: document.getElementById("hazeNoise-uv"), hero: document.getElementById("hazeNoise-hero") };
+  let last = 0;
   const tick = now => {
+    hazeRAF = requestAnimationFrame(tick);
+    if (now - last < 66) return; last = now;
     const k = (now - t0) / 1000;
     for (const [id, ph] of [["uv", 0], ["hero", 2.1]]) if (HAZE[id] && !offscreen(id === "uv" ? "c-uv" : "c-hero"))
       noise[id].setAttribute("baseFrequency", `${(.006 + .002 * sin(k * .6 + 1 + ph)).toFixed(4)} ${(.05 + .012 * sin(k * .9 + ph)).toFixed(4)}`);
-    hazeRAF = requestAnimationFrame(tick);
   };
   hazeRAF = requestAnimationFrame(tick);
 }

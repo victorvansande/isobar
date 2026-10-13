@@ -505,12 +505,12 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 /* ---------- UV ---------- */
 .gauge{position:relative;margin-top:auto}
 /* heat haze: the layers ripple, but they're oversized and clipped by the card so its edge never moves */
-.a-uv.hot::before{filter:blur(18px) url(#haze-uv)}
-.a-uv.hot::after{inset:-16px;filter:url(#haze-uv)}
 .a-uv.hot .gauge svg{filter:url(#haze-uv)}
-.a-hero.hot::before{filter:blur(18px) url(#haze-hero)}
-.a-hero.hot::after{inset:-16px;filter:url(#haze-hero)}
 .a-hero.hot .arc svg{filter:url(#haze-hero)}
+/* warm air rising over a hot card: soft bands moved by transform only, so phones stay smooth */
+.heat{position:absolute;left:0;right:0;top:0;height:calc(100% + 40px);z-index:-1;pointer-events:none;opacity:var(--hs);
+  background:repeating-linear-gradient(176deg,transparent 0 22px,rgba(255,236,214,.09) 30px,transparent 40px);animation:heatrise 3.2s linear infinite;will-change:transform}
+@keyframes heatrise{to{transform:translateY(-40.1px)}}
 
 /* ---------- weather-reactive layers ---------- */
 /* drizzle: finer, shorter, slower streaks. hail: hard pellets that bounce once at the bottom */
