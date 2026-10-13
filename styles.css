@@ -904,3 +904,16 @@ html.wall .a-moon .strip canvas{height:46px}
 .dry-glow{animation:dryglow 3.6s ease-in-out infinite alternate}
 @keyframes dryglow{from{opacity:.55}to{opacity:1}}
 @media (prefers-reduced-motion:reduce){.dry-glow{animation:none}}
+/* swiping between places: the next place's name slides in at the edge it comes from, and lights up once letting go
+   will switch to it */
+.swpeek{position:fixed;top:42%;z-index:1050;display:grid;gap:2px;padding:10px 14px;border-radius:16px;pointer-events:none;opacity:0;
+  background:rgba(16,14,30,.55);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);color:#fff;
+  transition:transform .18s cubic-bezier(.2,.8,.2,1),background-color .18s;visibility:hidden;max-width:46vw}
+.swpeek.on{visibility:visible}
+.swpeek.r{right:12px;text-align:right;transform:translateX(8px)}
+.swpeek.l{left:12px;transform:translateX(-8px)}
+.swpeek.ready{background:var(--signal);transform:none;box-shadow:none}
+.swpeek b{font-weight:650;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.swpeek small{font:500 12px/1 var(--f-label);color:rgba(255,255,255,.7)}
+.swpeek.r b::after{content:" ›"}
+.swpeek.l b::before{content:"‹ "}

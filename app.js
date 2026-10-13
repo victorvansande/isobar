@@ -2619,6 +2619,7 @@ async function release(dir) {
   const out = app.animate([{ transform: from, opacity: op }, { transform: `translateX(${-dir * 32}%)`, opacity: 0 }], { duration: 170, easing: "cubic-bezier(.4,0,1,1)", fill: "forwards" });
   await out.finished;
   scrollTo(0, 0); load(next);
+  { const r = placeRing(); toast(`${next.name} · ${r.findIndex(s => samePlace(s, next)) + 1} of ${r.length}`); } // where you landed
   app.animate([{ transform: `translateX(${dir * 32}%)`, opacity: 0 }, { transform: "translateX(0)", opacity: 1 }], { duration: 320, easing: "cubic-bezier(.2,.8,.2,1)" });
   out.cancel(); swiping = false;
 }
@@ -2626,21 +2627,36 @@ async function release(dir) {
   const app = $(".app");
   // controls that move sideways themselves keep their own gesture
   const own = t => t.closest(".hscroll,.leaflet-container,[role=slider],.band,#arcIn,#moonCv,.rticks,.zoomer,.rbar,input");
-  let x0 = 0, y0 = 0, dx = 0, mode = "no";
+  // Only a clearly sideways swipe counts (twice as far sideways as up or down), so scrolling never switches places by
+  // accident. While you drag, the next place's name slides in at the edge it comes from; once you have dragged far
+  // enough to switch it lights up. Letting go there (or flicking) switches; anywhere short of it springs back.
+  let x0 = 0, y0 = 0, t0 = 0, dx = 0, mode = "no", ready = false;
+  const peek = $("#swPeek"), far = () => Math.min(innerWidth * .28, 130);
+  const hidePeek = () => { peek.className = "swpeek"; peek.style.opacity = ""; };
   app.addEventListener("touchstart", e => {
     mode = e.touches.length === 1 && !own(e.target) && placeRing().length > 1 && !swiping ? "maybe" : "no";
-    x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; dx = 0;
+    x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; t0 = e.timeStamp; dx = 0; ready = false;
   }, { passive: true });
   app.addEventListener("touchmove", e => {
     if (mode === "no") return;
     const t = e.touches[0], mx = t.clientX - x0, my = t.clientY - y0;
-    if (mode === "maybe") { if (Math.hypot(mx, my) < 10) return; mode = Math.abs(mx) > Math.abs(my) * 1.3 ? "swipe" : "no"; if (mode === "no") return; }
+    if (mode === "maybe") { if (Math.hypot(mx, my) < 14) return; mode = Math.abs(mx) > Math.abs(my) * 2 ? "swipe" : "no"; if (mode === "no") return; }
     e.preventDefault(); dx = mx; // a sideways swipe: the page follows the finger instead of scrolling
     const r = placeRing(), i = r.findIndex(s => samePlace(s, place)), there = r[i + (dx < 0 ? 1 : -1)];
     const shift = there ? dx * .55 : dx * .18; // with nothing that way it only gives a little
     app.style.transform = `translateX(${shift.toFixed(1)}px)`; app.style.opacity = (1 - Math.min(Math.abs(shift) / 700, .3)).toFixed(3);
+    if (!there) return hidePeek();
+    const p = Math.min(Math.abs(dx) / far(), 1), now = p >= 1;
+    peek.className = `swpeek on ${dx < 0 ? "r" : "l"}${now ? " ready" : ""}`; peek.style.opacity = Math.min(p * 1.6, 1).toFixed(2);
+    $("#swPeekName").textContent = there.name; $("#swPeekN").textContent = `${r.indexOf(there) + 1} of ${r.length}`;
+    if (now && !ready && navigator.vibrate) navigator.vibrate(8); // a small tick on Android when it will switch
+    ready = now;
   }, { passive: false });
-  const end = () => { if (mode !== "swipe") return; mode = "no"; release(Math.abs(dx) > 70 ? (dx < 0 ? 1 : -1) : 0); };
+  const end = e => {
+    if (mode !== "swipe") return; mode = "no"; hidePeek();
+    const fast = Math.abs(dx) > 50 && Math.abs(dx) / Math.max(e.timeStamp - t0, 1) > .6; // a quick flick also switches
+    release(ready || fast ? (dx < 0 ? 1 : -1) : 0);
+  };
   app.addEventListener("touchend", end); app.addEventListener("touchcancel", end);
   // on a computer: the arrow keys
   document.addEventListener("keydown", e => {
@@ -2665,7 +2681,11 @@ dlgP.addEventListener("click", e => {
   const p = row.dataset.kind === "saved" ? saved[+row.dataset.i] : results[+row.dataset.i];
   dlgP.close(); load(p);
 });
-$("#saveCur").onclick = () => { if (!place) return; saved.push({ name: place.name, sub: place.sub, lat: place.lat, lon: place.lon }); store.set("saved", saved); renderSaved(); toast(`Saved ${place.name}`); };
+$("#saveCur").onclick = () => { if (!place) return; saved.push({ name: place.name, sub: place.sub, lat: place.lat, lon: place.lon }); store.set("saved", saved); renderSaved();
+  // the first time there is more than one place, say once how to move between them
+  if (placeRing().length > 1 && !store.get("swipeHint", false)) { store.set("swipeHint", true); toast(`Saved ${place.name}. Swipe sideways to switch places`); }
+  else toast(`Saved ${place.name}`);
+};
 $("#placeBtn").onclick = openPlaces; $("#searchBtn").onclick = openPlaces;
 $("#locBtn").onclick = async () => {
   $("#locBtn").classList.add("spin");
