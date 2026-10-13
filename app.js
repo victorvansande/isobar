@@ -448,7 +448,18 @@ async function guessPlace() {
 }
 
 /* ---------------- render helpers ---------------- */
+/* A line made of parts ("Flanders, Belgium · Tue 13 Oct") breaks only between its parts: each part moves to the next
+   line whole, the "·" or comma staying with the part before it. A part wider than the whole line still wraps inside. */
+const wholeParts = list => list.map(x => `<span class="part">${esc(x)}</span>`).join(" ");
 const head = (t, s) => `<header class="ch"><h3>${esc(t)}</h3><p>${esc(s)}</p></header>`;
+/* A card's title and subtitle are always one line (rule 8): when one doesn't fit (a narrow phone), it shrinks a little
+   until it does, down to 13 px. Run after the cards are drawn and when the window changes size. */
+function fitHeads() {
+  for (const p of document.querySelectorAll(".card .ch h3, .card .ch p")) {
+    p.style.fontSize = "";
+    if (p.scrollWidth > p.clientWidth + 1) p.style.fontSize = `${Math.max(13, parseFloat(getComputedStyle(p).fontSize) * p.clientWidth / p.scrollWidth - .3).toFixed(1)}px`;
+  }
+}
 const tile = (k, v) => `<div class="tile"><span class="mono">${k}</span><b>${v}</b></div>`;
 const card = id => document.getElementById(id);
 let X = {};
@@ -2034,7 +2045,7 @@ function renderRain() {
   const next = []; for (let k = hi; k < hi + 24 && k < H.time.length; k++) next.push(H.precipitation[k] ?? 0);
   const sum24 = next.reduce((a, b) => a + b, 0), mx = Math.max(...next.map(toMm), 1);
   const bars = next.map((v, i) => { const h = toMm(v) / mx * 36; return `<rect x="${i * 10 + 2}" y="${40 - Math.max(h, 1.5)}" width="6" height="${Math.max(h, 1.5)}" rx="3" fill="currentColor" opacity="${v > 0 ? 1 : .24}"/>`; }).join("");
-  el.innerHTML = `${head("Rain", pop != null ? `Today · ${pop}% chance` : "Today")}
+  el.innerHTML = `${head("Rain today", pop != null ? `${pop}% chance` : "–")}
     <div class="num big">${fmtP(today)}<small>${PU()}</small></div>
     <div class="spark"><svg viewBox="0 0 240 42" preserveAspectRatio="none" aria-hidden="true">${bars}</svg></div>
     <div class="spark-ax">${[0, 12, 23].map(k => H.time[hi + k] ? `<span class="tm">${k ? fmtT(T(H.time[hi + k])) : "Now"}</span>` : "<span></span>").join("")}</div>
@@ -2417,7 +2428,7 @@ function fitName() {
   const n = $("#placeName"); n.style.fontSize = "";
   if (n.scrollWidth > n.clientWidth) n.style.fontSize = `${Math.max(20, parseFloat(getComputedStyle(n).fontSize) * n.clientWidth / n.scrollWidth - .5).toFixed(1)}px`;
 }
-document.fonts?.ready.then(fitName); // measured again once the real font is in
+document.fonts?.ready.then(() => { fitName(); fitHeads(); }); // measured again once the real font is in
 function renderPlace() {
   $("#placeName").textContent = place ? place.name : "Isobar";
   { const len = (place ? place.name : "").length, h = $("#placeName").parentElement; h.classList.toggle("long", len > 11 && len <= 17); h.classList.toggle("longer", len > 17); }
@@ -2425,7 +2436,9 @@ function renderPlace() {
   $("#tbName").textContent = place ? place.name : "";
   const t = D ? localDateLabel(new Date()) : ""; // the time itself lives in the clock pill
   // each part (region, country, date) stays whole; a line only breaks between them
-  $("#placeSub").innerHTML = (place ? [place.sub, t].filter(Boolean) : ["Finding your location"]).map(p => p.split(", ").map(q => `<span>${esc(q)}</span>`).join(", ")).join("&nbsp;· ");
+  const bits = !place ? ["Finding your location"] : place.sub ? place.sub.split(", ").map((q, i, a) => i < a.length - 1 ? q + "," : q) : [];
+  if (place && t) { if (bits.length) bits[bits.length - 1] += " ·"; bits.push(t); }
+  $("#placeSub").innerHTML = wholeParts(bits);
   renderDots();
 }
 function renderAll() {
@@ -2435,6 +2448,7 @@ function renderAll() {
   holdDraw = new Set();
   for (const f of parts) { try { f(); } catch (e) { console.error(f.name, e); } }
   const draws = holdDraw; holdDraw = null; // every card is in place: now the canvases measure and draw
+  fitHeads();
   for (const f of draws) { try { f(); } catch (e) { console.error(e); } }
   wantRadar();
   loadClimate();
@@ -2914,7 +2928,7 @@ let rT;
 // the phone, resizing a window) needs the canvases redrawn, and redrawing clears them for a moment.
 let lastW = innerWidth;
 window.addEventListener("resize", () => {
-  fitName();
+  fitName(); fitHeads();
   clearTimeout(rT);
   if (wallOn) fitWall(); // the wall view rescales at once, and redraws its cards once the window settles
   rT = setTimeout(() => {

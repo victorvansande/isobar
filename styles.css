@@ -130,7 +130,7 @@ dialog:focus-visible,.sheet:focus-visible{outline:none} /* opening a sheet focus
 .place h1.longer{font-size:clamp(22px,3.2vw,36px)}
 .place h1 svg{width:22px;height:22px;flex:none;opacity:.45;stroke:currentColor;fill:none;stroke-width:2}
 .place .sub{font-weight:600;font-size:clamp(16px,2vw,20px);letter-spacing:-.02em;color:var(--ink-2);margin-top:4px;text-wrap:balance}
-.place .sub span{white-space:nowrap} /* breaks only between its parts, never inside "Tue 13 Oct" */
+.part{display:inline-block} /* a part of a line ("100% chance", "Tue 13 Oct") moves to the next line whole (rule 9a) */
 .top-r{display:flex;gap:8px;align-items:center;flex:none}
 .chip{display:flex;align-items:center;gap:.6em;height:38px;font:500 12px/1 var(--f-label);letter-spacing:0;padding:0 14px;border-radius:999px;color:var(--ink-2);white-space:nowrap}
 .chip b{color:var(--ink);font-weight:500}
@@ -284,9 +284,9 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 /* flat tile inside a pigment card */
 .tile{background:rgba(255,255,255,.1);border-radius:16px}
 
-.ch{display:grid;gap:0;margin:0 0 10px}
-.ch h3,.ch h2{margin:0;font-weight:700;font-size:17px;letter-spacing:-.02em;line-height:1.15}
-.ch p{margin:0;font-weight:500;font-size:17px;letter-spacing:-.02em;line-height:1.15;color:var(--ink-2)}
+.ch{display:grid;grid-template-columns:minmax(0,1fr);gap:0;margin:0 0 10px;min-width:0}
+.ch h3,.ch h2{margin:0;font-weight:700;font-size:17px;letter-spacing:-.02em;line-height:1.15;white-space:nowrap}
+.ch p{margin:0;font-weight:500;font-size:17px;letter-spacing:-.02em;line-height:1.15;color:var(--ink-2);white-space:nowrap} /* one line, always (fitHeads shrinks it if needed) */
 .ch-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 .mono{font-family:var(--f-label);font-size:12px;font-weight:500;letter-spacing:-.005em;color:var(--ink-2)}
 /* times on axes: even-width figures, so they line up */

@@ -47,7 +47,9 @@ What Isobar feels like, as a touchstone for anything new: does it look like it w
 
 6. English, sentence case, no full stop on labels.
 7. A card never repeats what it already says: the line under a number adds something new.
-8. A subtitle is one short line; the foot of a card is at most one line.
+8. A card's title and subtitle are each exactly one line, never wrapped: write them short enough for a half-width
+   card on a phone (about 16 characters), and on a very narrow screen they shrink a little to fit (`fitHeads`,
+   down to 13 px). The foot of a card is at most one line.
 9. Units always follow the settings and are written small after the number.
 9a. **Never break or cut a phrase.** A label, a date, a time or a number with its unit stays whole on one line
     ("Sunrise tomorrow", "Tue 13 Oct", "34 min"): give each part `white-space: nowrap` or a no-break space, and let a
