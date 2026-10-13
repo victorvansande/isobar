@@ -1160,10 +1160,10 @@ function renderWind() {
   const spTxt = sp == null ? "–" : String(Math.round(sp));
   // streaks flow across the card from the side the wind comes from, scaled to its strength
   const kmh = toMs(sp ?? 0) * 3.6, gusts = windFlow(dir, kmh, toMs(gust ?? 0) * 3.6);
-  el.innerHTML = `${gusts}${head("Wind", sp == null ? "–" : `From the ${pt8(dir)}`)}
+  el.innerHTML = `${gusts}${head("Wind", sp == null ? "–" : esc(bname))}
     <div class="compass"><svg viewBox="0 0 200 200" role="img" aria-label="Wind from ${pt16(dir)}">${ticks}${lab}${tri}</svg>
       <div class="compass-c" role="img" aria-label="${sp == null ? "No wind data" : `${spTxt} ${WU[S.wind]}`}">${dm(spTxt)}<span class="mono u">${WU[S.wind]}</span></div></div>
-    <div class="foot"><span>Gusts <b>${R(gust)}</b> ${WU[S.wind]}</span><span>Bft <b>${b}</b> · ${esc(bname)}</span></div>`;
+    <div class="foot"><span>From ${PTS[Math.round(((dir % 360) + 360) % 360 / 45) % 8 * 2]} · gusts <b>${R(gust)}</b> ${WU[S.wind]}</span></div>`;
 }
 
 /* ---------------- feels like ---------------- */
@@ -1174,9 +1174,11 @@ function renderFeels() {
   let why, sub;
   // only causes the numbers can back up: wind cools, humid warmth warms, the sun warms by day under an open sky
   const d = Math.abs(Math.round(diff));
-  if (Math.abs(dC) < 1.5) { sub = "Same as measured"; why = "It feels about as warm as the thermometer says."; }
-  else if (dC < 0) { sub = "Colder"; why = ms > 3 ? `Wind makes it feel ${d}° colder than measured.` : `Feels ${d}° colder than measured.`; }
-  else { sub = "Warmer"; why = (c.relative_humidity_2m ?? 0) > 55 && toC(t) >= 20 ? `Humidity makes it feel ${d}° warmer.` : c.is_day && (c.cloud_cover ?? 100) < 50 ? `Sunshine and still air make it feel ${d}° warmer.` : `Feels ${d}° warmer than measured.`; }
+  // the difference itself is the subtitle, with its cause in a word when the numbers back one up
+  if (Math.abs(dC) < 1.5) { sub = "Same"; why = "It feels about as warm as the thermometer says."; }
+  else if (dC < 0) { sub = `${d}° colder${ms > 3 ? " · wind" : ""}`; why = ms > 3 ? `Wind makes it feel ${d}° colder than measured.` : `Feels ${d}° colder than measured.`; }
+  else { const humid = (c.relative_humidity_2m ?? 0) > 55 && toC(t) >= 20, sun = c.is_day && (c.cloud_cover ?? 100) < 50;
+    sub = `${d}° warmer${humid ? " · humid" : sun ? " · sun" : ""}`; why = (c.relative_humidity_2m ?? 0) > 55 && toC(t) >= 20 ? `Humidity makes it feel ${d}° warmer.` : c.is_day && (c.cloud_cover ?? 100) < 50 ? `Sunshine and still air make it feel ${d}° warmer.` : `Feels ${d}° warmer than measured.`; }
   const lo = Math.min(t, f) - 6, hi = Math.max(t, f) + 6, P = v => ((v - lo) / (hi - lo) * 100).toFixed(1);
   // when it feels the same as the thermometer (to the degree), the marker sits right on it with no gap to fill
   const same = R(f) === R(t), fp = same ? t : f;
@@ -1187,8 +1189,8 @@ function renderFeels() {
     <div class="num big">${R(f)}°</div>
     <div class="ftrack" aria-hidden="true"><div class="fdots">${fdots}</div>
       <div class="tick" style="left:${P(t)}%"></div><div class="tri" style="left:${P(fp)}%"></div>
-      <span class="lab" style="left:${P(t)}%">Actual ${R(t)}°</span></div>
-    <p class="feels-why">${esc(why)}</p>`;
+      <span class="lab" style="left:${P(t)}%">Actual ${R(t)}°</span></div>`;
+  el.querySelector(".num").setAttribute("aria-label", `${R(f)} degrees. ${why}`); // the longer explanation stays for screen readers
 }
 
 /* ---------------- hourly (glass) ---------------- */
