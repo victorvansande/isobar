@@ -68,6 +68,10 @@ What Isobar feels like, as a touchstone for anything new: does it look like it w
 13a. **Corners**: card 30 px (`--r-card`), surfaces inside cards 16 px, pills fully round; 1–3 px only for hairline
     marks and needles.
 13b. **Gaps inside cards** follow a rhythm of 4: 2, 4, 8, 12, 16, 20 px.
+13c. **Breathing room between blocks.** Inside a card, separate blocks (the header, a reading, a picture, a row of
+    tiles, a sentence, the foot) are at least 12 px apart; lines that belong together sit 2–4 px apart. Text never
+    touches the edge of a box it sits in: a tile or other inner box keeps 12 px of padding all round. In code: the
+    header (`.ch`) keeps 12 px below it, the foot (`.foot`) and a note (`.empty`) keep 12 px above them.
 13. Cards keep the order fixed in `index.html` and the grid areas in `styles.css`; a new card gets a place in both
     the wide and the phone layout, and in the wall view.
 

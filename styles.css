@@ -284,7 +284,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 /* flat tile inside a pigment card */
 .tile{background:rgba(255,255,255,.1);border-radius:16px}
 
-.ch{display:grid;grid-template-columns:minmax(0,1fr);gap:0;margin:0 0 10px;min-width:0}
+.ch{display:grid;grid-template-columns:minmax(0,1fr);gap:0;margin:0 0 12px;min-width:0}
 .ch h3,.ch h2{margin:0;font-weight:700;font-size:17px;letter-spacing:-.02em;line-height:1.15;white-space:nowrap}
 .ch p{margin:0;font-weight:500;font-size:17px;letter-spacing:-.02em;line-height:1.15;color:var(--ink-2);white-space:nowrap} /* one line, always (fitHeads shrinks it if needed) */
 .ch-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
@@ -296,7 +296,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .pig .num{text-shadow:0 .1em .22em rgba(255,255,255,.22)}
 .num small{font-family:var(--f-label);font-size:12px;letter-spacing:0;font-weight:500;margin-left:6px;color:var(--ink-2);text-shadow:none;vertical-align:.25em}
 .big{font-size:clamp(44px,5vw,62px)}
-.foot{margin-top:auto;display:flex;justify-content:space-between;gap:12px;align-items:flex-end;font-size:13px;color:var(--ink-2)}
+.foot{margin-top:auto;padding-top:12px;display:flex;justify-content:space-between;gap:12px;align-items:flex-end;font-size:13px;color:var(--ink-2)}
 /* a small, quiet "i" that opens an explainer */
 .info-i{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;color:var(--ink-2);box-shadow:inset 0 0 0 1px var(--ink-3);flex:none}
 .info-i svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
@@ -309,7 +309,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .a-wind .foot{flex-wrap:wrap;row-gap:2px;padding-top:6px} /* a little air between the compass and the line under it */
 .a-wind .foot span{white-space:nowrap}
 .muted{color:var(--ink-2)}
-.empty{margin:auto 0;color:var(--ink-2);font-size:15px;max-width:34ch}
+.empty{margin:auto 0;padding-top:12px;color:var(--ink-2);font-size:15px;max-width:34ch}
 /* the app's pointer: a short raspberry capsule standing across the scale, like a needle */
 .tri{position:absolute;width:4px;height:12px;border-radius:2px;background:var(--signal);margin-left:-2px;box-shadow:0 1px 3px rgba(0,0,0,.3)}
 
@@ -497,7 +497,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .day-bi{overflow:hidden}
 .day-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:6px 14px 38px}
 .day-grid .say{grid-column:1/-1;font-weight:600;font-size:15px;letter-spacing:-.01em;padding:0 4px 4px}
-.tile{display:grid;gap:4px;padding:10px 12px}
+.tile{display:grid;gap:4px;padding:12px}
 .tile b{font:400 18px/1.05 var(--f-num);letter-spacing:-.02em}
 
 /* ---------- UV ---------- */
@@ -658,7 +658,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .a-clouds .field circle.off{opacity:.09;transform:scale(.84)} /* empty dots as faint as the rain card's */
 
 /* ---------- pollen ---------- */
-.pgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:4px}
+.pgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 /* on wide screens pollen spans the full width, its six types in one line */
 @media (min-width:1001px){.a-pollen .pgrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .pgrid .tile{gap:4px}

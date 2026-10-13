@@ -1610,7 +1610,7 @@ function renderUV() {
       <path d="M20 100 A80 80 0 0 1 ${mx_.toFixed(1)} ${my_.toFixed(1)}" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
       ${tri}</svg>
       <div class="gauge-v" role="img" aria-label="UV index ${uv < 10 ? uv.toFixed(1) : Math.round(uv)}">${dm(uv < 10 ? uv.toFixed(1) : String(Math.round(uv)))}</div></div>
-    <div class="foot" style="margin-top:12px"><span>${esc(sub)}</span></div>`;
+    <div class="foot"><span>${esc(sub)}</span></div>`;
 }
 
 /* ---------------- humidity ---------------- */
@@ -1807,7 +1807,7 @@ function renderSun() {
       <div><span class="mono">Last light</span><b>${fmtT(st.dusk)}</b></div>
       <div><span class="mono">vs yesterday</span><b id="sunChange">${chTxt}</b></div>
     </div>
-    <div class="foot" style="margin-top:14px"><span>Sunshine expected <b>${dur(sunsh)}</b></span><span>Solar noon <b>${fmtT(st.noon)}</b></span></div>
+    <div class="foot"><span>Sunshine expected <b>${dur(sunsh)}</b></span><span>Solar noon <b>${fmtT(st.noon)}</b></span></div>
     </div>
     <div class="sun-year" id="c-year"></div>`; // the daylight through the year fills this (renderYear runs right after)
   updateSun(null);
@@ -2027,7 +2027,7 @@ function renderVis() {
   }
   // clarity 0 (thick fog, under 0.5 km) to 1 (30 km and more): how blue the sky is and how much haze hangs over it all
   const clear = km == null ? .5 : clamp((lg(km) - lg(.5)) / (lg(30) - lg(.5)), 0, 1);
-  const fmtD = d => imperial ? `${Math.round(d / 1.609 * 10) / 10} mi` : `${d} km`;
+  const fmtD = d => imperial ? `${Math.round(d / 1.609 * 10) / 10} mi` : `${d} km`; // the unit never parts from its number
   // one short line the number above doesn't say: where visibility is heading over the next 12 hours (hourly forecast)
   const toKm = v => v == null ? null : unitFt ? v * 0.0003048 : v / 1000, nice = d => fmtD(d >= 10 ? Math.round(d) : Math.round(d * 10) / 10);
   const next = []; for (let k = hi + 1; k <= hi + 12 && k < H.time.length; k++) { const v = toKm(H.visibility[k]); if (v != null) next.push([v, T(H.time[k])]); }
