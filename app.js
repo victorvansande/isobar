@@ -482,7 +482,9 @@ function renderSummary() {
   const kindAt = k => wmo(H.weather_code[k])[1];
   const PRECIP = ["rain", "drizzle", "snow", "sleet", "thunder"];
   const mmh = k => toMm(H.precipitation[k] ?? 0);
-  const wet = k => mmh(k) >= .2 || ((H.precipitation_probability[k] ?? 0) >= 60 && PRECIP.includes(kindAt(k)));
+  // within the next six hours the quarter-hour timeline decides (the same one the precipitation card shows); later on, the hourly
+  const nc = nowcast(), ncWet = k => { const t0 = T(H.time[k]).valueOf(), t1 = t0 + 36e5; if (!nc.times.length || t1 > nc.end) return null; return nc.times.some((t, i) => t >= t0 - 9e5 && t < t1 && nc.rate[i] >= nc.thr); };
+  const wet = k => ncWet(k) ?? (mmh(k) >= .2 || ((H.precipitation_probability[k] ?? 0) >= 60 && PRECIP.includes(kindAt(k))));
   const at = k => fmtT(T(H.time[k]));
   // what falls during a wet spell, named after its wettest hour
   const what = (a, b) => {
@@ -495,7 +497,7 @@ function renderSummary() {
   };
   const cap = s => s[0].toUpperCase() + s.slice(1);
   let first;
-  const wetNow = wet(hi) || (c.precipitation ?? 0) > 0;
+  const wetNow = nc.times.length ? nc.rate[0] >= nc.thr : wet(hi) || (c.precipitation ?? 0) > 0;
   if (wetNow) {
     let stop = hi; while (stop < end && wet(stop)) stop++;
     first = stop < end ? `${cap(what(hi, stop))} until ${at(stop)}, then dry.` : `${cap(what(hi, end))} on and off for the next 12 hours.`;
@@ -897,6 +899,12 @@ function renderHero() {
     const cur = segs.find(g => now >= g.t0 && now < g.t1);
     const next = cur && wet(cur) ? segs.find(g => g.t0 >= cur.t1 && !wet(g)) : segs.find(g => g.t0 > now && wet(g));
     if (next) mid = cur && wet(cur) ? `Dry from ${fmtT(next.h)}` : `${next.type === "snow" ? "Snow" : "Rain"} from ${fmtT(next.h)}`;
+    // within the next six hours, to the quarter hour from the same timeline as the precipitation card
+    const nc = nowcast();
+    if (nc.times.length) {
+      const wetQ = i => nc.rate[i] >= nc.thr, nowWet = wetQ(0), i = nowWet ? nc.rate.findIndex(v => v < nc.thr) : nc.rate.findIndex(v => v >= nc.thr);
+      if (i > 0 && nc.times[i] <= a1) mid = nowWet ? `Dry from ${fmtT(nc.times[i])}` : `${wmo(hourAt(nc.times[i]).code)[1] === "snow" ? "Snow" : "Rain"} from ${fmtT(nc.times[i])}`;
+    }
   }
   const rb = body === "sun" ? rainbowChance() : null;
   if (rb) mid = `Rainbow possible to the ${now < st.noon ? "west" : "east"}`; // always opposite the sun
@@ -993,12 +1001,15 @@ function moonSvg(p, r) {
 /* The hourly weather along the arc between a0 and a1, merged into runs: "wet" (rain, drizzle, thunder), "snow",
    "cloud" (75% cover or more) or "" (fair). f0/f1 are positions on the arc, h the first hour of the run. */
 function arcWeather(a0, a1) {
-  const H = X.H, A = a0.valueOf(), B = a1.valueOf(), segs = [];
+  const H = X.H, A = a0.valueOf(), B = a1.valueOf(), segs = [], nc = nowcast();
+  // within the next six hours, whether it rains comes from the quarter-hour timeline (as on the precipitation card)
+  const ncWet = (from, to) => !nc.times.length || to > nc.end ? null : nc.times.some((t, i) => t >= from - 9e5 && t < to && nc.rate[i] >= nc.thr);
   H.time.forEach((s, k) => {
     const t = T(s).valueOf(), from = Math.max(t - 18e5, A), to = Math.min(t + 18e5, B);
     if (to <= from) return;
     const kd = wmo(H.weather_code[k])[1], mm = toMm(H.precipitation[k] ?? 0);
-    const type = kd === "snow" || kd === "sleet" ? "snow" : ["rain", "drizzle", "thunder"].includes(kd) || mm >= .1 ? "wet" : (H.cloud_cover[k] ?? 0) >= 75 ? "cloud" : "";
+    const fall = ncWet(from, to) ?? (kd === "snow" || kd === "sleet" || ["rain", "drizzle", "thunder"].includes(kd) || mm >= .1);
+    const type = fall ? (kd === "snow" || kd === "sleet" ? "snow" : "wet") : (H.cloud_cover[k] ?? 0) >= 75 ? "cloud" : "";
     const last = segs.at(-1);
     if (last && last.type === type && last.t1 === from) { last.t1 = to; last.f1 = (to - A) / (B - A); }
     else segs.push({ type, t0: from, t1: to, f0: (from - A) / (B - A), f1: (to - A) / (B - A), h: new Date(Math.max(t, A)) });
@@ -1074,8 +1085,10 @@ function bindSunScrub() {
 }
 
 /* ---------------- rain in the next hours (glass) ---------------- */
-function renderNow() {
-  const el = card("c-now"), M = D.minutely_15;
+/* Rain in the next six hours, per quarter-hour: the one timeline the precipitation card, the summary and the main card
+   all read, so they never disagree about when it rains. From the quarter-hour forecast, with the hourly filling in. */
+function nowcast() {
+  const M = D.minutely_15;
   let times = [], vals = [];
   // skip quarter-hours that already passed (a kept forecast can be hours old); with too few left the hourly takes over
   if (M && M.precipitation && M.precipitation.some(v => v != null)) M.time.forEach((s, i) => { const t = T(s); if (t >= Date.now() - 9e5) { times.push(t); vals.push(M.precipitation[i] ?? 0); } });
@@ -1087,7 +1100,10 @@ function renderNow() {
     if (k < 0) break; times.push(t); vals.push((X.H.precipitation[k] ?? 0) / 4);
   }
   times = times.slice(0, 24); vals = vals.slice(0, 24);
-  const rate = vals.map(v => toMm(v) * 4);
+  return { times, vals, rate: vals.map(v => toMm(v) * 4), thr: .1, end: times.length ? times.at(-1).valueOf() + 9e5 : 0 };
+}
+function renderNow() {
+  const el = card("c-now"), { times, vals, rate } = nowcast();
   const thr = 0.1, first = rate.findIndex(v => v >= thr), peak = Math.max(0, ...rate);
   const inten = r => r < 2.5 ? "Light" : r < 7.6 ? "Moderate" : r < 50 ? "Heavy" : "Violent";
   let say, sub;
@@ -1209,9 +1225,10 @@ function renderHourly() {
   const { H, hi } = X, el = card("c-hourly");
   const n = Math.min(48, H.time.length - hi), colW = 58, temps = [], cols = [];
   for (let i = 0; i < n; i++) {
-    const k = hi + i, t = T(H.time[k]), day = !!H.is_day[k], pop = nz(H.precipitation_probability[k]);
-    const [, kind] = wmo(H.weather_code[k]);
-    temps.push(H.temperature_2m[k]);
+    const k = hi + i, t = T(H.time[k]), pop = nz(H.precipitation_probability[k]);
+    // "Now" shows the conditions right now, exactly as the main card and the top bar do; later columns the hourly forecast
+    const day = i ? !!H.is_day[k] : X.isDay, [, kind] = wmo(i ? H.weather_code[k] : X.c.weather_code);
+    temps.push(i ? H.temperature_2m[k] : X.c.temperature_2m);
     const isMid = H.time[k].endsWith("T00:00");
     const tl = i === 0 ? `<span class="htime now">Now</span>` : isMid ? `<span class="htime mid">${wd(H.time[k].slice(0, 10))}</span>` : `<span class="htime">${fmtH(t)}</span>`;
     const lit = pop == null ? 0 : Math.round(pop / 20);
