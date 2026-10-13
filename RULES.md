@@ -33,6 +33,10 @@ machine can check on every push; the rest are for whoever changes the app (Claud
     bottom. A card whose content runs edge to edge (the hours strip) gives its header and foot that same inset.
 11. **One gap between cards**: 14 px (10 px on phones).
 12. **Controls line up with the text**: a switch or button in a card sits on the same inset as the title.
+    The main card follows the same inset; corner controls (Back to now, the moon) line up on it.
+13a. **Corners**: card 30 px (`--r-card`), surfaces inside cards 16 px, pills fully round; 1–3 px only for hairline
+    marks and needles.
+13b. **Gaps inside cards** follow a rhythm of 4: 2, 4, 8, 12, 16, 20 px.
 13. Cards keep the order fixed in `index.html` and the grid areas in `styles.css`; a new card gets a place in both
     the wide and the phone layout, and in the wall view.
 
@@ -42,6 +46,8 @@ machine can check on every push; the rest are for whoever changes the app (Claud
     - `--f-display` (Geist): titles, sentences, buttons;
     - `--f-label` (Geist letters with Urbanist figures): small labels, units, times on axes;
     - `--f-num` (Urbanist, light): the big readings.
+14a. **Type sizes**: 11, 12, 13, 15, 17, 20, 30 px. The big readings in `--f-num` keep their own sizes; text fields
+    stay 16 px (iOS zooms in below that); text inside an SVG drawing scales with it.
 15. **Weights**: Geist 400, 500, 600, 700; Urbanist 200–400. Nothing in between (Geist only comes in those steps).
 16. Dot-matrix numerals only on the main card, the top bar and the instruments (wind, UV, pressure, air quality),
     and each has a spoken label (`aria-label`).
