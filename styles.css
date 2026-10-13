@@ -348,10 +348,14 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .pig.hero{transition:background-color .5s}
 .arc svg{width:100%;height:auto;display:block;overflow:visible}
 /* the weather along the sun or moon path: rain and snow hours as a soft band, heavy cloud as a faint one */
-.arc .awx{fill:none;stroke-width:6;stroke-linecap:round}
-.arc .awx-wet{stroke:#a9d6ff;stroke-opacity:.5}
-.arc .awx-snow{stroke:#fff;stroke-opacity:.5}
-.arc .awx-cloud{stroke:#fff;stroke-opacity:.2}
+/* the weather colours the arc itself: blue where it rains, white for snow, a thicker soft grey under heavy cloud */
+.arc .awx{fill:none;stroke-width:3;stroke-linecap:round}
+.arc .awx-wet{stroke:#8fb6ff}
+.arc .awx-snow{stroke:#fff}
+.arc .awx-cloud{stroke:#c8ccdc;stroke-opacity:.6;stroke-width:3.2}
+.hero.light .arc .awx-wet{stroke:#3f6fe0}
+.hero.light .arc .awx-snow{stroke:#8a96b8}
+.hero.light .arc .awx-cloud{stroke:#6a7090}
 .hero-foot{display:grid;grid-template-columns:1fr auto 1fr;align-items:end;margin-top:4px}
 .hero-foot div{display:grid;gap:1px}
 .hero-foot b{font:400 20px/1 var(--f-num);letter-spacing:-.02em}

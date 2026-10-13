@@ -919,11 +919,9 @@ function renderHero() {
   const vy = Math.max(0, Math.floor(arcPoint(.5)[1] - 16));
   const arc = `<svg viewBox="0 ${vy} 300 ${108 - vy}" aria-hidden="true">
     <line x1="0" y1="95" x2="300" y2="95" stroke="currentColor" stroke-opacity=".3" stroke-width="1"/>
+    <path id="arcDone" d="${arcPath(0, f)}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path id="arcLeft" d="${arcPath(f, 1)}" fill="none" stroke="currentColor" stroke-opacity=".3" stroke-width="1.4" stroke-linecap="round"/>
     ${segs.filter(g => g.type).map(g => `<path class="awx awx-${g.type}" d="${arcPath(g.f0, g.f1)}"/>`).join("")}
-    <path id="arcDone" d="${arcPath(0, f)}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
-    <path id="arcLeft" d="${arcPath(f, 1)}" fill="none" stroke="currentColor" stroke-opacity=".5" stroke-width="1.8" stroke-dasharray="0 5.5" stroke-linecap="round"/>
-    <line id="arcDrop" x1="${px}" y1="${py}" x2="${px}" y2="95" stroke="currentColor" stroke-opacity=".55" stroke-width="1" stroke-dasharray="1 3"/>
-    <circle cx="30" cy="95" r="2.6" fill="currentColor"/><circle cx="150" cy="95" r="2.6" fill="currentColor"/><circle cx="270" cy="95" r="2.6" fill="currentColor"/>
     ${dot}
   </svg>`;
   const [label] = wmo(c.weather_code);
@@ -1045,7 +1043,6 @@ function scrubSun(f) {
   const [px, py] = arcPoint(f).map(v => v.toFixed(1));
   $("#arcDone").setAttribute("d", arcPath(0, f));
   $("#arcLeft").setAttribute("d", arcPath(f, 1));
-  const drop = $("#arcDrop"); drop.setAttribute("x1", px); drop.setAttribute("x2", px); drop.setAttribute("y1", py);
   const dot = $("#sunDot"); dot.setAttribute("transform", `translate(${px} ${py})`); dot.setAttribute("opacity", "1");
   const h = hourAt(t), [label, kind] = wmo(h.code), v = R(h.temp), box = $("#heroTemp");
   // the weather on the card follows the hour too: snow, rain, fog, cloud, stars or sun
