@@ -10,7 +10,7 @@ const LIBS = [
   "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css",
   "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"
 ];
-const LIVE = /open-meteo\.com|rainviewer\.com|arcgisonline\.com|bigdatacloud\.net|githubusercontent\.com/;
+const LIVE = /open-meteo\.com|rainviewer\.com|buienradar\.nl|arcgisonline\.com|bigdatacloud\.net|githubusercontent\.com/;
 const FIXED = /fonts\.googleapis\.com|fonts\.gstatic\.com|cdnjs\.cloudflare\.com/;
 
 self.addEventListener("install", e => {
