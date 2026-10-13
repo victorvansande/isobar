@@ -2907,6 +2907,16 @@ const openSettings = modelOnly => { dlgS.classList.toggle("model-only", modelOnl
 $("#setBtn").onclick = () => openSettings(false);
 $("#modelChip").onclick = () => openSettings(true);
 $("#infoBtn").onclick = () => $("#dlgInfo").showModal();
+/* While a sheet is open the page behind it stays put. iOS ignores overflow: hidden and scrolls the page whenever a swipe
+   on the sheet (or beside it) has nothing left to scroll, so the page is pinned where it was and put back exactly there
+   when the last sheet closes; the top bar keeps its state meanwhile. Watches every dialog, so new sheets are covered too. */
+let lockY = null;
+const lockPage = () => {
+  const open = !!document.querySelector("dialog[open]"), b = document.body.style;
+  if (open && lockY == null) { lockY = scrollY; Object.assign(b, { position: "fixed", top: `-${lockY}px`, left: "0", right: "0" }); }
+  else if (!open && lockY != null) { Object.assign(b, { position: "", top: "", left: "", right: "" }); scrollTo(0, lockY); lockY = null; }
+};
+document.querySelectorAll("dialog").forEach(d => new MutationObserver(lockPage).observe(d, { attributes: true, attributeFilter: ["open"] }));
 
 /* ---------------- Android ---------------- */
 // The back button (or gesture) closes an open sheet instead of leaving the app. Each sheet adds a step to the
@@ -2997,7 +3007,7 @@ window.addEventListener("resize", () => {
 });
 const tb = $("#topbar");
 let tbOn = null; // touch the top bar only when it actually shows or hides, not on every scroll event
-window.addEventListener("scroll", () => { const on = scrollY > 160 && !!D; if (on === tbOn) return; tbOn = on; tb.classList.toggle("show", on); tb.setAttribute("aria-hidden", String(!on)); }, { passive: true });
+window.addEventListener("scroll", () => { if (lockY != null) return; const on = scrollY > 160 && !!D; if (on === tbOn) return; tbOn = on; tb.classList.toggle("show", on); tb.setAttribute("aria-hidden", String(!on)); }, { passive: true });
 document.addEventListener("visibilitychange", () => { if (!document.hidden && place && Date.now() - fetchedAt > 10 * 6e4) { load(place, { quiet: true }); followMe(); } });
 
 /* A place found by location follows you: on launch and on coming back to the app, if location is already allowed,
