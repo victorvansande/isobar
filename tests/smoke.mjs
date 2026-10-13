@@ -141,6 +141,7 @@ async function run(engine, name, viewport, variant = "normal") {
       check("scrubbing the sun shows another hour", when !== "Now", `still "${when}"; arc at ${Math.round(arc.x)},${Math.round(arc.y)} ${Math.round(arc.width)}×${Math.round(arc.height)}`);
     }
     // daylight through the year: one column per day, and the arrow keys move through it
+    await page.click("#c-sun .sseg button[data-v=\"year\"]"); // the year chart sits behind the sun card's Year switch
     check("daylight chart covers the whole year", await page.evaluate(() => { const n = +document.querySelector("#yrChart").getAttribute("aria-valuemax"); return n === 365 || n === 366; }));
     await page.focus("#yrChart"); const before = await page.textContent("#yrDate"); await page.keyboard.press("PageUp");
     check("moving through the year shows another day", (await page.textContent("#yrDate")) !== before);
