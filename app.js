@@ -1991,11 +1991,11 @@ function renderRain() {
   const next = []; for (let k = hi; k < hi + 24 && k < H.time.length; k++) next.push(H.precipitation[k] ?? 0);
   const sum24 = next.reduce((a, b) => a + b, 0), mx = Math.max(...next.map(toMm), 1);
   const bars = next.map((v, i) => { const h = toMm(v) / mx * 36; return `<rect x="${i * 10 + 2}" y="${40 - Math.max(h, 1.5)}" width="6" height="${Math.max(h, 1.5)}" rx="3" fill="currentColor" opacity="${v > 0 ? 1 : .24}"/>`; }).join("");
-  el.innerHTML = `${head("Rain", "Today")}
+  el.innerHTML = `${head("Rain", pop != null ? `Today · ${pop}% chance` : "Today")}
     <div class="num big">${fmtP(today)}<small>${PU()}</small></div>
     <div class="spark"><svg viewBox="0 0 240 42" preserveAspectRatio="none" aria-hidden="true">${bars}</svg></div>
     <div class="spark-ax">${[0, 12, 23].map(k => H.time[hi + k] ? `<span class="tm">${k ? fmtT(T(H.time[hi + k])) : "Now"}</span>` : "<span></span>").join("")}</div>
-    <div class="foot"><span>Next 24 h <b>${fmtP(sum24)} ${PU()}</b></span><span>${pop != null ? `<b>${pop}%</b> chance` : ""}</span></div>`;
+    <div class="foot"><span style="white-space:nowrap">Next 24 h <b>${fmtP(sum24)}</b> ${PU()}</span></div>`;
 }
 
 /* ---------------- clouds ---------------- */
