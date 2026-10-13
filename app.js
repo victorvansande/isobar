@@ -1666,7 +1666,12 @@ function renderAir() {
   const scale = Array.from({ length: 24 }, (_, k) => `<i class="${k * 5 < v ? "on" : ""}"></i>`).join("");
   // the pollutant figures are for the curious: folded away behind a small toggle, which remembers its state
   const open = store.get("airOpen", false);
-  el.innerHTML = `${v >= 60 ? `<span class="smog" aria-hidden="true"></span>` : ""}<div class="air${open ? " open" : ""}"><div class="air-l">${head("Air quality", L[1])}
+  // polluted air shows: a smog veil from Moderate up, thicker the higher the index, and fine particles drifting with
+  // the wind, as many as the PM2.5 count (from 5 µg/m³, the WHO yearly guideline)
+  const smog = v >= 40 ? clamp(.25 + (v - 40) / 60 * .5, .25, .75) : 0, pm = a.pm2_5 ?? 0;
+  const ms = toMs(X.c.wind_speed_10m ?? 0), east = sin((X.c.wind_direction_10m ?? 270) * rad) < 0, rnd = prng(Math.round(pm * 10) + 7);
+  const motes = pm >= 5 ? Array.from({ length: Math.round(clamp(pm * 1.2, 4, 60)) }, () => `<i style="left:${(rnd() * 100).toFixed(1)}%;top:${(rnd() * 100).toFixed(1)}%;--t:${(clamp(16 / (1 + ms / 3), 4, 16) * (.7 + rnd() * .6)).toFixed(1)}s;--d:-${(rnd() * 16).toFixed(1)}s;--dx:${east ? "" : "-"}${(30 + rnd() * 30).toFixed(0)}px;--dy:${((rnd() - .5) * 24).toFixed(0)}px;--o:${(.35 + rnd() * .5).toFixed(2)}"></i>`).join("") : "";
+  el.innerHTML = `${smog ? `<span class="smog" aria-hidden="true" style="opacity:${smog.toFixed(2)}"></span>` : ""}${motes ? `<span class="motes" aria-hidden="true">${motes}</span>` : ""}<div class="air${open ? " open" : ""}"><div class="air-l">${head("Air quality", L[1])}
       <span class="air-v" role="img" aria-label="European AQI ${Math.round(v)}, ${L[1].toLowerCase()}">${dm(String(Math.round(v)))}</span>
       <span class="mono">European AQI</span>
       <div class="scale" aria-hidden="true">${scale}<span class="tri" style="left:calc(2.5px + (100% - 5px) * ${clamp(v / 115, 0, 1).toFixed(3)})"></span></div>

@@ -565,10 +565,15 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 /* a pressure needle that trembles when pressure is changing fast */
 .tremble{transform-box:view-box;transform-origin:100px 100px;animation:tremble 2.6s ease-in-out infinite}
 @keyframes tremble{0%,55%,100%{transform:rotate(0)}8%{transform:rotate(1.2deg)}16%{transform:rotate(-.9deg)}24%{transform:rotate(.6deg)}32%{transform:rotate(-.35deg)}40%{transform:rotate(.15deg)}}
-/* smog drifting over the air quality card on poor days */
+/* smog drifting over the air quality card from Moderate up (its strength is set per card in renderAir) */
 .smog{position:absolute;inset:-40%;z-index:-1;pointer-events:none;opacity:.6;mix-blend-mode:multiply;background-size:440px 440px;animation:smog 70s linear infinite alternate;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='440' height='440'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.011' numOctaves='3' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .34 0 0 0 0 .31 0 0 0 0 .33 1.7 0 0 0 -.55'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23s)'/%3E%3C/svg%3E")}
 @keyframes smog{to{transform:translate(14%,5%)}}
+/* fine particles (PM2.5) drifting through the air quality card with the wind */
+.motes{position:absolute;inset:0;z-index:-1;pointer-events:none}
+.motes i{position:absolute;width:2px;height:2px;border-radius:50%;background:rgba(255,236,214,.7);opacity:0;animation:mote var(--t) linear var(--d) infinite}
+:root[data-mode="day"] .motes i{background:rgba(70,48,30,.55)}
+@keyframes mote{0%{opacity:0;transform:translate(0,0)}15%,85%{opacity:var(--o)}100%{opacity:0;transform:translate(var(--dx),var(--dy))}}
 .gauge svg{width:100%;height:auto;display:block;overflow:visible}
 .gauge-v{position:absolute;left:0;right:0;bottom:0;text-align:center}
 .gauge-v .dm{height:40px;margin:0 auto 4px}
