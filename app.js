@@ -1671,7 +1671,14 @@ function renderAir() {
   const smog = v >= 40 ? clamp(.25 + (v - 40) / 60 * .5, .25, .75) : 0, pm = a.pm2_5 ?? 0;
   const ms = toMs(X.c.wind_speed_10m ?? 0), east = sin((X.c.wind_direction_10m ?? 270) * rad) < 0, rnd = prng(Math.round(pm * 10) + 7);
   const motes = pm >= 5 ? Array.from({ length: Math.round(clamp(pm * 1.2, 4, 60)) }, () => `<i style="left:${(rnd() * 100).toFixed(1)}%;top:${(rnd() * 100).toFixed(1)}%;--t:${(clamp(16 / (1 + ms / 3), 4, 16) * (.7 + rnd() * .6)).toFixed(1)}s;--d:-${(rnd() * 16).toFixed(1)}s;--dx:${east ? "" : "-"}${(30 + rnd() * 30).toFixed(0)}px;--dy:${((rnd() - .5) * 24).toFixed(0)}px;--o:${(.35 + rnd() * .5).toFixed(2)}"></i>`).join("") : "";
-  el.innerHTML = `${smog ? `<span class="smog" aria-hidden="true" style="opacity:${smog.toFixed(2)}"></span>` : ""}${motes ? `<span class="motes" aria-hidden="true">${motes}</span>` : ""}<div class="air${open ? " open" : ""}"><div class="air-l">${head("Air quality", L[1])}
+  // clean air (Good) shows too: the card turns a touch clearer, with soft light falling in from above that drifts very
+  // slowly, like sun through trees; the cleaner the air, the clearer the light
+  const clear = v < 20 ? .45 + (20 - v) / 20 * .55 : 0;
+  // and when the air is excellent (index under 15, the cleanest part of Good), hairline glints twinkle like stars: three
+  // of them, each lit for about a second in a cycle of 10 to 14 s, and each time somewhere new (see below)
+  const spot = () => [`${(8 + Math.random() * 86).toFixed(0)}%`, `${(10 + Math.random() * 78).toFixed(0)}%`], glintAt = () => { const [l, t] = spot(); return `left:${l};top:${t}`; };
+  const sparks = v < 15 ? Array.from({ length: 3 }, (_, i) => `<i class="air-glint" style="${glintAt()};--t:${(10 + Math.random() * 4).toFixed(1)}s;--d:-${(i * 4 + Math.random() * 1.5).toFixed(1)}s"></i>`).join("") : "";
+  el.innerHTML = `${clear ? `<span class="clear-air" aria-hidden="true" style="--s:${clear.toFixed(2)}"></span>` : ""}${sparks ? `<span class="sparks" aria-hidden="true">${sparks}</span>` : ""}${smog ? `<span class="smog" aria-hidden="true" style="opacity:${smog.toFixed(2)}"></span>` : ""}${motes ? `<span class="motes" aria-hidden="true">${motes}</span>` : ""}<div class="air${open ? " open" : ""}"><div class="air-l">${head("Air quality", L[1])}
       <span class="air-v" role="img" aria-label="European AQI ${Math.round(v)}, ${L[1].toLowerCase()}">${dm(String(Math.round(v)))}</span>
       <span class="mono">European AQI</span>
       <div class="scale" aria-hidden="true">${scale}<span class="tri" style="left:calc(2.5px + (100% - 5px) * ${clamp(v / 115, 0, 1).toFixed(3)})"></span></div>
@@ -1679,6 +1686,7 @@ function renderAir() {
       <button class="air-more mono" id="airMore" aria-expanded="${open}" aria-controls="airPol">Pollutants<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9.5l6 6 6-6"/></svg></button></div></div>
     <div class="pol-wrap" id="airPol"><div><div class="pol tile">${rows.map(([n, val, lim]) => `<div class="pol-r"><span class="mono">${n}</span><div class="mbar"><div class="fill" style="width:${clamp(val / (lim * 2) * 100, 2, 100)}%"></div><span class="lim" style="left:50%"></span></div><span class="v">${val < 10 ? val.toFixed(1) : Math.round(val)}<small>µg/m³</small></span></div>`).join("")}
       <span class="mono lim-key"><i aria-hidden="true"></i>Now · WHO daily limit</span>${a.us_aqi != null ? `<span class="mono pol-us">US AQI ${Math.round(a.us_aqi)}</span>` : ""}</div></div></div></div>`;
+  el.querySelectorAll(".air-glint").forEach(g => g.addEventListener("animationiteration", () => { [g.style.left, g.style.top] = spot(); })); // a new spot each time
   $("#airMore").onclick = () => {
     const box = el.querySelector(".air"), on = !box.classList.contains("open");
     box.classList.toggle("open", on); $("#airMore").setAttribute("aria-expanded", on); store.set("airOpen", on);

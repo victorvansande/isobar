@@ -569,6 +569,21 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .smog{position:absolute;inset:-40%;z-index:-1;pointer-events:none;opacity:.6;mix-blend-mode:multiply;background-size:440px 440px;animation:smog 70s linear infinite alternate;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='440' height='440'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.011' numOctaves='3' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .34 0 0 0 0 .31 0 0 0 0 .33 1.7 0 0 0 -.55'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23s)'/%3E%3C/svg%3E")}
 @keyframes smog{to{transform:translate(14%,5%)}}
+/* clean air: a clear glow from above and two faint shafts of light that drift very slowly, like sun through trees */
+.clear-air{position:absolute;inset:-25%;z-index:-1;pointer-events:none;opacity:var(--s);animation:clearair 34s ease-in-out infinite alternate;
+  background:radial-gradient(34% 26% at 62% 18%,rgba(255,255,244,.2),transparent 70%),
+    linear-gradient(112deg,transparent 30%,rgba(255,255,244,.08) 36%,transparent 43%,transparent 55%,rgba(255,255,244,.06) 60%,transparent 66%)}
+:root:not([data-mode="day"]) .clear-air{opacity:calc(var(--s) * .6)} /* by moonlight: dimmer */
+:root[data-mode="day"] .clear-air{background:radial-gradient(34% 26% at 62% 18%,rgba(255,255,250,.75),transparent 70%),
+    linear-gradient(112deg,transparent 30%,rgba(255,255,250,.42) 36%,transparent 43%,transparent 55%,rgba(255,255,250,.3) 60%,transparent 66%)} /* white light needs more on a pale card */
+@keyframes clearair{0%{transform:translate(-5%,-1%)}50%{transform:translate(3%,2%)}100%{transform:translate(7%,-2%)}}
+/* excellent air: hairline glints that twinkle like stars, each time somewhere new */
+.sparks{position:absolute;inset:0;z-index:-1;pointer-events:none}
+.air-glint{position:absolute;width:15px;height:15px;margin:-7.5px 0 0 -7.5px;opacity:0;animation:airglint var(--t) ease-in-out var(--d) infinite}
+.air-glint::before,.air-glint::after{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;margin-left:-.5px;border-radius:1px;background:linear-gradient(transparent,#fff 50%,transparent)}
+.air-glint::after{transform:rotate(90deg)}
+:root[data-mode="day"] .air-glint::before,:root[data-mode="day"] .air-glint::after{width:1.5px;background:linear-gradient(transparent,rgba(255,255,255,1) 50%,transparent);box-shadow:0 0 0 .5px rgba(20,60,50,.12)}
+@keyframes airglint{0%,86%,100%{opacity:0;transform:scale(.4)}93%{opacity:.95;transform:scale(1)}}
 /* fine particles (PM2.5) drifting through the air quality card with the wind */
 .motes{position:absolute;inset:0;z-index:-1;pointer-events:none}
 .motes i{position:absolute;width:2px;height:2px;border-radius:50%;background:rgba(255,236,214,.7);opacity:0;animation:mote var(--t) linear var(--d) infinite}
