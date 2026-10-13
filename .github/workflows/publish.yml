@@ -26,7 +26,9 @@ jobs:
         with:
           node-version: 20
       - name: Syntax
-        run: node --check app.js && node --check palette.js && node --check sw.js && node --check tools/warnings.mjs && node --check tests/smoke.mjs
+        run: node --check app.js && node --check palette.js && node --check sw.js && node --check tools/warnings.mjs && node --check tests/smoke.mjs && node --check tests/lint.mjs
+      - name: Rules (see RULES.md)
+        run: node tests/lint.mjs
       - name: Browsers
         run: |
           npm install --no-save --no-audit --no-fund playwright@1.48.2
