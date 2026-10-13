@@ -1997,14 +1997,15 @@ function renderClouds() {
 function cloudField(el, cc) {
   const box = el.querySelector(".field"); if (!box) return;
   if (el._drift) clearInterval(el._drift);
-  const cols = 14, w = box.clientWidth || 238, rowH = 13 * w / 238;
-  const rows = clamp(Math.floor((box.clientHeight - 10) / rowH), 6, 14), total = cols * rows, lit = Math.round(cc / 100 * total);
+  // the same fine grid as the rain card: a dot every ~15 px, filling only the room the card has below the number
+  const w = box.clientWidth || 200, pitch = 15, cols = Math.max(6, Math.round(w / pitch));
+  const rows = clamp(Math.floor((box.clientHeight - 12) / pitch), 3, 14), total = cols * rows, lit = Math.round(cc / 100 * total);
   // a smooth field that wraps around the width, so the lit dots form cloud banks that can drift and come back round
   const T = 2 * PI / cols;
   const order = Array.from({ length: total }, (_, i) => { const x = i % cols, y = Math.floor(i / cols); return [i, sin(x * T + y * .55) + .6 * sin(2 * x * T + 1.7 - y * .8) + .35 * sin(3 * x * T + 4.1 + y * 1.1) + ((i * 9301 + 49297) % 233280) / 233280 * .45]; }).sort((a, b) => b[1] - a[1]).map(a => a[0]);
   const on = new Set(order.slice(0, lit));
-  let dots = ""; for (let i = 0; i < total; i++) { const x = i % cols, y = Math.floor(i / cols); dots += `<circle cx="${x * 17 + 8}" cy="${y * 13 + 7}" r="4.6" fill="currentColor"${on.has(i) ? "" : ' class="off"'}/>`; }
-  box.innerHTML = `<svg viewBox="0 0 238 ${rows * 13}" aria-hidden="true">${dots}</svg>`;
+  let dots = ""; for (let i = 0; i < total; i++) { const x = i % cols, y = Math.floor(i / cols); dots += `<circle cx="${x * 10 + 5}" cy="${y * 10 + 5}" r="2.5" fill="currentColor"${on.has(i) ? "" : ' class="off"'}/>`; }
+  box.innerHTML = `<svg viewBox="0 0 ${cols * 10} ${rows * 10}" aria-hidden="true">${dots}</svg>`;
   el._fit = `${w}x${box.clientHeight}`;
   if (!lit || lit === total || calmMotion.matches) return;
   // the banks drift left to right one column at a time, like a dot-matrix ticker, at the pace of the wind:
