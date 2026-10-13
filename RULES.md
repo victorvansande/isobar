@@ -89,6 +89,11 @@ What Isobar feels like, as a touchstone for anything new: does it look like it w
     on cards in either. Sky cards (main card, sun, moon) show the real sky colour.
 20. Shapes follow nature: the sun's arc is a sine of time, the moon has its real phase, rain falls where it is
     forecast.
+20a. **Sheets are cards too.** The windows that open on top (14 days, How sure, About, Settings, Places, warnings,
+    the humidity explainer) follow every rule here: the same data as the cards, the same words, day and night as
+    mirrors (light glass with dark ink by day, the board's night glass at night), drawn with the sheet tokens
+    `--ink`, `--ink-2`, `--ink-3`, `--wash` and `--wash-2` rather than fixed white, and no blur on the sheet itself.
+    "Today" in a sheet says whether it means the whole day or the rest of it.
 
 ## Rendering and speed
 
@@ -100,7 +105,8 @@ What Isobar feels like, as a touchstone for anything new: does it look like it w
 
 ## Way of working
 
-25. Every change is checked in the preview (at phone width too, down to 320 px), then committed; it is pushed to
+25. Every change is checked in the preview (at phone width too, down to 320 px, and by day and at night), including
+    the sheets that show the same thing as the changed card; then committed. It is pushed to
     `main` when the owner says so, and the check workflow runs the lint
     and the browser test in Chromium and WebKit before publishing.
 26. Design choices are shown as options first; the person who owns the app picks.

@@ -53,7 +53,7 @@ for (const [, sel, body] of plain.matchAll(/([^{}]+)\{([^{}]*)\}/g))
 if (!/\.board\{display:grid;gap:14px/.test(css)) fail("gap (11)", "the board gap is no longer 14px");
 
 // Rule 17: no new hard-coded colours outside the tokens (a ceiling that may only go down)
-const HEX_CEILING = 44;
+const HEX_CEILING = 42;
 const hexes = new Set(plain.match(/#[0-9a-fA-F]{3,6}\b/g) || []);
 if (hexes.size > HEX_CEILING) fail("colours (17)", `${hexes.size} different hard-coded colours in styles.css (at most ${HEX_CEILING}); use palette.js or a :root token`);
 

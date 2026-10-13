@@ -115,7 +115,7 @@ dialog:focus-visible,.sheet:focus-visible{outline:none} /* opening a sheet focus
 .warn b{font-weight:600;font-size:15px}
 .warn small{font-size:13px;color:var(--ink-2);text-wrap:pretty}
 .warn svg{width:12px;height:12px;flex:none;fill:none;stroke:var(--ink-2);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.wx{padding:14px 0;border-top:1px solid rgba(255,255,255,.1)}
+.wx{padding:14px 0;border-top:1px solid var(--wash-2)}
 .wx:first-child{border-top:0;padding-top:0}
 .wx h3{display:flex;align-items:center;gap:8px;margin:0 0 4px;font-size:17px;font-weight:700}
 .wx h3 i{width:9px;height:9px;border-radius:50%;background:var(--wc);flex:none}
@@ -303,7 +303,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .info-i:hover{color:var(--ink)}
 .learn h3{margin:18px 0 4px;font-size:15px;font-weight:700;letter-spacing:-.01em}
 .learn p{margin:0;font-size:15px;line-height:1.55;color:var(--ink-2)}
-.learn .now{padding:12px 14px;border-radius:16px;background:rgba(255,255,255,.07);color:var(--ink)}
+.learn .now{padding:12px 14px;border-radius:16px;background:var(--wash);color:var(--ink)}
 .foot b{color:var(--ink);font-weight:600}
 /* the wind foot: gusts and the Beaufort name each stay whole, and drop under each other on a narrow card */
 .a-wind .foot{flex-wrap:wrap;row-gap:2px;padding-top:6px} /* a little air between the compass and the line under it */
@@ -743,8 +743,8 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 dialog{border:0;padding:0;background:transparent;color:#fff;max-width:none;max-height:none;width:100%;height:100%;margin:0;overflow:visible}
 dialog::backdrop{background:rgba(6,4,20,.4);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
 .sheet{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(460px,calc(100% - 24px));max-height:min(680px,calc(100% - 40px));overflow:auto;border-radius:30px;padding:22px;
-  --ink:#fff;--ink-2:rgba(255,255,255,.6);--ink-3:rgba(255,255,255,.3);
-  background:rgba(20,16,38,.74);-webkit-backdrop-filter:blur(34px) saturate(1.6);backdrop-filter:blur(34px) saturate(1.6);box-shadow:inset 0 0 0 1px rgba(255,255,255,.1)}
+  --ink:#fff;--ink-2:rgba(255,255,255,.6);--ink-3:rgba(255,255,255,.3);--wash:rgba(255,255,255,.08);--wash-2:rgba(255,255,255,.14);--on-ink:#100f18;color:var(--ink);
+  background:rgba(22,26,54,.94);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)} /* the board's night glass; no blur on a sheet that scrolls (rule 21), the backdrop already softens the page */
 @media (max-width:560px){.sheet{top:auto;bottom:10px;transform:translateX(-50%);max-height:82%}}
 /* the full 14-day stack, popped out of the hourly card */
 .sheet.days-sheet{width:min(560px,calc(100% - 24px));max-height:calc(100% - 40px);padding:18px 14px 14px}
@@ -753,29 +753,29 @@ dialog::backdrop{background:rgba(6,4,20,.4);-webkit-backdrop-filter:blur(8px);ba
 @media (max-width:560px){.sheet.days-sheet{max-height:88%}}
 .sheet-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
 .sheet-h h2{margin:0;font-size:20px;font-weight:700;letter-spacing:-.03em}
-.field-in{display:flex;align-items:center;gap:12px;padding:0 16px;height:52px;border-radius:16px;background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
-.field-in svg{width:18px;height:18px;stroke:rgba(255,255,255,.5);fill:none;stroke-width:2;stroke-linecap:round;flex:none}
-.field-in input{flex:1;min-width:0;background:none;border:0;outline:0;color:#fff;font:500 16px var(--f-display)}
+.field-in{display:flex;align-items:center;gap:12px;padding:0 16px;height:52px;border-radius:16px;background:var(--wash);box-shadow:inset 0 0 0 1px var(--wash)}
+.field-in svg{width:18px;height:18px;stroke:var(--ink-2);fill:none;stroke-width:2;stroke-linecap:round;flex:none}
+.field-in input{flex:1;min-width:0;background:none;border:0;outline:0;color:var(--ink);font:500 16px var(--f-display)}
 .list{display:grid;gap:4px;margin-top:12px}
 .row{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:12px 14px;border-radius:16px;text-align:left;cursor:pointer}
-.row:hover,.row:focus-visible{background:rgba(255,255,255,.08)}
+.row:hover,.row:focus-visible{background:var(--wash)}
 .row b{font-weight:600;display:block}
 .row span{font-size:13px;color:var(--ink-2)}
 .prow{position:relative}
 .prow .row:not(:last-child){padding-right:48px} /* room for the remove button */
 .prow .x{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--ink-2);padding:6px;border-radius:50%}
-.prow .x:hover{color:#fff;background:rgba(255,255,255,.1)}
+.prow .x:hover{color:var(--ink);background:var(--wash)}
 .label{font:600 13px/1 var(--f-display);letter-spacing:-.01em;color:var(--ink-2);margin:20px 0 8px}
-.seg{display:flex;gap:4px;padding:4px;border-radius:999px;background:rgba(255,255,255,.07);flex-wrap:wrap}
+.seg{display:flex;gap:4px;padding:4px;border-radius:999px;background:var(--wash);flex-wrap:wrap}
 .seg button{flex:1;padding:9px 10px;border-radius:999px;font-weight:600;font-size:13px;color:var(--ink-2);white-space:nowrap}
-.seg button[aria-pressed="true"]{background:#fff;color:#000}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--on-ink)}
 .models{display:grid;gap:4px}
 #dlgSet.model-only .sheet > .label,#dlgSet.model-only .seg,#dlgSet.model-only #installBtn{display:none}
 .models button{display:grid;gap:2px;text-align:left;padding:11px 14px;border-radius:16px}
 .models button b{font-weight:600}
 .models button span{font-size:13px;color:var(--ink-2)}
-.models button[aria-pressed="true"]{background:rgba(232,0,73,.16);box-shadow:inset 0 0 0 1px rgba(232,0,73,.7)}
-.models button:hover{background:rgba(255,255,255,.06)}
+.models button[aria-pressed="true"]{background:var(--wash-2);box-shadow:inset 0 0 0 1px var(--ink-3)} /* chosen like the switches: raspberry stays for "now" and needles */
+.models button:hover{background:var(--wash)}
 .toast{position:fixed;left:50%;bottom:calc(76px + var(--dock-b));transform:translateX(-50%);z-index:1100;padding:11px 18px;border-radius:999px;font-weight:600;font-size:13px;max-width:calc(100% - 32px);text-align:center;color:#fff;transition:bottom .35s cubic-bezier(.2,.8,.2,1)}
 body.net-off .toast{bottom:calc(122px + var(--dock-b))}
 /* offline: the last forecast stays up and this pill says how old it is (tap to try again) */
@@ -838,7 +838,7 @@ body.net-off .toast{bottom:calc(122px + var(--dock-b))}
 .sp-read span b{color:var(--ink);font-weight:600}
 .sp-note{margin:14px 2px 0;font-size:13px;line-height:1.5;color:var(--ink-2)}
 /* a detail tile that opens something: a small chevron in the corner */
-.tile-go{position:relative;text-align:left;cursor:pointer;font:inherit;color:inherit}
+.tile-go{position:relative;text-align:left;cursor:pointer;font:inherit;color:inherit;grid-column:1/-1} /* a full row, so its sentence reads on one line */
 .tile-go svg{position:absolute;right:10px;top:11px;width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;opacity:.6}
 .tile-go:hover svg{opacity:1}
 
@@ -900,16 +900,17 @@ html.wall .a-moon .strip canvas{height:46px}
 .deck{gap:8px}
 .day + .day{margin-top:0}
 .day:not(.open){flex:0 0 auto;min-height:0} /* a closed row is just as tall as its line */
-.day{border-radius:16px;background:linear-gradient(155deg,#26253a,#1a1928);box-shadow:inset 0 1px 0 rgba(255,255,255,.09),inset 0 0 0 1px rgba(255,255,255,.05)}
+.day{border-radius:16px;background:var(--wash);box-shadow:inset 0 0 0 1px rgba(255,255,255,.05)} /* flat, no gloss: a lighter step of the sheet's own glass */
 .day-h{padding:16px 18px}
 .day-b{margin-top:-6px}
 .day-grid{padding:4px 14px 16px}
 /* by day: bright cards like the board's white glass (opaque enough not to turn grey over the panel) */
-:root[data-mode="day"] .day{background:linear-gradient(155deg,rgba(255,255,255,.95),rgba(255,255,255,.82));-webkit-backdrop-filter:none;backdrop-filter:none;
-  box-shadow:inset 0 1px 0 #fff,0 1px 2px rgba(30,20,60,.06),0 10px 24px -16px rgba(30,20,60,.28)}
+:root[data-mode="day"] .day{background:rgba(255,255,255,.9);-webkit-backdrop-filter:none;backdrop-filter:none;
+  box-shadow:0 1px 2px rgba(30,20,60,.06)}
 /* the panel itself: light frosted glass with dark text by day, the dark glass at night */
-:root[data-mode="day"] .sheet.days-sheet{--ink:#100f18;--ink-2:rgba(16,15,24,.64);--ink-3:rgba(16,15,24,.3);color:var(--ink);background:rgba(236,234,244,.84);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.9),inset 0 0 0 1px rgba(255,255,255,.55),0 30px 60px -30px rgba(30,20,60,.35)}
+:root[data-mode="day"] .sheet{--ink:#100f18;--ink-2:rgba(16,15,24,.64);--ink-3:rgba(16,15,24,.3);--wash:rgba(40,30,110,.06);--wash-2:rgba(40,30,110,.1);--on-ink:#fff;color:var(--ink);background:rgba(240,238,247,.96);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.55),0 30px 60px -30px rgba(30,20,60,.35)}
+:root[data-mode="day"] .sheet .lens{background:rgba(255,255,255,.62);box-shadow:inset 0 0 0 1px rgba(20,10,60,.06);color:var(--ink)}
 /* sheets scroll without a system scrollbar, like the rest of the app */
 .sheet{scrollbar-width:none}
 .sheet::-webkit-scrollbar{display:none}

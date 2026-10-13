@@ -33,7 +33,7 @@ let D = null, AQ = null, U = null, TZ = "UTC", OFF = 0, fetchedAt = 0; // U: how
 
 const MODELS = [
   ["best_match", "Best match", "Picks the sharpest local model for your spot (KNMI HARMONIE, DWD ICON-D2, Météo-France AROME, UKMO, HRRR…) and hands over to ECMWF for later days."],
-  ["ecmwf_ifs", "ECMWF IFS · 9 km", "The European Centre's global model, a reference for the days ahead."],
+  ["ecmwf_ifs", "ECMWF IFS", "The European Centre's global model, 9 km, a reference for the days ahead."],
   ["ecmwf_aifs025_single", "ECMWF AIFS", "ECMWF's machine-learning global forecast."],
   ["icon_seamless", "DWD ICON", "German Weather Service. 2.2 km over central Europe."],
   ["knmi_seamless", "KNMI HARMONIE", "Dutch Met Office. 2 km over the Netherlands and Belgium, 5.5 km over the rest of Europe."],
@@ -1444,15 +1444,16 @@ function drawSpread() {
   // the chart
   const cv = $("#spCv"), sz = sizeCanvas(cv); if (!sz) return;
   const { ctx, w, h } = sz, padL = 30, padR = 6, top = 10, bot = 24, cw = (w - padL - padR) / n;
+  const ink = document.documentElement.dataset.mode === "day" ? "16,15,24" : "255,255,255"; // the sheet's ink, dark by day and light at night
   const X0 = i => padL + (i + .5) * cw;
   ctx.font = "500 10px 'Isobar Digits', Geist, sans-serif"; ctx.textBaseline = "middle";
-  const grid = (vals, Y, fmt) => { ctx.strokeStyle = "rgba(255,255,255,.08)"; ctx.lineWidth = 1; ctx.fillStyle = "rgba(255,255,255,.5)"; ctx.textAlign = "right";
+  const grid = (vals, Y, fmt) => { ctx.strokeStyle = `rgba(${ink},.08)`; ctx.lineWidth = 1; ctx.fillStyle = `rgba(${ink},.5)`; ctx.textAlign = "right";
     for (const v of vals) { const y = Math.round(Y(v)) + .5; ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke(); ctx.fillText(fmt(v), padL - 6, y); } };
   // day labels along the bottom
-  ctx.textAlign = "center"; ctx.fillStyle = "rgba(255,255,255,.5)";
-  st.forEach((s, i) => { if (i % 2 === 0 || cw > 34) ctx.fillText(i === 0 ? "Now" : wd(s.key).slice(0, 2), X0(i), h - 8); });
+  ctx.textAlign = "center"; ctx.fillStyle = `rgba(${ink},.5)`;
+  st.forEach((s, i) => { if (i % 2 === 0 || cw > 34) ctx.fillText(i === 0 ? "Now" : cw > 30 ? wd(s.key) : wd(s.key).slice(0, 2), X0(i), h - 8); }); // "Wed" as everywhere; two letters only when narrow
   // the selected day
-  ctx.fillStyle = "rgba(255,255,255,.07)"; ctx.fillRect(padL + spSel * cw, top - 4, cw, h - top - bot + 8);
+  ctx.fillStyle = `rgba(${ink},.07)`; ctx.fillRect(padL + spSel * cw, top - 4, cw, h - top - bot + 8);
   if (spView === "t") {
     const all = E.hi.flat().filter(v => v != null).concat(st.map(s => s.app).filter(v => v != null));
     const step = S.temp === "f" ? 10 : 5, lo = Math.floor(Math.min(...all) / step) * step, hi = Math.ceil(Math.max(...all) / step) * step;
@@ -1463,10 +1464,10 @@ function drawSpread() {
     ctx.beginPath(); st.forEach((s, i) => ctx[i ? "lineTo" : "moveTo"](X0(i), Y(s.h90))); for (let i = n - 1; i >= 0; i--) ctx.lineTo(X0(i), Y(st[i].h10));
     ctx.closePath(); ctx.fillStyle = "rgba(138,150,255,.3)"; ctx.fill();
     // every run as a thin line
-    ctx.strokeStyle = "rgba(255,255,255,.13)"; ctx.lineWidth = 1; ctx.lineJoin = "round";
+    ctx.strokeStyle = `rgba(${ink},.13)`; ctx.lineWidth = 1; ctx.lineJoin = "round";
     for (const m of E.hi) { ctx.beginPath(); let on = false; m.forEach((v, i) => { if (v == null) return; ctx[on ? "lineTo" : "moveTo"](X0(i), Y(v)); on = true; }); ctx.stroke(); }
     // the middle run, then the app's own forecast in the accent
-    ctx.strokeStyle = "#fff"; ctx.lineWidth = 2.2; ctx.beginPath(); st.forEach((s, i) => ctx[i ? "lineTo" : "moveTo"](X0(i), Y(s.h50))); ctx.stroke();
+    ctx.strokeStyle = `rgb(${ink})`; ctx.lineWidth = 2.2; ctx.beginPath(); st.forEach((s, i) => ctx[i ? "lineTo" : "moveTo"](X0(i), Y(s.h50))); ctx.stroke();
     ctx.strokeStyle = Palette.SIGNAL; ctx.fillStyle = Palette.SIGNAL; ctx.lineWidth = 1.6; ctx.setLineDash([3, 3]); ctx.beginPath();
     let on = false; st.forEach((s, i) => { if (s.app == null) return; ctx[on ? "lineTo" : "moveTo"](X0(i), Y(s.app)); on = true; }); ctx.stroke(); ctx.setLineDash([]);
     st.forEach((s, i) => { if (s.app == null) return; ctx.beginPath(); ctx.arc(X0(i), Y(s.app), i === spSel ? 4 : 2.6, 0, PI * 2); ctx.fill(); });
@@ -1477,13 +1478,13 @@ function drawSpread() {
       const f = s.wet / (s.n || 1), bw = Math.min(cw * .62, 22), x = X0(i) - bw / 2, y = Y(f);
       ctx.fillStyle = `rgba(127,192,255,${(.35 + f * .5).toFixed(2)})`;
       ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x, y, bw, Y(0) - y, [4, 4, 1, 1]) : ctx.rect(x, y, bw, Y(0) - y); ctx.fill();
-      if (f >= .3 && cw > 20) { ctx.fillStyle = "rgba(255,255,255,.75)"; ctx.textAlign = "center"; ctx.fillText(`${Math.round(f * 100)}`, X0(i), y - 8); }
+      if (f >= .3 && cw > 20) { ctx.fillStyle = `rgba(${ink},.75)`; ctx.textAlign = "center"; ctx.fillText(`${Math.round(f * 100)}`, X0(i), y - 8); }
     });
   }
   // what the selected day holds
   const s = st[spSel], name = spSel === 0 ? "Today" : `${wd(s.key)} ${dm_(s.key)}`;
   $("#spRead").innerHTML = spView === "t"
-    ? `<b>${esc(name)}</b><span>High <b>${R(s.h10)}–${R(s.h90)}°</b>, most likely ${R(s.h50)}°</span><span>Low ${R(s.l10)}–${R(s.l90)}°${s.app != null ? ` · app ${R(s.app)}°` : ""}</span>`
+    ? `<b>${esc(name)}</b><span>High <b>${R(s.h10)}–${R(s.h90)}°</b>, most likely ${R(s.h50)}°${s.app != null ? ` · in the app ${R(s.app)}°` : ""}</span><span>Low ${R(s.l10)}–${R(s.l90)}°</span>`
     : `<b>${esc(name)}</b><span>Wet in <b>${s.wet} of ${s.n}</b> runs</span><span>${fmtP(s.mean)} ${PU()} on average, up to ${fmtP(s.r90)} ${PU()} in the wettest runs</span>`;
   const box = $("#spChart"); box.setAttribute("aria-valuemin", 0); box.setAttribute("aria-valuemax", n - 1); box.setAttribute("aria-valuenow", spSel);
   box.setAttribute("aria-valuetext", $("#spRead").textContent);
@@ -1507,10 +1508,10 @@ function drawSpread() {
    Other days keep the day's own summary (its most severe weather, its highest chance of rain). */
 function dayLook(i) {
   const { Dy, H, hi, di } = X;
-  if (i !== di) return { code: Dy.weather_code[i], pop: nz(Dy.precipitation_probability_max[i]) };
+  if (i !== di) return { code: Dy.weather_code[i], pop: nz(Dy.precipitation_probability_max[i]), mm: Dy.precipitation_sum[i] ?? 0 };
   let end = H.time.findIndex(t => t.slice(0, 10) > Dy.time[i]); if (end < 0) end = H.time.length;
   const codes = H.weather_code.slice(hi, end).filter(v => v != null), pops = H.precipitation_probability.slice(hi, end).filter(v => v != null);
-  return { code: codes.length ? Math.max(...codes) : Dy.weather_code[i], pop: pops.length ? Math.max(...pops) : nz(Dy.precipitation_probability_max[i]) };
+  return { code: codes.length ? Math.max(...codes) : Dy.weather_code[i], pop: pops.length ? Math.max(...pops) : nz(Dy.precipitation_probability_max[i]), mm: H.precipitation.slice(hi, end).reduce((a, b) => a + (b ?? 0), 0), rest: true };
 }
 /* Rain (or snow) falls in a day card once rain is likely (40%+) or measurable (0.5 mm+).
    More rain means more drops; a likelier forecast draws them brighter. */
@@ -1530,13 +1531,13 @@ function renderDays() {
   const P = v => ((v - lo) / ((hi - lo) || 1) * 100).toFixed(1);
   const open = store.get("openDay", 0);
   const items = idx.map((i, n) => {
-    const key = Dy.time[i], [label, kind] = wmo(dayLook(i).code);
-    const mn = Dy.temperature_2m_min[i], mx = Dy.temperature_2m_max[i], pop = dayLook(i).pop;
+    const look = dayLook(i), key = Dy.time[i], [label, kind] = wmo(look.code);
+    const mn = Dy.temperature_2m_min[i], mx = Dy.temperature_2m_max[i], pop = look.pop;
     const tc = v => window.Palette.tempFam(toC(v)).mid; // colour of a temperature on the shared scale
     const rise = Dy.sunrise[i] ? T(Dy.sunrise[i]) : null, set = Dy.sunset[i] ? T(Dy.sunset[i]) : null;
     const wdir = Dy.wind_direction_10m_dominant[i];
     return `<article class="day${n === open ? " open" : ""}" style="z-index:${n + 1}">
-      ${weatherFx(n, kind, pop, toMm(Dy.precipitation_sum[i] ?? 0))}
+      ${weatherFx(n, kind, pop, toMm(look.mm))}
       <button class="day-h" aria-expanded="${n === open}" data-n="${n}">
         <span class="dn"><b>${n === 0 ? "Today" : wd(key)}</b><i>${n === 0 ? wd(key) + " " : ""}${dm_(key)}</i></span>
         ${icon(kind, true)}
@@ -1544,10 +1545,10 @@ function renderDays() {
         <span class="dr"><em>${R(mn)}°</em><span class="bar">${cl[n] ? `<span class="nrm" style="left:${P(fromC(cl[n].lo))}%;right:${(100 - P(fromC(cl[n].hi))).toFixed(1)}%"></span>` : ""}<span class="fill" style="left:${P(mn)}%;right:${(100 - P(mx)).toFixed(1)}%;--lo:${tc(mn)};--hi:${tc(mx)}"></span>${n === 0 && c.temperature_2m != null ? `<span class="nd" style="left:${P(clamp(c.temperature_2m, lo, hi))}%"></span>` : ""}</span><em class="hiT" style="--tc:${tc(mx)}">${R(mx)}°</em></span>
       </button>
       <div class="day-b"><div class="day-bi"><div class="day-grid">
-        <div class="say">${esc(label)}${pop != null ? `, ${pop}% chance of rain` : ""}.</div>
+        <div class="say">${look.rest ? `Rest of today: ${esc(label.toLowerCase())}` : esc(label)}${pop != null ? `, ${pop}% chance of rain` : ""}.</div>
         ${tile("Feels like", `${R(Dy.apparent_temperature_min[i])}° / ${R(Dy.apparent_temperature_max[i])}°`)}
-        ${tile("Rain", `${fmtP(Dy.precipitation_sum[i])} ${PU()}`)}
-        ${tile("Rain hours", `${R(Dy.precipitation_hours[i])} h`)}
+        ${tile(look.rest ? "Rain today" : "Rain", `${fmtP(Dy.precipitation_sum[i])} ${PU()}`)}
+        ${tile(look.rest ? "Rain hours today" : "Rain hours", `${R(Dy.precipitation_hours[i])} h`)}
         ${tile("Wind", `${R(Dy.wind_speed_10m_max[i])} ${WU[S.wind]}${wdir != null ? " " + pt16(wdir) : ""}`)}
         ${tile("Gusts", `${R(Dy.wind_gusts_10m_max[i])} ${WU[S.wind]}`)}
         ${tile("UV max", Dy.uv_index_max[i] != null ? Dy.uv_index_max[i].toFixed(1) : "–")}
@@ -1557,7 +1558,7 @@ function renderDays() {
         ${cl[n] ? tile("Normal", `${R(fromC(cl[n].lo))}° / ${R(fromC(cl[n].hi))}°`) : ""}
         ${cl[n] && cl[n].rh ? tile("Record high", `${R(fromC(cl[n].rh[0]))}° <small>${cl[n].rh[1]}</small>`) : ""}
         ${cl[n] && cl[n].rl ? tile("Record low", `${R(fromC(cl[n].rl[0]))}° <small>${cl[n].rl[1]}</small>`) : ""}
-        ${U && U[key] ? `<button class="tile tile-go" data-spread="${n}"><span class="mono">Models</span><b>${U[key].n || 4} models within ${Math.max(1, Math.round(U[key].deg * (S.temp === "f" ? 1.8 : 1)))}°${U[key].lead >= 6 ? " · far ahead" : ""}</b><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4.5 2.5L8 6l-3.5 3.5"/></svg></button>` : ""}
+        ${U && U[key] ? `<button class="tile tile-go" data-spread="${n}"><span class="mono">Models</span><b>${U[key].n || 4} models within ${Math.max(1, Math.round(U[key].deg * (S.temp === "f" ? 1.8 : 1)))}°${U[key].lead >= 6 ? " · far ahead" : ""}</b><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4.5 2.5L8 6l-3.5 3.5"/></svg></button>` : ""}
       </div></div></div>
     </article>`;
   }).join("");
@@ -1616,13 +1617,13 @@ function renderHumid() {
 /* A plain-language explainer of humidity, dew point, dew, frost and fog, starting from today's numbers. */
 function openLearn(t, dp, h) {
   const gap = t != null && dp != null ? R(t) - R(dp) : null, F = S.temp === "f", mi = F || S.precip === "inch";
-  const frz = F ? 32 : 0, dry = F ? 50 : 10, sticky = F ? 64 : 18;
+  const frz = F ? 32 : 0, dry = F ? 61 : 16, sticky = F ? 64 : 18, heavy = F ? 70 : 21; // the same steps as the humidity card's labels
   const now = gap == null ? "" : gap <= 1
     ? `Right now the air is ${R(t)}° and the dew point ${R(dp)}°. They're almost the same, so the air is close to full: dew, mist or fog are likely.`
     : `Right now the air is ${R(t)}° and the dew point ${R(dp)}°. A surface has to cool ${gap}° below the air before dew forms on it${R(dp) <= frz ? ", and since that's below freezing it would be frost" : ""}.`;
   $("#learnBody").innerHTML = `${now ? `<p class="now">${esc(now)}</p>` : ""}
     <h3>Humidity</h3><p>Air always carries some water as invisible vapour. Warm air can hold much more than cold air. Humidity (${R(h)}% now) says how full the air is compared with the most it can hold at its current temperature.</p>
-    <h3>Dew point</h3><p>The temperature the air would have to cool to before it's completely full (100%). It tells you how much water is really in the air: the higher it is, the muggier it feels. Under ${dry}° feels dry, above ${sticky}° sticky.</p>
+    <h3>Dew point</h3><p>The temperature the air would have to cool to before it's completely full (100%). It tells you how much water is really in the air: the higher it is, the muggier it feels. Below ${dry}° it feels fresh, from ${dry}° a little muggy, from ${sticky}° muggy and from ${heavy}° oppressive.</p>
     <h3>Dew</h3><p>On clear, calm nights, grass, leaves and car roofs lose heat to the open sky and get colder than the air around them. Once a surface is colder than the dew point, water condenses on it, just like drops on a cold glass of water. If the surface is below ${frz}°, it becomes frost instead.</p>
     <h3>Mist and fog</h3><p>When the air itself cools down to its dew point, the water condenses into tiny floating droplets. You call it mist if you can still see over ${mi ? "half a mile" : "1 km"}, and fog below that. It mostly forms on still, clear nights, or when damp air moves over cold ground or water.</p>
     <h3>Why humidity peaks at night</h3><p>The amount of water in the air hardly changes over a day, but cooler night air can hold less of it. So humidity climbs towards 100% at night and drops again as the sun warms the air.</p>`;
@@ -2109,10 +2110,12 @@ function renderSrc() {
   const m = MODELS.find(x => x[0] === S.model) || MODELS[0];
   $("#infoBody").innerHTML = `<p><b>Forecast</b> Open-Meteo, ${esc(m[1])} model. ${esc(m[2])}</p>
     <p><b>Air and pollen</b> Copernicus CAMS. Pollen counts are in grains per cubic metre of air.</p>
-    <p><b>Rain radar</b> RainViewer for the past two hours; the next two hours in the Benelux and around from Buienradar's radar forecast (buienradar.nl). On Esri map tiles (Esri, HERE, Garmin, © OpenStreetMap).</p>
+    <p><b>Rain radar</b> RainViewer for the past two hours; the next two hours in and around the Benelux from Buienradar's radar forecast (buienradar.nl). On Esri map tiles (Esri, HERE, Garmin, © OpenStreetMap).</p>
+    <p><b>How sure</b> The ECMWF ensemble (51 runs) and how far four main models (ECMWF, GFS, GEM, ICON) lie apart, both via Open-Meteo.</p>
     <p><b>Weather warnings</b> MeteoAlarm (EUMETNET) and the national weather services, such as KMI. Region outlines © EuroGeographics.</p>
     <p><b>Normals and records</b> ERA5 reanalysis (Copernicus), for the area around this spot: normals over 1991–2020, records since 1950.</p>
-    <p><b>Moon</b> NASA LRO imagery. Phases, sunrise and twilight are calculated on this device.</p>
+    <p><b>Sun and moon</b> Sunrise and sunset from Open-Meteo. Twilight, golden hour, the sun's height and the moon's phase, rise and set are calculated on this device with standard astronomical formulas. Moon map: NASA LRO imagery.</p>
+    <p><b>Places</b> Search by Open-Meteo geocoding (GeoNames); your own spot named by BigDataCloud.</p>
     <button class="wall-link" id="wallBtn">Show every card on one screen</button>`;
   $("#wallBtn").onclick = () => { $("#dlgInfo").close(); setWall(true); };
   // where the forecast is for, at the top of the About sheet: coordinates, height above sea level and time zone
@@ -2639,7 +2642,7 @@ function renderWarnings() {
 }
 $("#warnX").onclick = () => { store.set("warnHide", warnHideKey()); renderWarnings(); };
 $("#warn").onclick = () => {
-  if (!warnings.length) { $("#warnBody").innerHTML = `<p>The official warnings (MeteoAlarm, via KMI and the other national weather services) couldn't be refreshed for a while, so this app can't tell whether any apply right now. Check meteo.be or your national weather service.</p>`; $("#dlgWarn").showModal(); return; }
+  if (!warnings.length) { $("#warnBody").innerHTML = `<p>The official warnings (MeteoAlarm, via KMI and the other national weather services) couldn't be refreshed for a while, so this app can't tell whether any apply right now. Check your national weather service.</p>`; $("#dlgWarn").showModal(); return; }
   const link = u => /^https?:\/\//.test(u) ? ` · <a href="${esc(u)}" target="_blank" rel="noopener">More details</a>` : "";
   $("#warnBody").innerHTML = warnings.map(w => {
     const [name, col] = WLEVEL[w.level] || WLEVEL[2];
