@@ -923,7 +923,7 @@ html.wall .a-moon .strip canvas{height:46px}
   .arc-in{max-width:300px;margin:0 auto}
 }
 /* the empty pollen strip opens on request to show each type; on the wide board the six sit in one row */
-.a-pollen.slim:not(.open) .pgrid{display:none}
+.a-pollen.slim:not(.open) .pgrid,.a-pollen.slim:not(.open) .foot{display:none}
 .a-pollen.slim.open .pgrid{margin-top:12px}
 .a-pollen.open .air-more svg{transform:rotate(180deg)}
 @media (min-width:1001px){.a-pollen.slim .pgrid{grid-template-columns:repeat(6,minmax(0,1fr))}}

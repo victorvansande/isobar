@@ -409,7 +409,7 @@ async function fetchAll(p, signal) {
   }), signal);
   const a = getJSON("https://air-quality-api.open-meteo.com/v1/air-quality?" + qs({
     latitude: p.lat, longitude: p.lon, timezone: "auto", forecast_days: 2,
-    current: "european_aqi,us_aqi,pm10,pm2_5,nitrogen_dioxide,ozone,sulphur_dioxide,alder_pollen,birch_pollen,grass_pollen,mugwort_pollen,olive_pollen,ragweed_pollen",
+    current: "european_aqi,us_aqi,pm10,pm2_5,nitrogen_dioxide,ozone,sulphur_dioxide,dust,alder_pollen,birch_pollen,grass_pollen,mugwort_pollen,olive_pollen,ragweed_pollen",
     hourly: "european_aqi"
   }), signal).catch(() => null);
   // the same days from four independent models, to see how much they agree (see confidence())
@@ -2101,34 +2101,48 @@ function cloudField(el, cc) {
 
 /* ---------------- pollen ---------------- */
 const POLLEN = [["grass_pollen", "Grass", [5, 30, 100]], ["birch_pollen", "Birch", [10, 100, 500]], ["alder_pollen", "Alder", [10, 50, 200]], ["mugwort_pollen", "Mugwort", [5, 20, 50]], ["ragweed_pollen", "Ragweed", [5, 20, 50]], ["olive_pollen", "Olive", [20, 100, 400]]];
+/* Pollen and desert dust: what sets off hay fever and asthma outdoors. Pollen comes from the CAMS European model, so
+   only for Europe; dust comes from the CAMS global model, so everywhere (it matters most around deserts: the Sahara,
+   the Middle East, Central Asia, Australia). Outside Europe the card says plainly that pollen isn't forecast there.
+   Dust levels follow the particle limits it counts towards (PM10: WHO 45 and EU 50 µg/m³ over a day). */
+const DUST = [20, 50, 150];
 function renderPollen() {
   const el = card("c-pollen"), a = AQ && AQ.current;
-  const avail = a && POLLEN.some(([k]) => a[k] != null);
-  if (!avail) el.classList.remove("slim");
-  if (!avail) { el.innerHTML = `${head("Pollen", "Not forecast here")}<p class="empty">Pollen counts come from the CAMS European model, so they're only available for locations in Europe.</p>`; return; }
   const lvl = (v, t) => v < 1 ? [0, "None"] : v < t[0] ? [1, "Low"] : v < t[1] ? [2, "Moderate"] : v < t[2] ? [3, "High"] : [4, "Very high"];
-  const items = POLLEN.filter(([k]) => a[k] != null).map(([k, n, t]) => { const v = a[k], [l, ln] = lvl(v, t); return { n, v, l, ln }; });
-  const top = items.reduce((m, i) => i.l > m.l ? i : m, items[0]);
-  const grid = `<div class="pgrid" id="polGrid">${items.map(i => `<div class="tile"><span class="mono">${i.n}</span><b>${i.v < 10 ? i.v.toFixed(1) : Math.round(i.v)}</b><span class="dots" role="img" aria-label="${i.ln}">${[1, 2, 3, 4].map(q => `<i class="${q <= i.l ? "on" : ""}"></i>`).join("")}</span></div>`).join("")}</div>`;
+  const fmt = v => v < 10 ? v.toFixed(1) : Math.round(v);
+  const dots = i => `<span class="dots" role="img" aria-label="${i.ln}">${[1, 2, 3, 4].map(q => `<i class="${q <= i.l ? "on" : ""}"></i>`).join("")}</span>`;
+  const dust = a && a.dust != null ? (() => { const [l, ln] = lvl(a.dust, DUST); return { n: "Desert dust", v: a.dust, l, ln }; })() : null;
+  const items = a ? POLLEN.filter(([k]) => a[k] != null).map(([k, n, t]) => { const v = a[k], [l, ln] = lvl(v, t); return { n, v, l, ln }; }) : [];
+  const say = i => i.l === 0 ? "Nothing in the air" : `${i.n} is ${i.ln.toLowerCase()}`;
+  el.classList.remove("open");
+  if (!items.length) { // outside Europe: dust only, and an honest line about pollen
+    el.classList.remove("slim");
+    el.innerHTML = `${head("Pollen and dust", !dust ? "Not forecast here" : dust.l ? say(dust) : "No desert dust")}
+      ${dust ? `<div class="pgrid"><div class="tile"><span class="mono">Desert dust</span><b>${fmt(dust.v)}<small>µg/m³</small></b>${dots(dust)}</div></div>` : ""}
+      <p class="empty">Pollen isn't forecast here: the pollen model (CAMS) only covers Europe.</p>`;
+    return;
+  }
+  const all = dust ? [...items, dust] : items, top = all.reduce((m, i) => i.l > m.l ? i : m, all[0]);
+  const grid = `<div class="pgrid" id="polGrid">${items.map(i => `<div class="tile"><span class="mono">${i.n}</span><b>${fmt(i.v)}</b>${dots(i)}</div>`).join("")}</div>`;
+  const foot = dust ? `<div class="foot"><span>Desert dust <b>${fmt(dust.v)}</b> µg/m³ · ${dust.ln.toLowerCase()}</span></div>` : "";
   // nothing in the air at all: one quiet line instead of a wall of zeros, which still opens to show each type
   el.classList.toggle("slim", top.l === 0);
   if (top.l === 0) {
     const open = store.get("polOpen", false);
     el.classList.toggle("open", open);
-    el.innerHTML = `<div class="ch-row">${head("Pollen", "Nothing in the air")}<button class="air-more mono" id="polMore" aria-expanded="${open}" aria-controls="polGrid">All ${items.length} types at zero<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9.5l6 6 6-6"/></svg></button></div>${grid}`;
+    el.innerHTML = `<div class="ch-row">${head("Pollen and dust", say(top))}<button class="air-more mono" id="polMore" aria-expanded="${open}" aria-controls="polGrid">All ${all.length} at zero<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9.5l6 6 6-6"/></svg></button></div>${grid}${foot}`;
     $("#polMore").onclick = () => { const on = !el.classList.contains("open"); el.classList.toggle("open", on); $("#polMore").setAttribute("aria-expanded", on); store.set("polOpen", on); };
     return;
   }
-  el.classList.remove("open");
-  el.innerHTML = `<div class="ch-row">${head("Pollen", `${top.n} is ${top.ln.toLowerCase()}`)}</div>
-    ${grid}`;
+  el.innerHTML = `<div class="ch-row">${head("Pollen and dust", say(top))}</div>
+    ${grid}${foot}`;
 }
 
 /* ---------------- source ---------------- */
 function renderSrc() {
   const m = MODELS.find(x => x[0] === S.model) || MODELS[0];
   $("#infoBody").innerHTML = `<p><b>Forecast</b> Open-Meteo, ${esc(m[1])} model. ${esc(m[2])}</p>
-    <p><b>Air and pollen</b> Copernicus CAMS. Pollen counts are in grains per cubic metre of air.</p>
+    <p><b>Air, pollen and dust</b> Copernicus CAMS: the European model for air and pollen (pollen only in Europe), the global model for desert dust and for air outside Europe. Pollen counts are in grains per cubic metre of air.</p>
     <p><b>Rain radar</b> RainViewer for the past two hours; the next two hours in and around the Benelux from Buienradar's radar forecast (buienradar.nl). On Esri map tiles (Esri, HERE, Garmin, © OpenStreetMap).</p>
     <p><b>How sure</b> The ECMWF ensemble (51 runs) and how far four main models (ECMWF, GFS, GEM, ICON) lie apart, both via Open-Meteo.</p>
     <p><b>Weather warnings</b> MeteoAlarm (EUMETNET) and the national weather services, such as KMI. Region outlines © EuroGeographics.</p>
