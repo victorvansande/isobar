@@ -1,7 +1,30 @@
 # Isobar rules
 
-The rules every change follows, so the app stays one consistent piece of work. `tests/lint.mjs` checks the ones a
-machine can check on every push; the rest are for whoever changes the app (Claude included) to keep.
+A reference, not a law book. These notes keep the app one consistent piece of work, and they are the first thing to
+read before adding something new. They are meant to be played with: when a change is clearly better by breaking a
+rule, break it, and update the rule (and, if it is a checked one, the numbers in `tests/lint.mjs`) so the reference
+stays true. `tests/lint.mjs` checks the rules a machine can check on every push; the rest are for whoever changes the
+app (Claude included) to weigh.
+
+## Look and feel
+
+What Isobar feels like, as a touchstone for anything new: does it look like it was always there?
+
+- **Calm, natural and precise.** A quiet surface that tells the truth about the sky. Decoration only when it carries
+  real data; nothing that is only there to look busy.
+- **The real sky is the colour.** The main card, the sun and the moon take the colour of the sky outside; the
+  ground is a soft wash of that same sky.
+- **Day and night are mirrors.** Pastel tints with dark ink by day, deep tints with light ink at night. No glow, no
+  gloss, no neon, no glassy bubbles.
+- **Dot matrix is the signature.** Numerals on the instruments, grids (rain, clouds), scroll bars, timelines and
+  small marks are built from dots that light up; a dot is "on", a faint dot is "off".
+- **Capsules point.** Needles and markers are short rounded capsules in raspberry, on scales of dots or thin lines.
+- **Thin lines, round ends.** Arcs, axes and icons are fine strokes with rounded caps; the travelled part bright,
+  the rest soft.
+- **Nature sets the shapes and the motion.** The sun's arc is a sine of time, the moon has its real phase, clouds
+  drift with the wind, rain falls where it is forecast, frost creeps in. Motion is slow, smooth and caused by data.
+- **One idea per card.** A title, one short subtitle, the reading, one picture of it, at most one line underneath.
+- **Plain words.** Short English sentences a person would say; no jargon unless it is the right word.
 
 ## Data: one truth per quantity
 

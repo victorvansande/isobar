@@ -1,4 +1,5 @@
-/* Checks the rules in RULES.md that a machine can check, on every push (see .github/workflows/publish.yml).
+/* Checks the rules in RULES.md that a machine can check, on every push (see .github/workflows/publish.yml). The rules
+   are a reference, not law: when a change is clearly better by breaking one, change the rule here and in RULES.md.
    No dependencies: run with `node tests/lint.mjs` from the repository root. Exits with 1 when a rule is broken. */
 import { readFileSync } from "node:fs";
 
