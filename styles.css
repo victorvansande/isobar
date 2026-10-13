@@ -194,7 +194,7 @@ dialog:focus-visible,.sheet:focus-visible{outline:none} /* opening a sheet focus
 .yr-axis{display:grid;grid-template-columns:repeat(12,1fr);margin-top:8px;text-align:center}
 
 /* ---------- card base ---------- */
-.card{position:relative;isolation:isolate;overflow:hidden;border-radius:var(--r-card);padding:18px 20px 20px;min-width:0;min-height:190px;display:flex;flex-direction:column}
+.card{position:relative;isolation:isolate;overflow:hidden;border-radius:var(--r-card);padding:18px 20px 20px;--pad-x:20px;min-width:0;min-height:190px;display:flex;flex-direction:column}
 @supports (corner-shape:squircle){.card,.day{border-radius:54px;corner-shape:squircle}}
 /* iOS Safari lets blurred, animated layers (the drifting pigment, the sun rays) spill past rounded corners
    despite overflow:hidden, which shows as a square behind each corner. Clip the shape explicitly there. */
@@ -368,7 +368,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 
 /* ---------- hourly (glass) ---------- */
 .a-hourly{min-height:0;padding:18px 0 14px}
-.a-hourly .ch-row{padding:0 20px}
+.a-hourly .ch-row{padding:0 var(--pad-x)} /* the same inset as every other card */
 .hscroll{overflow-x:auto;overflow-y:hidden;scrollbar-width:none;padding:0 14px 6px;-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 14px,#000 calc(100% - 24px),transparent);mask-image:linear-gradient(90deg,transparent 0,#000 14px,#000 calc(100% - 24px),transparent)}
 .hin{position:relative;display:grid;padding-top:30px}
 /* sun and moon track: sunlight turning to night and back at the real sunset and sunrise */
@@ -398,7 +398,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .a-hourly[data-view="d"] .hv-d{display:block}
 .a-hourly[data-view="d"] .hv-h{display:none}
 /* under the 14 days: the full forecast as the main button, "How sure?" as a quiet link beside it */
-.a-hourly[data-view="d"] .hfoot{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:14px;padding:0 20px 6px} /* the same inset as the header, clear of the rounded corners */
+.a-hourly[data-view="d"] .hfoot{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:14px;padding:0 var(--pad-x) 6px} /* the same inset as the header, clear of the rounded corners */
 .a-hourly .hall-main{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 16px;border-radius:999px;font-weight:600;font-size:14px;background:var(--ink);color:var(--seg-on,#100f18)}
 :root[data-mode="day"] .a-hourly .hall-main{--seg-on:#fff}
 .a-hourly .hall-main svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
@@ -776,7 +776,8 @@ body.net-off .toast{bottom:calc(122px + var(--dock-b))}
 @media (max-width:600px){
   .app{padding-left:14px;padding-right:14px}
   .board{gap:10px}
-  .card{padding:16px 16px 18px;min-height:170px}
+  .card{padding:16px 16px 18px;min-height:170px;--pad-x:16px}
+  .a-hourly{padding:16px 0 12px} /* full-bleed strip; header and foot take the card inset themselves */
   .hero{min-height:500px}
   .air{grid-template-columns:1fr}
   .air .pol{margin-top:16px}
