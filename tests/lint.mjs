@@ -44,6 +44,11 @@ if (!/\.card\{[^}]*--pad-x:20px/.test(css)) fail("inset (10)", ".card no longer 
 if (!/\.card\{[^}]*--pad-x:16px/.test(css)) fail("inset (10)", "the phone layout no longer sets --pad-x: 16px");
 if (!/\.a-hourly \.ch-row\{padding:0 var\(--pad-x\)\}/.test(css)) fail("inset (10)", "the hours card header doesn't use --pad-x");
 
+// Rule 9a: text is never cut off with an ellipsis, except in these last-resort places (names too long even shrunk)
+const MAY_CUT = ["#placeName", ".topbar b", ".swpeek b", ".netpill span", ".dn i"];
+for (const [, sel, body] of plain.matchAll(/([^{}]+)\{([^{}]*)\}/g))
+  if (/text-overflow:\s*ellipsis|line-clamp/.test(body) && !MAY_CUT.includes(sel.trim())) fail("never cut (9a)", `${sel.trim()} cuts its text off; let it wrap or shrink instead`);
+
 // Rule 11: one gap between cards
 if (!/\.board\{display:grid;gap:14px/.test(css)) fail("gap (11)", "the board gap is no longer 14px");
 

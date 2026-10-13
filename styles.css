@@ -113,7 +113,7 @@ dialog:focus-visible,.sheet:focus-visible{outline:none} /* opening a sheet focus
 .warn .wl{width:10px;height:10px;border-radius:50%;flex:none;background:var(--wc);box-shadow:0 0 0 4px color-mix(in srgb,var(--wc) 25%,transparent)}
 .warn span{flex:1;min-width:0;display:grid;gap:2px}
 .warn b{font-weight:600;font-size:15px}
-.warn small{font-size:13px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.warn small{font-size:13px;color:var(--ink-2);text-wrap:pretty}
 .warn svg{width:12px;height:12px;flex:none;fill:none;stroke:var(--ink-2);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .wx{padding:14px 0;border-top:1px solid rgba(255,255,255,.1)}
 .wx:first-child{border-top:0;padding-top:0}
@@ -129,7 +129,8 @@ dialog:focus-visible,.sheet:focus-visible{outline:none} /* opening a sheet focus
 .place h1.long{font-size:clamp(26px,4vw,44px)}
 .place h1.longer{font-size:clamp(22px,3.2vw,36px)}
 .place h1 svg{width:22px;height:22px;flex:none;opacity:.45;stroke:currentColor;fill:none;stroke-width:2}
-.place .sub{font-weight:600;font-size:clamp(16px,2vw,20px);letter-spacing:-.02em;color:var(--ink-2);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.place .sub{font-weight:600;font-size:clamp(16px,2vw,20px);letter-spacing:-.02em;color:var(--ink-2);margin-top:4px;text-wrap:balance}
+.place .sub span{white-space:nowrap} /* breaks only between its parts, never inside "Tue 13 Oct" */
 .top-r{display:flex;gap:8px;align-items:center;flex:none}
 .chip{display:flex;align-items:center;gap:.6em;height:38px;font:500 12px/1 var(--f-label);letter-spacing:0;padding:0 14px;border-radius:999px;color:var(--ink-2);white-space:nowrap}
 .chip b{color:var(--ink);font-weight:500}
@@ -356,9 +357,9 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .hero-foot{display:grid;grid-template-columns:1fr minmax(0,auto) 1fr;column-gap:16px;align-items:end;margin-top:4px}
 .hero-foot div{display:grid;gap:2px}
 .hero-foot b{font:400 20px/1 var(--f-num);letter-spacing:-.02em}
-.hero-foot span{font-size:12px;color:var(--ink-2)}
-.hero-foot .mid{text-align:center;justify-items:center;max-width:15ch;justify-self:center;text-wrap:balance} /* its own short block between the two times, never running into them */
-.hero-foot .mid span{transition:opacity .4s}.hero-foot .mid span.fade{opacity:0} /* the one-time drag tip fades in and out */
+.hero-foot span{font-size:12px;color:var(--ink-2);white-space:nowrap} /* "Sunrise tomorrow" stays whole; the middle line wraps instead */
+.hero-foot .mid{text-align:center;min-width:0;justify-items:center;max-width:15ch;justify-self:center;text-wrap:balance} /* its own short block between the two times, never running into them */
+.hero-foot .mid span{white-space:normal;transition:opacity .4s}.hero-foot .mid span.fade{opacity:0} /* the one-time drag tip fades in and out */
 .hero-foot .r{text-align:right}
 
 /* ---------- rain next hours (glass) ---------- */
@@ -643,7 +644,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 :root:not([data-mode="day"]) .a-vis{--v-near:#cfcbe4;--v-far:#4d5680;--v-haze:#3b3a52;--v-sky:#24418c}
 .vis-sky{position:absolute;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(180deg,color-mix(in oklab,var(--v-sky) var(--clear),var(--v-haze)) 0%,transparent 70%);opacity:var(--skyA)}
 .vis-fog{position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(180deg,transparent 35%,var(--v-haze) 100%);opacity:var(--fogA)}
-.vis-say{margin:8px 0 0;font-size:13px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis} /* always one line */
+.vis-say{margin:8px 0 0;font-size:13px;color:var(--ink-2);text-wrap:balance}
 .vis svg{width:100%;height:84px;display:block}
 .vis path{animation:ridgeflow var(--t) linear var(--dl) infinite,ridgebob var(--b) ease-in-out var(--dl) infinite alternate}
 @keyframes ridgeflow{to{transform:translateX(-240px)}}
@@ -815,7 +816,7 @@ body.net-off .toast{bottom:calc(122px + var(--dock-b))}
   .top{margin-bottom:16px}
   .summary{margin-top:0} /* the same breathing room above and below the summary */
   .chip{display:none}
-  .place .sub{white-space:normal;font-size:15px}
+  .place .sub{font-size:15px}
   .vis{margin:auto -16px -18px}
 }
 /* cards scrolled well out of view pause their animations (they resume where they were, before they come into view) */

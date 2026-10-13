@@ -49,6 +49,12 @@ What Isobar feels like, as a touchstone for anything new: does it look like it w
 7. A card never repeats what it already says: the line under a number adds something new.
 8. A subtitle is one short line; the foot of a card is at most one line.
 9. Units always follow the settings and are written small after the number.
+9a. **Never break or cut a phrase.** A label, a date, a time or a number with its unit stays whole on one line
+    ("Sunrise tomorrow", "Tue 13 Oct", "34 min"): give each part `white-space: nowrap` or a no-break space, and let a
+    line break only between parts (at a "·" or a comma). When space runs out, the text that can wrap wraps
+    (balanced), and a name that can't wrap shrinks to fit. Cutting text off with an ellipsis is a last resort, only
+    where nothing else is possible (a place name too long even at its smallest size); `tests/lint.mjs` keeps a list
+    of those places.
 
 ## Layout
 
@@ -94,6 +100,7 @@ What Isobar feels like, as a touchstone for anything new: does it look like it w
 
 ## Way of working
 
-25. Every change is checked in the preview, then committed and pushed to `main`; the check workflow runs the lint
+25. Every change is checked in the preview (at phone width too, down to 320 px), then committed; it is pushed to
+    `main` when the owner says so, and the check workflow runs the lint
     and the browser test in Chromium and WebKit before publishing.
 26. Design choices are shown as options first; the person who owns the app picks.

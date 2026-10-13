@@ -58,9 +58,9 @@ const fmtH = d => S.clock === "12"
 const dayOf = key => { const [Y, M, Dd] = key.split("-").map(Number); return new Date(Date.UTC(Y, M - 1, Dd, 12)); };
 const wd = key => dayOf(key).toLocaleDateString("en-GB", { weekday: "short", timeZone: "UTC" });
 const dm_ = key => dayOf(key).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
-// one way to write a length of time everywhere: "10 h 57 min", "45 min", "3 min 48 s"
-const dur = s => { if (s == null || isNaN(s)) return "–"; const t = Math.round(s / 60), h = Math.floor(t / 60), m = t % 60; return h ? (m ? `${h} h ${m} min` : `${h} h`) : `${m} min`; };
-const inMins = m => m < 60 ? `${Math.round(m)} min` : `${Math.floor(m / 60)} h ${Math.round(m % 60) ? Math.round(m % 60) + " min" : ""}`.trim();
+// one way to write a length of time everywhere: "10 h 57 min", "45 min", "3 min 48 s"; a number never parts from its unit (no-break spaces)
+const dur = s => { if (s == null || isNaN(s)) return "–"; const t = Math.round(s / 60), h = Math.floor(t / 60), m = t % 60; return h ? (m ? `${h}\u00a0h ${m}\u00a0min` : `${h}\u00a0h`) : `${m}\u00a0min`; };
+const inMins = m => m < 60 ? `${Math.round(m)}\u00a0min` : `${Math.floor(m / 60)}\u00a0h ${Math.round(m % 60) ? Math.round(m % 60) + "\u00a0min" : ""}`.trim();
 const localDateLabel = d => new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: TZ }).format(d);
 
 /* ---------------- units ---------------- */
@@ -2407,12 +2407,21 @@ function renderClock() {
   el.setAttribute("aria-label", `Local time ${hh}:${mm}${ap ? " " + ap : ""}`);
   $("#tbTime").textContent = `${hh}:${mm}${ap ? " " + ap : ""}`; // the same time, quietly, in the top bar that shows on scrolling
 }
+/* The place name is never cut off: when it doesn't fit beside the clock it shrinks until it does (down to 20 px; only a
+   name too long even then ends in an ellipsis). */
+function fitName() {
+  const n = $("#placeName"); n.style.fontSize = "";
+  if (n.scrollWidth > n.clientWidth) n.style.fontSize = `${Math.max(20, parseFloat(getComputedStyle(n).fontSize) * n.clientWidth / n.scrollWidth - .5).toFixed(1)}px`;
+}
+document.fonts?.ready.then(fitName); // measured again once the real font is in
 function renderPlace() {
   $("#placeName").textContent = place ? place.name : "Isobar";
   { const len = (place ? place.name : "").length, h = $("#placeName").parentElement; h.classList.toggle("long", len > 11 && len <= 17); h.classList.toggle("longer", len > 17); }
+  fitName();
   $("#tbName").textContent = place ? place.name : "";
   const t = D ? localDateLabel(new Date()) : ""; // the time itself lives in the clock pill
-  $("#placeSub").textContent = place ? [place.sub, t].filter(Boolean).join(" · ") : "Finding your location";
+  // each part (region, country, date) stays whole; a line only breaks between them
+  $("#placeSub").innerHTML = (place ? [place.sub, t].filter(Boolean) : ["Finding your location"]).map(p => p.split(", ").map(q => `<span>${esc(q)}</span>`).join(", ")).join("&nbsp;· ");
   renderDots();
 }
 function renderAll() {
@@ -2647,7 +2656,7 @@ $("#warn").onclick = () => {
 let netFail = false;
 const ago = t => {
   const m = (Date.now() - t) / 6e4;
-  return m < 1 ? "just now" : m < 60 ? `${Math.floor(m)} min ago` : m < 24 * 60 ? `${Math.floor(m / 60)} h ago` : updLabel(t);
+  return m < 1 ? "just now" : m < 60 ? `${Math.floor(m)}\u00a0min ago` : m < 24 * 60 ? `${Math.floor(m / 60)}\u00a0h ago` : updLabel(t);
 };
 const updLabel = t => (Date.now() - t > 20 * 36e5 ? wd(new Date(t + OFF * 1000).toISOString().slice(0, 10)) + " " : "") + fmtT(new Date(t));
 function renderNet() {
@@ -2901,6 +2910,7 @@ let rT;
 // the phone, resizing a window) needs the canvases redrawn, and redrawing clears them for a moment.
 let lastW = innerWidth;
 window.addEventListener("resize", () => {
+  fitName();
   clearTimeout(rT);
   if (wallOn) fitWall(); // the wall view rescales at once, and redraws its cards once the window settles
   rT = setTimeout(() => {
