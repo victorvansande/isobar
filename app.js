@@ -2153,7 +2153,11 @@ function renderPollen() {
     $("#polMore").onclick = () => { const on = !el.classList.contains("open"); el.classList.toggle("open", on); $("#polMore").setAttribute("aria-expanded", on); store.set("polOpen", on); };
     return;
   }
-  el.innerHTML = `<div class="ch-row">${head("Pollen and dust", say(top))}</div>
+  // pollen in the air shows as a few soft grains floating up and along with the wind, slower and rounder than the air
+  // card's particles: more of them the higher the worst pollen level (none when it's all at zero)
+  const pl = Math.max(...items.map(i => i.l)), prnd = prng(pl * 31 + items.length), east = sin((X.c.wind_direction_10m ?? 270) * rad) < 0;
+  const grains = pl ? Array.from({ length: [0, 6, 12, 20, 30][pl] }, () => `<i style="left:${(prnd() * 100).toFixed(1)}%;top:${(20 + prnd() * 80).toFixed(1)}%;--t:${(14 + prnd() * 10).toFixed(1)}s;--d:-${(prnd() * 24).toFixed(1)}s;--dx:${east ? "" : "-"}${(20 + prnd() * 40).toFixed(0)}px;--dy:-${(20 + prnd() * 30).toFixed(0)}px;--o:${(.35 + prnd() * .45).toFixed(2)}"></i>`).join("") : "";
+  el.innerHTML = `${grains ? `<span class="pollen-air" aria-hidden="true">${grains}</span>` : ""}<div class="ch-row">${head("Pollen and dust", say(top))}</div>
     ${grid}${foot}`;
 }
 

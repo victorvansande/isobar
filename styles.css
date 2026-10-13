@@ -584,6 +584,10 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .air-glint::after{transform:rotate(90deg)}
 :root[data-mode="day"] .air-glint::before,:root[data-mode="day"] .air-glint::after{width:1.5px;background:linear-gradient(transparent,rgba(255,255,255,1) 50%,transparent);box-shadow:0 0 0 .5px rgba(20,60,50,.12)}
 @keyframes airglint{0%,86%,100%{opacity:0;transform:scale(.4)}93%{opacity:.95;transform:scale(1)}}
+/* pollen floating through the pollen card: soft warm grains rising gently with the wind */
+.pollen-air{position:absolute;inset:0;z-index:-1;pointer-events:none}
+.pollen-air i{position:absolute;width:3.5px;height:3.5px;border-radius:50%;background:rgba(255,236,160,.85);opacity:0;animation:mote var(--t) ease-in-out var(--d) infinite}
+:root[data-mode="day"] .pollen-air i{background:rgba(150,120,30,.55)}
 /* fine particles (PM2.5) drifting through the air quality card with the wind */
 .motes{position:absolute;inset:0;z-index:-1;pointer-events:none}
 .motes i{position:absolute;width:2px;height:2px;border-radius:50%;background:rgba(255,236,214,.7);opacity:0;animation:mote var(--t) linear var(--d) infinite}
