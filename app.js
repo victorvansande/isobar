@@ -2174,7 +2174,7 @@ function renderSrc() {
   const m = MODELS.find(x => x[0] === S.model) || MODELS[0];
   $("#infoBody").innerHTML = `<p><b>Forecast</b> Open-Meteo, ${esc(m[1])} model. ${esc(m[2])}</p>
     <p><b>Air, pollen and dust</b> Copernicus CAMS: the European model for air and pollen (pollen only in Europe), the global model for desert dust and for air outside Europe. Pollen counts are in grains per cubic metre of air.</p>
-    <p><b>Rain radar</b> RainViewer for the past two hours; the next two hours in and around the Benelux from Buienradar's radar forecast (buienradar.nl). On Esri map tiles (Esri, HERE, Garmin, © OpenStreetMap).</p>
+    <p><b>Rain radar</b> In and around the Benelux: Buienradar (buienradar.nl), its measured radar of the past two hours and its forecast for the next two. Elsewhere: RainViewer, the past two hours. On Esri map tiles (Esri, HERE, Garmin, © OpenStreetMap).</p>
     <p><b>How sure</b> The ECMWF ensemble (51 runs) and how far four main models (ECMWF, GFS, GEM, ICON) lie apart, both via Open-Meteo.</p>
     <p><b>Weather warnings</b> MeteoAlarm (EUMETNET) and the national weather services, such as KMI. Region outlines © EuroGeographics.</p>
     <p><b>Normals and records</b> ERA5 reanalysis (Copernicus), for the area around this spot: normals over 1991–2020, records since 1950.</p>
@@ -2329,10 +2329,12 @@ const makeRadarLayer = () => L.GridLayer.extend({
     return tile;
   }
 });
-/* Rain in the next two hours: Buienradar's radar forecast (nowcast, every 10 minutes) for the Benelux and around.
-   Its images are Web Mercator; their extent isn't published, so it was measured by laying the images over RainViewer's
-   radar of the same moments and finding where the showers line up best (to within a few km). Only used when your
-   place lies well inside it. The past stays RainViewer's measured radar. */
+/* Buienradar: the measured radar of the past two hours and its forecast for the next two, every 10 minutes, for the
+   Benelux and around. Inside that area the whole timeline comes from this one product, so the rain doesn't jump,
+   vanish or change shape at "now" (two different radars never quite agree: one may show light rain the other filters
+   out). Its images are Web Mercator; their extent isn't published, so it was measured by laying the images over
+   RainViewer's radar of the same moments and finding where the showers line up best (to within a few km). Only used
+   when your place lies well inside it; elsewhere RainViewer shows the past two hours. */
 const BR_AREA = [[49.525, .025], [54.785, 9.96]];
 const inBr = (la, lo) => la > BR_AREA[0][0] + .4 && la < BR_AREA[1][0] - .4 && lo > BR_AREA[0][1] + .4 && lo < BR_AREA[1][1] - .4;
 /* Intensity (0–1) from a pixel in Buienradar's colours: near-white for drizzle, then light to deep blue, red for heavy
@@ -2357,9 +2359,10 @@ function brPrepare(f, layer) {
   img.onerror = () => { f.ready = false; };
   img.src = f.url;
 }
-async function brForecast(after) {
-  const m = await getJSON("https://image.buienradar.nl/2.0/metadata/sprite/RadarMapRainWebmercatorNL?width=1000&height=915&history=0&forecast=12");
-  return (m.times || []).map(t => ({ time: Date.parse(t.timestamp + "Z") / 1000, url: t.url, fut: true, br: true })).filter(f => f.time > after);
+async function brFrames() {
+  const m = await getJSON("https://image.buienradar.nl/2.0/metadata/sprite/RadarMapRainWebmercatorNL?width=1000&height=915&history=12&forecast=12");
+  const now = Date.now() / 1000;
+  return (m.times || []).map(t => { const time = Date.parse(t.timestamp + "Z") / 1000; return { time, url: t.url, fut: time > now, br: true }; });
 }
 const BLANK = "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==";
 
@@ -2423,14 +2426,14 @@ async function initRadar() {
     const past = (j.radar && j.radar.past) || [], fut = (j.radar && j.radar.nowcast) || [];
     const tileUrl = f => `${radarHost}${f.path}/256/{z}/{x}/{y}/2/1_1.png`;
     frames = [...past.map(f => ({ ...f, fut: false })), ...fut.map(f => ({ ...f, fut: true }))];
-    // the next two hours from Buienradar when this place lies inside its forecast area (RainViewer's own nowcast is empty)
-    if (!fut.length && inBr(ll[0], ll[1]) && past.length) { try { frames.push(...await brForecast(past.at(-1).time)); } catch {} }
+    // inside Buienradar's area its past and forecast replace RainViewer altogether: one source for the whole timeline
+    if (inBr(ll[0], ll[1])) { try { const b = await brFrames(); if (b.some(f => !f.fut) && b.some(f => f.fut)) frames = b; } catch {} }
     layers = frames.map(f => f.br ? L.imageOverlay(BLANK, BR_AREA, { opacity: 0, zIndex: 10, interactive: false })
       : new RadarLayer({ url: tileUrl(f), opacity: 0, maxZoom: 12, zIndex: 10 })); // show() puts the ones it needs on the map
     const ticks = () => { $("#rTicks").innerHTML = frames.map((f, i) => `<button class="${f.fut ? "fut" : ""}" data-i="${i}" aria-label="${f.fut ? "Forecast frame" : "Frame"} ${i + 1}"></button>`).join(""); };
     ticks();
     $("#rTicks").onclick = e => { const b = e.target.closest("button"); if (b) { stopLoop(); show(+b.dataset.i); } };
-    show(past.length - 1);
+    show(Math.max(0, frames.findLastIndex(f => !f.fut))); // open on the latest measured frame
   } catch { $("#radarSub").textContent = navigator.onLine ? "Radar is unavailable right now" : "Offline"; }
 }
 function show(i) {
@@ -2442,10 +2445,10 @@ function show(i) {
     if (!near(k)) { if (map.hasLayer(l)) map.removeLayer(l); return; }
     if (!map.hasLayer(l)) l.addTo(map);
     if (frames[k].br) brPrepare(frames[k], l);
-    l.setOpacity(k === fi ? (frames[k].fut ? .62 : .8) : 0); // forecast frames a little fainter: they are an estimate
+    l.setOpacity(k === fi ? .8 : 0); // the same strength either side of now, so the rain doesn't seem to fade at the switch
   });
   [...$("#rTicks").children].forEach((b, k) => b.classList.toggle("cur", k === fi));
-  $("#radarSub").textContent = frames[fi].br ? "Forecast · Buienradar" : ""; // whose forecast you are looking at
+  $("#radarSub").textContent = frames[fi].br ? (frames[fi].fut ? "Forecast · Buienradar" : "Radar · Buienradar") : ""; // whose radar you are looking at
   const t = new Date(frames[fi].time * 1000), mins = Math.round((t - Date.now()) / 6e4);
   $("#rTime").textContent = `${fmtT(t)} ${Math.abs(mins) < 6 && !frames[fi].fut ? "now" : (mins > 0 ? "+" : "") + mins + "m"}`; // a forecast frame always says how far ahead
 }
