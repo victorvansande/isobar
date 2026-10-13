@@ -1913,7 +1913,7 @@ function renderYear() {
     <p class="yr-sub" id="yrSub"></p>
     <div class="yr-chart" id="yrChart" role="slider" tabindex="0" aria-label="Day of the year. Drag or use the arrow keys to see the daylight on another day." aria-valuemin="1" aria-valuemax="${Y.days.length}">
       <canvas id="yrCv" aria-hidden="true"></canvas>
-      <span class="yr-h tm" style="top:25%">06</span><span class="yr-h tm" style="top:50%">12</span><span class="yr-h tm" style="top:75%">18</span>
+      ${[6, 12, 18].map(hr => `<span class="yr-h tm" data-h="${hr}" style="top:${hr / 24 * 100}%"><i></i>${S.clock === "12" ? `${hr % 12 || 12}${hr < 12 ? "am" : "pm"}` : String(hr).padStart(2, "0")}</span>`).join("")}
       ${(Y.days.dst || []).map(c => { const x = (c.i / Y.days.length * 100); return `<span class="yr-dst${x > 55 ? " r" : ""}${c === Y.days.dst[0] ? " up" : ""}" style="left:${x.toFixed(2)}%"><b class="mono">${dm_(c.key)} · ${wallClock(c.from)} → ${wallClock(c.to)}</b></span>`; }).join("")}
       <span class="yr-today" style="left:${((Y.today + .5) / Y.days.length * 100).toFixed(2)}%"></span><span class="yr-sel" id="yrSel"></span></div>
     <div class="yr-axis tm">${["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"].map(m => `<span>${m}</span>`).join("")}</div>`;
@@ -1928,13 +1928,19 @@ function drawYear() {
   const { ctx, w, h } = s, n = Y.days.length, cw = w / n, mix = window.Palette.mix;
   // The sky's colour for the sun's height, as in the sun card: night until −6° (civil dawn), violet twilight up to
   // sunrise, golden light up to 6°, then warming to full day at that day's highest sun, so every day keeps its glow.
+  const skyOf = d => { const peak = Math.max(...d.alt); return a => a <= -6 ? YEAR_COL.night : a <= -.833 ? mix(YEAR_COL.night, YEAR_COL.tw, (a + 6) / 5.167)
+    : a <= 6 ? mix(YEAR_COL.tw, YEAR_COL.gold, (a + .833) / 6.833) : mix(YEAR_COL.gold, YEAR_COL.day, peak > 6 ? (a - 6) / (peak - 6) : 1); };
   Y.days.forEach((d, i) => {
-    const peak = Math.max(...d.alt), g = ctx.createLinearGradient(0, 0, 0, h);
-    const sky = a => a <= -6 ? YEAR_COL.night : a <= -.833 ? mix(YEAR_COL.night, YEAR_COL.tw, (a + 6) / 5.167)
-      : a <= 6 ? mix(YEAR_COL.tw, YEAR_COL.gold, (a + .833) / 6.833) : mix(YEAR_COL.gold, YEAR_COL.day, peak > 6 ? (a - 6) / (peak - 6) : 1);
+    const g = ctx.createLinearGradient(0, 0, 0, h), sky = skyOf(d);
     for (let k = 0; k <= 96; k++) g.addColorStop(k / 96, sky(d.alt[k]));
     ctx.fillStyle = g; ctx.fillRect(Math.floor(i * cw), 0, Math.ceil(cw) + 1, h);
   });
+  // the hour labels on the left edge take dark ink on bright sky and light ink on night, from the colour beneath them
+  const d0 = Y.days[Math.min(n - 1, Math.floor(16 / cw))], sky0 = skyOf(d0);
+  for (const lab of cv.parentElement.querySelectorAll(".yr-h")) {
+    const c = parseInt(sky0(d0.alt[lab.dataset.h * 4]).slice(1), 16), l = ((c >> 16 & 255) * .3 + (c >> 8 & 255) * .59 + (c & 255) * .11) / 255;
+    lab.classList.toggle("dk", l > .55);
+  }
 }
 const hm = mins => dur(mins * 60);
 // a wall-clock time [hours, minutes] in the chosen clock style

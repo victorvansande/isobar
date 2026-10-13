@@ -182,13 +182,15 @@ dialog:focus-visible,.sheet:focus-visible{outline:none} /* opening a sheet focus
 .yr-chart{position:relative;height:190px;border-radius:16px;overflow:hidden;cursor:grab;touch-action:pan-y;-webkit-user-select:none;user-select:none}
 .yr-chart.grab{cursor:grabbing}
 .yr-chart canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
-.yr-chart .yr-h{position:absolute;left:8px;transform:translateY(-50%);color:rgba(255,255,255,.88);text-shadow:0 0 3px rgba(18,10,58,.7),0 0 1px rgba(18,10,58,.6);pointer-events:none}
+.yr-chart .yr-h{position:absolute;left:0;transform:translateY(-50%);display:flex;align-items:center;gap:4px;color:rgba(255,255,255,.8);pointer-events:none} /* no glow: the ink follows the sky beneath (drawYear) */
+.yr-chart .yr-h.dk{color:rgba(18,10,58,.62)}
+.yr-chart .yr-h i{width:6px;height:1.5px;border-radius:1px;background:currentColor} /* the hour's tick on the edge */
 .yr-today,.yr-sel{position:absolute;top:0;bottom:0;width:2px;margin-left:-1px;pointer-events:none}
 .yr-today{background:var(--signal);opacity:.85}
 .yr-sel{background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.18)}
 /* when the clocks change: a faint dotted line at the step, with the date and the wall-clock jump at its foot */
 .yr-dst{position:absolute;top:0;bottom:0;width:0;border-left:1px dotted rgba(255,255,255,.4);pointer-events:none}
-.yr-dst b{position:absolute;bottom:7px;left:6px;white-space:nowrap;font-size:11px;font-weight:500;color:rgba(255,255,255,.72);text-shadow:0 0 3px rgba(18,10,58,.8)}
+.yr-dst b{position:absolute;bottom:7px;left:6px;white-space:nowrap;font-size:11px;font-weight:500;color:rgba(255,255,255,.72)}
 .yr-dst.r b{left:auto;right:6px}
 .yr-dst.up b{bottom:auto;top:7px}
 .yr-axis{display:grid;grid-template-columns:repeat(12,1fr);margin-top:8px;text-align:center}
