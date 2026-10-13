@@ -750,19 +750,23 @@ function drawBead(c, x, y, r) {
   c.fillStyle = "rgba(255,255,255,.92)"; c.beginPath(); c.ellipse(x - r * .34, y - ry * .42, r * .2, r * .12, -.5, 0, PI * 2); c.fill();
   if (r > 3) { c.fillStyle = "rgba(255,255,255,.4)"; c.beginPath(); c.arc(x + r * .3, y + ry * .46, r * .08, 0, PI * 2); c.fill(); }
 }
+/* A tiny droplet on glass, drawn as a little lens: a bright catch-light at the top left, clear in the middle and a
+   soft darker rim at the bottom, with a faint shadow under it. Rounder and softer than a speck. */
+function microDrop(c, x, y, r) {
+  c.fillStyle = "rgba(20,32,90,.07)"; c.beginPath(); c.arc(x, y + r * .3, r, 0, PI * 2); c.fill();
+  const g = c.createRadialGradient(x - r * .35, y - r * .4, r * .08, x, y, r);
+  g.addColorStop(0, "rgba(255,255,255,.85)"); g.addColorStop(.45, "rgba(255,255,255,.16)"); g.addColorStop(1, "rgba(20,32,90,.2)");
+  c.fillStyle = g; c.beginPath(); c.arc(x, y, r, 0, PI * 2); c.fill();
+}
 function startCondensation(cv) {
   condStop();
   const s = sizeCanvas(cv); if (!s) return;
   const { ctx, w, h } = s, dpr = cv.width / w, rnd = prng(31);
   const layer = () => { const c = document.createElement("canvas"); c.width = cv.width; c.height = cv.height; const x = c.getContext("2d"); x.setTransform(dpr, 0, 0, dpr, 0, 0); return [c, x]; };
   const [mist, m] = layer(), [beadC, bc] = layer();
-  // fogged glass: a faint haze made of dense, barely-visible micro-droplets, each a tiny lens (dark above, light below)
+  // fogged glass: a faint haze with scattered micro-droplets, each a tiny lens rather than a speck
   m.fillStyle = "rgba(225,235,255,.05)"; m.fillRect(0, 0, w, h);
-  for (let i = 0; i < w * h / 10; i++) {
-    const x = rnd() * w, y = rnd() * h, r = .3 + rnd() * .5;
-    m.fillStyle = `rgba(0,18,40,${(.05 + rnd() * .07).toFixed(3)})`; m.beginPath(); m.arc(x, y - r * .25, r, 0, PI * 2); m.fill();
-    m.fillStyle = `rgba(255,255,255,${(.06 + rnd() * .1).toFixed(3)})`; m.beginPath(); m.arc(x + r * .2, y + r * .3, r * .5, 0, PI * 2); m.fill();
-  }
+  for (let i = 0; i < w * h / 70; i++) microDrop(m, rnd() * w, rnd() * h, .7 + rnd() * .9);
   const beads = [];
   for (let tries = 0; tries < 900 && beads.length < w * h / 950; tries++) {
     const r = 1.2 + Math.pow(rnd(), 2.4) * 5.6, x = rnd() * w, y = rnd() * h;
@@ -771,7 +775,7 @@ function startCondensation(cv) {
   }
   m.globalCompositeOperation = "destination-out";
   for (const b of beads) { m.beginPath(); m.arc(b.x, b.y, b.r * 1.6, 0, PI * 2); m.fill(); } // beads gather the mist around them
-  const paintBeads = () => { bc.clearRect(0, 0, w, h); for (const b of beads) drawBead(bc, b.x, b.y, b.r); };
+  const paintBeads = () => { bc.clearRect(0, 0, w, h); for (const b of beads) (b.r < 2.2 ? microDrop : drawBead)(bc, b.x, b.y, b.r); }; // the smallest beads as soft little lenses
   paintBeads();
   const frame = run => { ctx.clearRect(0, 0, w, h); ctx.drawImage(mist, 0, 0, w, h); ctx.drawImage(beadC, 0, 0, w, h); if (run) drawBead(ctx, run.x, run.y, run.r); };
   frame();
