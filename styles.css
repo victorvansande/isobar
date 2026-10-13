@@ -28,7 +28,6 @@
   --f-display:"Geist","Helvetica Neue",Helvetica,Arial,sans-serif;
   --f-num:"Urbanist","Helvetica Neue",Helvetica,Arial,sans-serif;
   --f-label:"Isobar Digits","Geist","Helvetica Neue",Helvetica,Arial,sans-serif; /* small labels: Geist letters with the round Urbanist figures */
-  --f-mono:var(--f-label); /* no monospace left: times and axes use the label face, with even-width figures */
   --r-card:30px;
   --grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   color-scheme:dark;
@@ -118,7 +117,7 @@ dialog:focus-visible,.sheet:focus-visible{outline:none} /* opening a sheet focus
 .warn svg{width:12px;height:12px;flex:none;fill:none;stroke:var(--ink-2);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .wx{padding:14px 0;border-top:1px solid rgba(255,255,255,.1)}
 .wx:first-child{border-top:0;padding-top:0}
-.wx h3{display:flex;align-items:center;gap:9px;margin:0 0 4px;font-size:16px;font-weight:650}
+.wx h3{display:flex;align-items:center;gap:9px;margin:0 0 4px;font-size:16px;font-weight:700}
 .wx h3 i{width:9px;height:9px;border-radius:50%;background:var(--wc);flex:none}
 .wx .when{margin:0 0 8px;font:500 12px/1.4 var(--f-label);color:var(--ink-2)}
 .wx p{margin:0 0 8px;font-size:14px;line-height:1.5;color:var(--ink-2)}
@@ -285,8 +284,8 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .tile{background:rgba(255,255,255,.1);border-radius:14px}
 
 .ch{display:grid;gap:0;margin:0 0 10px}
-.ch h3,.ch h2{margin:0;font-weight:650;font-size:17px;letter-spacing:-.02em;line-height:1.15}
-.ch p{margin:0;font-weight:450;font-size:17px;letter-spacing:-.02em;line-height:1.15;color:var(--ink-2)}
+.ch h3,.ch h2{margin:0;font-weight:700;font-size:17px;letter-spacing:-.02em;line-height:1.15}
+.ch p{margin:0;font-weight:500;font-size:17px;letter-spacing:-.02em;line-height:1.15;color:var(--ink-2)}
 .ch-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 .mono{font-family:var(--f-label);font-size:12px;font-weight:500;letter-spacing:-.005em;color:var(--ink-2)}
 /* times on axes: even-width figures, so they line up */
@@ -301,10 +300,10 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .info-i{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;color:var(--ink-2);box-shadow:inset 0 0 0 1px var(--ink-3);flex:none}
 .info-i svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
 .info-i:hover{color:var(--ink)}
-.learn h3{margin:18px 0 4px;font-size:15px;font-weight:650;letter-spacing:-.01em}
+.learn h3{margin:18px 0 4px;font-size:15px;font-weight:700;letter-spacing:-.01em}
 .learn p{margin:0;font-size:14px;line-height:1.55;color:var(--ink-2)}
 .learn .now{padding:12px 14px;border-radius:16px;background:rgba(255,255,255,.07);color:var(--ink)}
-.foot b{color:var(--ink);font-weight:550}
+.foot b{color:var(--ink);font-weight:600}
 /* the wind foot: gusts and the Beaufort name each stay whole, and drop under each other on a narrow card */
 .a-wind .foot{flex-wrap:wrap;row-gap:2px;padding-top:6px} /* a little air between the compass and the line under it */
 .a-wind .foot span{white-space:nowrap}
@@ -364,7 +363,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .hero-foot .r{text-align:right}
 
 /* ---------- rain next hours (glass) ---------- */
-.now-say{font-weight:650;font-size:clamp(20px,2.3vw,26px);letter-spacing:-.03em;line-height:1.1;margin:2px 0 14px;max-width:24ch;text-wrap:balance}
+.now-say{font-weight:700;font-size:clamp(20px,2.3vw,26px);letter-spacing:-.03em;line-height:1.1;margin:2px 0 14px;max-width:24ch;text-wrap:balance}
 .now-chart svg{width:100%;height:auto;display:block;overflow:visible}
 .now-chart .wet{transform-box:fill-box;transform-origin:center;animation:fillin .6s cubic-bezier(.2,.7,.2,1) var(--d) both}
 .now-chart .wet.top{animation:fillin .6s cubic-bezier(.2,.7,.2,1) var(--d) both,land var(--p) ease-out var(--w2) infinite}
@@ -389,7 +388,6 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .ftrack .tick{position:absolute;top:15px;width:2px;height:16px;margin-left:-1px;background:#fff;border-radius:2px;opacity:.8} /* centred on the dot row (y 23) */
 .ftrack .tri{top:12px;height:22px;width:5px;margin-left:-2.5px;border-radius:3px} /* the needle crosses the dot row, centred on its dot */
 .ftrack .lab{position:absolute;top:36px;transform:translateX(-50%);font:500 12px/1 var(--f-label);white-space:nowrap;color:var(--ink-2)}
-.feels-why{font-size:13px;color:var(--ink-2);margin:auto 0 0;max-width:30ch}
 
 /* ---------- hourly (glass) ---------- */
 .a-hourly{min-height:0;padding:18px 0 14px}
@@ -402,10 +400,10 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .hin{position:relative;display:grid;padding-top:30px}
 /* sun and moon track: sunlight turning to night and back at the real sunset and sunrise */
 .htrack{position:absolute;left:0;top:6px;height:4px;border-radius:4px}
-.hev{position:absolute;top:14px;transform:translateX(-50%);display:flex;align-items:center;gap:4px;font:500 11px/1 var(--f-mono);font-variant-numeric:tabular-nums;color:var(--ink-2);white-space:nowrap}
+.hev{position:absolute;top:14px;transform:translateX(-50%);display:flex;align-items:center;gap:4px;font:500 11px/1 var(--f-label);font-variant-numeric:tabular-nums;color:var(--ink-2);white-space:nowrap}
 .hev svg{width:15px;height:12px;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
 .hcol{display:grid;grid-template-rows:22px 32px 78px 46px 10px;justify-items:center;align-items:center;padding:6px 0 4px}
-.htime{font:500 11px/1 var(--f-mono);font-variant-numeric:tabular-nums;color:var(--ink-2);white-space:nowrap}
+.htime{font:500 11px/1 var(--f-label);font-variant-numeric:tabular-nums;color:var(--ink-2);white-space:nowrap}
 .htime.now{background:var(--signal);color:var(--signal-ink);padding:5px 8px;border-radius:999px}
 .htime.mid{color:var(--ink);font-weight:600}
 .hpop{display:grid;justify-items:center;gap:4px;align-self:end}
@@ -447,8 +445,6 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 
 /* ---------- 14-day deck ---------- */
 .a-days{display:flex;flex-direction:column;min-width:0}
-.deck-h{display:flex;justify-content:space-between;align-items:flex-end;padding:4px 6px 12px}
-.deck-h .ch{margin:0}
 .deck{display:flex;flex-direction:column;flex:1}
 /* calm rows: the temperature colour lives in the low–high bar and the high, not the card */
 .day{position:relative;border-radius:26px;overflow:hidden;isolation:isolate;--ink:#fff;--ink-2:rgba(255,255,255,.6);--ink-3:rgba(255,255,255,.32);color:#fff;
@@ -483,7 +479,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 @keyframes flash{0%,91%,93.5%,95.5%,100%{background:transparent}92%{background:rgba(255,255,255,.2)}94.5%{background:rgba(255,255,255,.1)}}
 .day-h{width:100%;display:grid;grid-template-columns:minmax(0,1.3fr) 28px 40px minmax(0,2.2fr);align-items:center;gap:10px;padding:14px 18px 34px;text-align:left}
 .dn{display:flex;gap:7px;align-items:baseline;min-width:0;white-space:nowrap}
-.dn b{font-weight:650;font-size:17px;letter-spacing:-.02em}
+.dn b{font-weight:700;font-size:17px;letter-spacing:-.02em}
 .dn i{font-style:normal;font-weight:600;font-size:14px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis}
 .dp{font:500 12px/1 var(--f-label);color:var(--ink-2);text-align:right}
 .dr{display:grid;grid-template-columns:30px 1fr 30px;align-items:center;gap:8px}
@@ -684,13 +680,13 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 #radarMap img.leaflet-tile{mix-blend-mode:normal;width:256.5px!important;height:256.5px!important}
 :root[data-mode="day"] #radarMap{background:#efefef}
 @supports (corner-shape:squircle){#radarMap{border-radius:48px;corner-shape:squircle}}
-.leaflet-container{font:11px var(--f-mono)}
+.leaflet-container{font:11px var(--f-label)}
 /* map labels in the app's own type */
 .mlab{pointer-events:none}
 .mlab i{position:absolute;left:-2.5px;top:-2.5px;width:5px;height:5px;border-radius:50%;background:var(--ink);opacity:.5}
 .mlab span{position:absolute;left:8px;top:-7px;white-space:nowrap;font:500 11.5px/1 var(--f-display);letter-spacing:-.01em;color:var(--ink-2);text-shadow:0 0 6px var(--bg),0 0 2px var(--bg)}
 .mlab.here i{display:none}
-.mlab.here span{left:12px;top:-8px;font-weight:650;font-size:13px;color:var(--ink)}
+.mlab.here span{left:12px;top:-8px;font-weight:700;font-size:13px;color:var(--ink)}
 .rbar{position:absolute;z-index:500;left:16px;right:16px;bottom:24px;display:flex;align-items:center;gap:12px;padding:7px 14px 7px 7px;border-radius:999px}
 .rbar .round{width:34px;height:34px}
 .rbar .round svg{fill:#fff;stroke:none}
@@ -701,7 +697,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .rticks button::after{content:"";position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:rgba(255,255,255,.34);transition:transform .2s,background .2s}
 .rticks button.cur::after{background:var(--signal);transform:scale(1.75)}
 .rticks button.fut::after{background:rgba(143,176,255,.62)}
-.rtime{font:500 11px/1 var(--f-mono);font-variant-numeric:tabular-nums;min-width:70px;text-align:right}
+.rtime{font:500 11px/1 var(--f-label);font-variant-numeric:tabular-nums;min-width:70px;text-align:right}
 .zoomer{position:absolute;z-index:500;right:16px;top:16px;display:grid;gap:6px}
 .ch.lens.dark h3{color:#fff}.ch.lens.dark p{color:rgba(255,255,255,.65)}
 
@@ -722,7 +718,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .dock{position:fixed;left:50%;bottom:var(--dock-b);transform:translateX(-50%);z-index:1000;display:flex;gap:8px;align-items:center;padding:7px;border-radius:999px;color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12),0 18px 40px -16px rgba(0,0,0,.45)}
 .dock .round{width:48px;height:48px;background:rgba(255,255,255,.1)}
 .dock .round svg{width:20px;height:20px}
-.pill{height:48px;min-width:128px;padding:0 22px;border-radius:999px;display:flex;align-items:center;justify-content:center;gap:9px;font-weight:650;font-size:14px;letter-spacing:-.01em;color:var(--signal-ink);
+.pill{height:48px;min-width:128px;padding:0 22px;border-radius:999px;display:flex;align-items:center;justify-content:center;gap:9px;font-weight:700;font-size:14px;letter-spacing:-.01em;color:var(--signal-ink);
   background:var(--signal)}
 .pill svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2.1;stroke-linecap:round}
 /* page dots under "Places" when there are several places to swipe between */
@@ -736,13 +732,13 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .topbar.show{transform:translate(-50%,0)}
 .topbar .ic{width:22px;height:22px}
 .topbar .lift .ic{transform:translateY(3.2px)}
-.topbar b{font-weight:650;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar b{font-weight:700;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .topbar span{font:300 20px/1 var(--f-num)}
 /* the temperature in dot-matrix, as on the main card, at the clock's size */
 .topbar #tbTemp{display:flex;align-items:center}
 .topbar #tbTemp .dm{height:17px}
 /* the local time in the top bar: small and quiet, after a hairline */
-.topbar .tb-time{font:500 12px/1 var(--f-mono);font-variant-numeric:tabular-nums;color:rgba(255,255,255,.58);padding-left:10px;border-left:1px solid rgba(255,255,255,.18);white-space:nowrap}
+.topbar .tb-time{font:500 12px/1 var(--f-label);font-variant-numeric:tabular-nums;color:rgba(255,255,255,.58);padding-left:10px;border-left:1px solid rgba(255,255,255,.18);white-space:nowrap}
 
 /* ---------- sheets ---------- */
 dialog{border:0;padding:0;background:transparent;color:#fff;max-width:none;max-height:none;width:100%;height:100%;margin:0;overflow:visible}
@@ -820,7 +816,7 @@ body.net-off .toast{bottom:calc(122px + var(--dock-b))}
   .day-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
   .top{margin-bottom:16px}
   .summary{margin-top:0} /* the same breathing room above and below the summary */
-  .chip,.hnote{display:none}
+  .chip{display:none}
   .place .sub{white-space:normal;font-size:15px}
   .vis{margin:auto -16px -18px}
 }
@@ -944,7 +940,7 @@ html.wall .a-moon .strip canvas{height:46px}
 .swpeek.r{right:12px;text-align:right;transform:translateX(8px)}
 .swpeek.l{left:12px;transform:translateX(-8px)}
 .swpeek.ready{background:var(--signal);transform:none;box-shadow:none}
-.swpeek b{font-weight:650;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.swpeek b{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .swpeek small{font:500 12px/1 var(--f-label);color:rgba(255,255,255,.7)}
 .swpeek.r b::after{content:" ›"}
 .swpeek.l b::before{content:"‹ "}

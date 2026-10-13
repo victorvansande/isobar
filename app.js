@@ -4,10 +4,9 @@
 const $ = (s, r = document) => r.querySelector(s);
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-const cap1 = s => s ? s[0].toUpperCase() + s.slice(1) : s;
 const R = v => (v == null || isNaN(v)) ? "–" : Math.round(v);
 const nz = v => v == null || isNaN(v) ? null : v;
-const { FAM, weatherPal, heroPal, lum, paint } = window.Palette;
+const { FAM, heroPal, lum, paint } = window.Palette;
 
 /* The dock's refraction uses an SVG filter inside backdrop-filter, which only Chromium renders. */
 if (navigator.userAgentData && navigator.userAgentData.brands.some(b => /Chromium/.test(b.brand))) document.documentElement.classList.add("lq");
@@ -74,9 +73,7 @@ const fmtP = v => v == null ? "–" : (S.precip === "inch" ? v.toFixed(2) : (v <
 const BFT = [[0.5, "Calm"], [1.6, "Light air"], [3.4, "Light breeze"], [5.5, "Gentle breeze"], [8, "Moderate breeze"], [10.8, "Fresh breeze"], [13.9, "Strong breeze"], [17.2, "Near gale"], [20.8, "Gale"], [24.5, "Strong gale"], [28.5, "Storm"], [32.7, "Violent storm"], [1e9, "Hurricane force"]];
 const beaufort = ms => { const i = BFT.findIndex(b => ms < b[0]); return [i, BFT[i][1]]; };
 const PTS = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
-const PTS8 = ["north", "northeast", "east", "southeast", "south", "southwest", "west", "northwest"];
 const pt16 = d => PTS[Math.round(d / 22.5) % 16];
-const pt8 = d => PTS8[Math.round(d / 45) % 8];
 
 /* ---------------- weather codes ---------------- */
 const WMO = {0:["Clear","clear"],1:["Mostly clear","clear"],2:["Partly cloudy","partly"],3:["Overcast","cloudy"],45:["Fog","fog"],48:["Freezing fog","fog"],

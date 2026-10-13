@@ -51,24 +51,6 @@
     }
     return { ...FAM[TEMP.at(-1)[1]] };
   }
-  /* Weather keeps the temperature hue on the rim and changes the core. */
-  const COND = {
-    cloudy:  { core: ["#0e0c22", .45], mid: ["#5546b8", .24], hi: ["#d6d0f5", .25], acc: ["#5a5fb0", .25] },
-    fog:     { core: ["#1d1828", .55], mid: ["#7d7398", .48], hi: ["#efe7f7", .5], acc: ["#a99cc4", .4] },
-    rain:    { core: ["#06083a", .6], mid: ["#3a2cf0", .42], hi: ["#86a8ff", .4], acc: ["#00a8ff", .35] },
-    drizzle: { core: ["#06083a", .5], mid: ["#3a2cf0", .32], hi: ["#86a8ff", .3], acc: ["#00a8ff", .3] },
-    snow:    { core: ["#0a1650", .5], mid: ["#5d7cff", .35], hi: ["#ffffff", .6], acc: ["#9fe8ff", .4] },
-    sleet:   { core: ["#0a1650", .5], mid: ["#4a5cf0", .4], hi: ["#dfe8ff", .5], acc: ["#9fe8ff", .4] },
-    thunder: { core: ["#0e0228", .6], mid: ["#5b17d6", .5], hi: ["#ff5fd0", .35], acc: [SIGNAL, .85] },
-    partly:  { hi: ["#ffffff", .12] }
-  };
-  const NIGHT = { core: ["#03030f", .55], mid: ["#191a66", .42], hi: ["#7a7fe0", .35], acc: ["#3b2a9a", .3] };
-  function weatherPal(tC, kind, isDay = true) {
-    let p = tempFam(tC);
-    if (COND[kind]) p = shift(p, COND[kind]);
-    if (!isDay) p = shift(p, NIGHT);
-    return p;
-  }
   /* The main card is the sky outside: its colour follows the sun's height (deep night blue, violet twilight, a golden
      low sun, soft morning blue, clear noon blue), the weather greys or darkens it, and the temperature tints it:
      the glows warm towards orange on a hot day and cool towards ice on a cold one. */
@@ -130,5 +112,5 @@
   // skips the work when the colours are unchanged (scrubbers call this on every frame; a repaint of a blurred card is costly)
   function paint(el, p) { const key = ROLES.map(k => p[k]).join(); if (el._pal === key) return; el._pal = key; for (const k of ROLES) el.style.setProperty("--" + k, p[k]); }
 
-  window.Palette = { FAM, TEMP, ROLES, SIGNAL, mix, tempFam, weatherPal, skyPal, heroPal, lum, paint };
+  window.Palette = { FAM, TEMP, ROLES, SIGNAL, mix, tempFam, skyPal, heroPal, lum, paint };
 })();
