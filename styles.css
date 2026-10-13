@@ -326,9 +326,9 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .hero .ch h3,.hero .ch p{font-size:20px}
 .hero-upd{position:absolute;top:24px;right:var(--pad-x)}
 /* the moon after dark, apart from the arc: small, with its phase, in the corner of the sky */
-.hero-moon{position:absolute;top:18px;right:var(--pad-x);width:34px;display:flex;flex-direction:column;align-items:center;gap:4px;color:#f3f1ff;filter:drop-shadow(0 0 6px rgba(225,225,255,.45))}
+.hero-moon{position:absolute;top:18px;right:var(--pad-x);display:flex;flex-direction:row-reverse;align-items:center;gap:8px;color:#f3f1ff;filter:drop-shadow(0 0 6px rgba(225,225,255,.45))}
 .hero-moon svg{display:block;width:34px;height:34px}
-/* under the moon: a horizon line with an arrow, up while the moon is above the horizon, down while it is below */
+/* beside the moon, to its left: a horizon line with an arrow, up while the moon is above the horizon, down while it is below */
 .hero-moon .hm-ind{width:12px;height:10px;fill:none;stroke:currentColor;stroke-width:1.2;stroke-linecap:round;stroke-linejoin:round;opacity:.55}
 .hero.light .hero-moon{color:#2f3560;filter:none} /* on a pale sky (snow, fog) the moon is drawn dark */
 .hero-upd:not([hidden]) + .hero-moon{top:46px}
@@ -341,8 +341,6 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .arc-in{position:relative;touch-action:pan-y;border-radius:16px}
 .arc-in[role="slider"]{cursor:grab}
 .arc-in.grab{cursor:grabbing}
-.sun-dot circle:first-child{transition:r .2s}
-.arc-in:hover .sun-dot circle:first-child,.arc-in.grab .sun-dot circle:first-child,.arc-in:focus-visible .sun-dot circle:first-child{r:12}
 .hero-now{position:absolute;top:18px;right:var(--pad-x);padding:8px 12px;border-radius:999px;font:600 12px/1 var(--f-display);letter-spacing:0;background:var(--signal);color:var(--signal-ink)}
 .pig.hero{transition:background-color .5s}
 .arc svg{width:100%;height:auto;display:block;overflow:visible}
