@@ -626,7 +626,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 :root:not([data-mode="day"]) .a-vis{--v-near:#cfcbe4;--v-far:#4d5680;--v-haze:#3b3a52;--v-sky:#24418c}
 .vis-sky{position:absolute;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(180deg,color-mix(in oklab,var(--v-sky) var(--clear),var(--v-haze)) 0%,transparent 70%);opacity:var(--skyA)}
 .vis-fog{position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(180deg,transparent 35%,var(--v-haze) 100%);opacity:var(--fogA)}
-.vis-say{margin:8px 0 0;font-size:13px;color:var(--ink-2);max-width:26ch}
+.vis-say{margin:8px 0 0;font-size:13px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis} /* always one line */
 .vis svg{width:100%;height:84px;display:block}
 .vis path{animation:ridgeflow var(--t) linear var(--dl) infinite,ridgebob var(--b) ease-in-out var(--dl) infinite alternate}
 @keyframes ridgeflow{to{transform:translateX(-240px)}}

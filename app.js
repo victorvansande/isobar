@@ -1974,8 +1974,16 @@ function renderVis() {
   // clarity 0 (thick fog, under 0.5 km) to 1 (30 km and more): how blue the sky is and how much haze hangs over it all
   const clear = km == null ? .5 : clamp((lg(km) - lg(.5)) / (lg(30) - lg(.5)), 0, 1);
   const fmtD = d => imperial ? `${Math.round(d / 1.609 * 10) / 10} mi` : `${d} km`;
-  // plain words about the distance; the hills are only the picture
-  const say = km == null ? "" : km < 1 ? `Fog: you can see less than ${fmtD(1)}` : `You can see about ${fmtD(km >= 10 ? Math.round(km) : Math.round(km * 10) / 10)}`;
+  // one short line the number above doesn't say: where visibility is heading over the next 12 hours (hourly forecast)
+  const toKm = v => v == null ? null : unitFt ? v * 0.0003048 : v / 1000, nice = d => fmtD(d >= 10 ? Math.round(d) : Math.round(d * 10) / 10);
+  const next = []; for (let k = hi + 1; k <= hi + 12 && k < H.time.length; k++) { const v = toKm(H.visibility[k]); if (v != null) next.push([v, T(H.time[k])]); }
+  let say = "";
+  if (km != null && next.length) {
+    const fog = km >= 1 && next.find(([v]) => v < 1), clearing = km < 1 && next.find(([v]) => v >= 2);
+    const lo = next.reduce((m, x) => x[0] < m[0] ? x : m), hiV = next.reduce((m, x) => x[0] > m[0] ? x : m);
+    say = fog ? `Fog likely by ${fmtT(fog[1])}` : clearing ? `Clearing by ${fmtT(clearing[1])}`
+      : lo[0] < km * .6 ? `Down to ${nice(lo[0])} by ${fmtT(lo[1])}` : hiV[0] > km * 1.6 && km < 20 ? `Up to ${nice(hiV[0])} by ${fmtT(hiV[1])}` : "Steady for the next 12 h";
+  }
   el.innerHTML = `<span class="vis-sky" aria-hidden="true" style="--clear:${Math.round(clear * 100)}%;--skyA:${(.35 + .4 * clear).toFixed(2)}"></span>
     <span class="vis-fog" aria-hidden="true" style="--fogA:${((1 - clear) * .75).toFixed(2)}"></span>
     ${head("Visibility", lab)}
