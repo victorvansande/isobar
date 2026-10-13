@@ -1170,25 +1170,24 @@ function renderWind() {
 function renderFeels() {
   const { c } = X, el = card("c-feels");
   const t = c.temperature_2m, f = c.apparent_temperature;
-  const diff = f - t, dC = toC(f) - toC(t), ms = toMs(c.wind_speed_10m ?? 0);
+  // everything works from the whole degrees the card shows, so the words, the number and the dots always agree
+  const rt = R(t), rf = R(f), ms = toMs(c.wind_speed_10m ?? 0);
   let why, sub;
   // only causes the numbers can back up: wind cools, humid warmth warms, the sun warms by day under an open sky
-  const d = Math.abs(Math.round(diff));
+  const d = Math.abs(rf - rt);
   // the difference itself is the subtitle, with its cause in a word when the numbers back one up
-  if (Math.abs(dC) < 1.5) { sub = "Same"; why = "It feels about as warm as the thermometer says."; }
-  else if (dC < 0) { sub = `${d}° colder${ms > 3 ? " · wind" : ""}`; why = ms > 3 ? `Wind makes it feel ${d}° colder than measured.` : `Feels ${d}° colder than measured.`; }
+  if (!d) { sub = "Same"; why = "It feels about as warm as the thermometer says."; }
+  else if (rf < rt) { sub = `${d}° colder${ms > 3 ? " · wind" : ""}`; why = ms > 3 ? `Wind makes it feel ${d}° colder than measured.` : `Feels ${d}° colder than measured.`; }
   else { const humid = (c.relative_humidity_2m ?? 0) > 55 && toC(t) >= 20, sun = c.is_day && (c.cloud_cover ?? 100) < 50;
     sub = `${d}° warmer${humid ? " · humid" : sun ? " · sun" : ""}`; why = (c.relative_humidity_2m ?? 0) > 55 && toC(t) >= 20 ? `Humidity makes it feel ${d}° warmer.` : c.is_day && (c.cloud_cover ?? 100) < 50 ? `Sunshine and still air make it feel ${d}° warmer.` : `Feels ${d}° warmer than measured.`; }
-  const lo = Math.min(t, f) - 6, hi = Math.max(t, f) + 6, P = v => ((v - lo) / (hi - lo) * 100).toFixed(1);
-  // when it feels the same as the thermometer (to the degree), the marker sits right on it with no gap to fill
-  const same = R(f) === R(t);
+  const same = !d; // the same to the degree: the needle sits right on the thermometer mark
   // one line nothing else says: how cold and how warm today feels at its extremes (from the hourly feels-like)
   const ft = X.H.time.map((s, k) => s.startsWith(X.todayKey) ? X.H.apparent_temperature[k] : null).filter(v => v != null);
   const range = ft.length ? `<div class="foot"><span>Today feels <b>${R(Math.min(...ft))}°</b> to <b>${R(Math.max(...ft))}°</b></span></div>` : "";
-  // the scale as a row of dots; the thermometer mark and the needle both sit exactly on a dot, and the dots between
-  // them light up
-  const N = 25, at = v => clamp(Math.round(+P(v) / 100 * (N - 1)), 0, N - 1), pos = k => (k / (N - 1) * 100).toFixed(2);
-  const ti = at(t), fi = same ? ti : at(f), k0 = Math.min(ti, fi), k1 = Math.max(ti, fi);
+  // the scale as a row of dots, one dot per degree, centred on the pair; the thermometer mark and the needle each sit
+  // on their own degree's dot, and the dots between them light up
+  const N = 25, lo = Math.round((rt + rf) / 2) - 12, at = v => clamp(v - lo, 0, N - 1), pos = k => (k / (N - 1) * 100).toFixed(2);
+  const ti = at(rt), fi = at(rf), k0 = Math.min(ti, fi), k1 = Math.max(ti, fi);
   let fdots = ""; for (let k = 0; k < N; k++) fdots += `<i${!same && k >= k0 && k <= k1 ? ' class="on"' : ""}></i>`;
   el.innerHTML = `${head("Feels like", sub)}
     <div class="num big">${R(f)}°</div>
