@@ -63,4 +63,7 @@ know (decisions, preferences, open choices), and push it along.**
 - Follow me: on launch and after 10+ min away the app checks your location (only once location was allowed; never
   asks by itself) and moves there when >3 km from the place on screen, to a saved place within 3 km if there is one.
   Not verified on an iPhone: iOS may keep asking for location in the home-screen app.
+- "Looks AI-made" (a colleague, 2026-10-14): proposed one calm card colour (colour only on main/sun/moon), dot-matrix
+  numerals only on the main card and top bar, raspberry only for "now"/warnings, fewer dot motifs, a warmer font
+  last. Mockups shown; Victor: not now. Don't redo unasked.
 - Saved for later, don't build unasked: a Vestaboard-style split-flap text effect (letters cycling until they land).
