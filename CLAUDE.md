@@ -49,4 +49,6 @@ know (decisions, preferences, open choices), and push it along.**
   when it rains, or all three; Victor said "leave it for now"); the night arc drawn below the horizon (audit point);
   hourly wind in the 48-hour strip; morning golden hour on the sun card; METAR-based correction of "now" cloud cover;
   hiding olive pollen north of the Alps.
+- Places sheet: a "Current location" row under the search field does the same as the dock's location button
+  (closes the sheet, then locates).
 - Saved for later, don't build unasked: a Vestaboard-style split-flap text effect (letters cycling until they land).

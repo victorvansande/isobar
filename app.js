@@ -2967,6 +2967,8 @@ $("#locBtn").onclick = async () => {
   catch (e) { toast(e.message); }
   finally { $("#locBtn").classList.remove("spin"); }
 };
+// the same from inside the places sheet: it closes at once and the dock button shows the search
+$("#useLoc").onclick = () => { dlgP.close(); $("#locBtn").click(); };
 $("#refreshBtn").onclick = () => load(place);
 $("#topbar").onclick = () => scrollTo({ top: 0, behavior: "smooth" });
 

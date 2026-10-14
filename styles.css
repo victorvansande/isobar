@@ -810,6 +810,10 @@ dialog::backdrop{background:rgba(6,4,20,.4);-webkit-backdrop-filter:blur(8px);ba
 .row:hover,.row:focus-visible{background:var(--wash)}
 .row b{font-weight:600;display:block}
 .row span{font-size:13px;color:var(--ink-2)}
+.row.here{margin-top:8px;justify-content:flex-start}
+.here-l{display:flex;align-items:center;gap:12px}
+.here-l svg{width:18px;height:18px;stroke:var(--ink);fill:none;stroke-width:2;stroke-linecap:round;flex:none}
+.here-l b{color:var(--ink);font-size:15px}
 .prow{position:relative}
 .prow .row:not(:last-child){padding-right:48px} /* room for the remove button */
 .prow .x{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--ink-2);padding:6px;border-radius:50%}
