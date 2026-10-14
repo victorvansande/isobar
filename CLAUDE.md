@@ -60,4 +60,7 @@ know (decisions, preferences, open choices), and push it along.**
 - Loading: the cards draw as soon as the forecast is in; air quality (air and pollen cards keep their skeleton
   meanwhile) and the four-model spread fill in after. Still open: a first-ever visit waits for the location prompt
   (up to 12 s) before it fetches anything.
+- Follow me: on launch and after 10+ min away the app checks your location (only once location was allowed; never
+  asks by itself) and moves there when >3 km from the place on screen, to a saved place within 3 km if there is one.
+  Not verified on an iPhone: iOS may keep asking for location in the home-screen app.
 - Saved for later, don't build unasked: a Vestaboard-style split-flap text effect (letters cycling until they land).

@@ -446,12 +446,12 @@ async function reverse(lat, lon) {
   } catch {}
   return { name, sub, lat: +lat.toFixed(4), lon: +lon.toFixed(4), gps: true };
 }
-function geolocate() {
+function geolocate(maxAge = 600000) { // maxAge: how old a known position may be, in ms
   return new Promise((res, rej) => {
     if (!navigator.geolocation) return rej(new Error("This browser can't share its location. Search for a place instead."));
-    navigator.geolocation.getCurrentPosition(p => res(p.coords),
-      e => rej(new Error(e.code === 1 ? "Location access is blocked. Allow it in your browser, or search for a place." : "Couldn't get your location. Search for a place instead.")),
-      { timeout: 12000, maximumAge: 600000 });
+    navigator.geolocation.getCurrentPosition(p => { store.set("locOK", true); res(p.coords); },
+      e => { if (e.code === 1) store.set("locOK", false); rej(new Error(e.code === 1 ? "Location access is blocked. Allow it in your browser, or search for a place." : "Couldn't get your location. Search for a place instead.")); },
+      { timeout: 12000, maximumAge: maxAge });
   });
 }
 async function guessPlace() {
@@ -3107,19 +3107,32 @@ window.addEventListener("resize", () => {
 const tb = $("#topbar");
 let tbOn = null; // touch the top bar only when it actually shows or hides, not on every scroll event
 window.addEventListener("scroll", () => { if (lockY != null) return; const on = scrollY > 160 && !!D; if (on === tbOn) return; tbOn = on; tb.classList.toggle("show", on); tb.setAttribute("aria-hidden", String(!on)); }, { passive: true });
-document.addEventListener("visibilitychange", () => { if (!document.hidden && place && Date.now() - fetchedAt > 10 * 6e4) { load(place, { quiet: true }); followMe(); } });
+let hiddenAt = 0;
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) { hiddenAt = Date.now(); return; }
+  const away = hiddenAt && Date.now() - hiddenAt > 10 * 6e4;
+  if (place && Date.now() - fetchedAt > 10 * 6e4) load(place, { quiet: true });
+  if (away) followMe(); // back after a while: maybe somewhere else now
+});
 
-/* A place found by location follows you: on launch and on coming back to the app, if location is already allowed,
-   check where you are now and move along when you're more than 3 km away. Never asks for permission by itself. */
+/* The app opens where you are: on launch, and on coming back after 10 minutes or more away, it checks your location
+   and moves there when you're more than 3 km from the place on screen; near a saved place it shows that one, by its
+   own name. Only once location has been allowed (here, or before in this app): it never asks out of the blue. While
+   you use the app, a place you picked yourself stays. */
 async function followMe() {
-  if (!place || !place.gps || !navigator.onLine || !navigator.permissions) return;
-  try { if ((await navigator.permissions.query({ name: "geolocation" })).state !== "granted") return; } catch { return; }
+  if (!place || !navigator.onLine || !navigator.geolocation) return;
+  let state = "prompt";
+  try { state = (await navigator.permissions.query({ name: "geolocation" })).state; } catch {}
+  if (state === "denied" || (state !== "granted" && !store.get("locOK", false))) return;
   try {
-    const c = await geolocate();
-    const km = Math.hypot((c.latitude - place.lat) * 111, (c.longitude - place.lon) * 111 * cos(c.latitude * rad));
-    if (km < 3) return;
+    const c = await geolocate(60000); // fresh: a position from before you set off would put you back home
+    const km = (a, b) => Math.hypot((a.lat - b.lat) * 111, (a.lon - b.lon) * 111 * cos(a.lat * rad));
+    const here = { lat: c.latitude, lon: c.longitude };
+    if (km(here, place) < 3) return;
+    const near = saved.map(s => [s, km(here, s)]).filter(([, d]) => d < 3).sort((a, b) => a[1] - b[1])[0];
+    const to = near ? near[0] : await reverse(c.latitude, c.longitude);
     while (loading) await new Promise(r => setTimeout(r, 200));
-    load(await reverse(c.latitude, c.longitude), { quiet: true });
+    load(to, { quiet: true });
   } catch {}
 }
 
