@@ -62,6 +62,12 @@ What Kwick feels like, as a touchstone for anything new: does it look like it wa
 
 10. **One inset for every card**: `--pad-x` (20 px, 16 px on phones) left and right; the card's own padding top and
     bottom. A card whose content runs edge to edge (the hours strip) gives its header and foot that same inset.
+10a. **A card's content grows with the card, not the screen.** Cards are made for a phone (a half-width card is
+    about 180 px). Wider than a phone (601 px and up), each card gets a factor --k from its own width (width / 180 px,
+    1 to 1.35) and its readings and pictures use it: the big numbers, compass, gauges, dot-matrix figures, the rain
+    chart. Titles and small text keep the type scale. Phones and the wall view stay at 1, exactly as designed. Between
+    761 and 1000 px the board has three columns, so no card gets twice the width its content was made for. Anything
+    new that should fill a wider card uses `calc(size * var(--k,1))`.
 11. **One gap between cards**: 14 px (10 px on phones).
 12. **Controls line up with the text**: a switch or button in a card sits on the same inset as the title.
     The main card follows the same inset; corner controls (Back to now, the moon) line up on it.

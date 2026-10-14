@@ -470,6 +470,12 @@ const wholeParts = list => list.map(x => `<span class="part">${esc(x)}</span>`).
 const head = (t, s) => `<header class="ch"><h3>${esc(t)}</h3><p>${esc(s)}</p></header>`;
 /* A card's title and subtitle are always one line (rule 8): when one doesn't fit (a narrow phone), it shrinks a little
    until it does, down to 13 px. Run after the cards are drawn and when the window changes size. */
+/* Wider than a phone, each card's readings and pictures grow with the card: --k is its width over 180 px (a phone's half-width card, what the content was made for), from 1 to
+   1.35 (styles.css uses it from 601 px up). Phones and the wall view keep 1, exactly as they were designed. */
+if ("ResizeObserver" in window) {
+  const ro = new ResizeObserver(es => { for (const e of es) { const el = e.target, k = innerWidth > 600 && !document.documentElement.classList.contains("wall") ? clamp(el.offsetWidth / 180, 1, 1.35) : 1; el.style.setProperty("--k", k.toFixed(3)); } });
+  document.querySelectorAll("#board > .card").forEach(c => ro.observe(c));
+}
 function fitHeads() {
   for (const p of document.querySelectorAll(".card .ch h3, .card .ch p")) {
     p.style.fontSize = "";

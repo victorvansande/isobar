@@ -160,6 +160,24 @@ dialog:focus-visible,.sheet:focus-visible{outline:none} /* opening a sheet focus
   .board{grid-template-columns:repeat(2,minmax(0,1fr));
    grid-template-areas:"hero hero" "now now" "hourly hourly" "radar radar" "wind feels" "rain uv" "humid press" "air air" "pollen pollen" "vis clouds" "sun sun" "moon moon" "src src";}
 }
+/* Between a phone and a desktop three columns, so a card never gets twice as wide as its content was made for (two
+   columns made cards ~470 px at 1000 px), and the step to four columns at 1001 px stays small. */
+@media (min-width:761px) and (max-width:1000px){
+  .board{grid-template-columns:repeat(3,minmax(0,1fr));
+   grid-template-areas:"hero hero wind" "hero hero feels" "now now now" "hourly hourly hourly" "radar radar rain" "radar radar uv" "humid press vis" "air air clouds" "pollen pollen pollen" "sun sun sun" "moon moon moon" "src src src";}
+}
+/* On screens wider than a phone a card's readings and pictures grow with the card (--k, set per card from its own
+   width over a phone card's 180 px, 1 up to 1.35), so a wider card fills like it does on a phone. Titles and small text keep the
+   type scale. Phones (600 px and less) are left exactly as they are. */
+@media (min-width:601px){
+  .board .big{font-size:calc(48px * var(--k,1))}
+  .board .compass{width:min(100%,calc(200px * var(--k,1)))}
+  .board .compass-c .dm{height:calc(42px * var(--k,1))}
+  .board .gauge-v .dm{height:calc(40px * var(--k,1))}
+  .board .dial{width:min(100%,calc(190px * var(--k,1)))}
+  .board .dial-v .dm{height:min(calc(27px * var(--k,1)),15cqw)}
+  .board .spark svg{height:calc(42px * var(--k,1))}
+}
 .a-hero{grid-area:hero}.a-now{grid-area:now}.a-wind{grid-area:wind}.a-feels{grid-area:feels}.a-hourly{grid-area:hourly}
 .a-days{grid-area:days}.a-uv{grid-area:uv}.a-humid{grid-area:humid}.a-air{grid-area:air}.a-moon{grid-area:moon}
 .a-radar{grid-area:radar}.a-sun{grid-area:sun}.a-press{grid-area:press}.a-vis{grid-area:vis}.a-rain{grid-area:rain}
