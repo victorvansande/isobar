@@ -660,16 +660,20 @@ function setHaze(which, scale) {
   if (on && !heat) { heat = document.createElement("span"); heat.className = "heat"; heat.setAttribute("aria-hidden", "true"); el.prepend(heat); }
   if (heat) { if (on) heat.style.setProperty("--hs", (scale / 14).toFixed(2)); else heat.remove(); }
   if (on) document.getElementById(`hazeMap-${which}`).setAttribute("scale", scale);
+  if (on && which === "hero") document.getElementById("hazeMap-text").setAttribute("scale", (scale * .4).toFixed(1)); // the number and its lines: gentler, so they stay readable
   cancelAnimationFrame(hazeRAF);
   if (!HAZE.uv && !HAZE.hero) return;
-  const t0 = performance.now(), noise = { uv: document.getElementById("hazeNoise-uv"), hero: document.getElementById("hazeNoise-hero") };
+  const t0 = performance.now(), noise = { uv: document.getElementById("hazeNoise-uv"), hero: document.getElementById("hazeNoise-hero") }, noiseText = document.getElementById("hazeNoise-text");
   let last = 0;
   const tick = now => {
     hazeRAF = requestAnimationFrame(tick);
     if (now - last < 66) return; last = now;
     const k = (now - t0) / 1000;
-    for (const [id, ph] of [["uv", 0], ["hero", 2.1]]) if (HAZE[id] && !offscreen(id === "uv" ? "c-uv" : "c-hero"))
-      noise[id].setAttribute("baseFrequency", `${(.006 + .002 * sin(k * .6 + 1 + ph)).toFixed(4)} ${(.05 + .012 * sin(k * .9 + ph)).toFixed(4)}`);
+    for (const [id, ph] of [["uv", 0], ["hero", 2.1]]) if (HAZE[id] && !offscreen(id === "uv" ? "c-uv" : "c-hero")) {
+      const f = `${(.006 + .002 * sin(k * .6 + 1 + ph)).toFixed(4)} ${(.05 + .012 * sin(k * .9 + ph)).toFixed(4)}`;
+      noise[id].setAttribute("baseFrequency", f);
+      if (id === "hero") noiseText.setAttribute("baseFrequency", f); // in step with the arc
+    }
   };
   hazeRAF = requestAnimationFrame(tick);
 }

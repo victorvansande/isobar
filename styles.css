@@ -509,6 +509,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 /* heat haze: the layers ripple, but they're oversized and clipped by the card so its edge never moves */
 .a-uv.hot .gauge svg{filter:url(#haze-uv)}
 .a-hero.hot .arc svg{filter:url(#haze-hero)}
+.a-hero.hot .hero-temp,.a-hero.hot .hero-meta{filter:url(#haze-text)} /* the big number and its lines shimmer with the arc, more gently so they stay readable; small areas, so still cheap on phones */
 /* warm air rising over a hot card: soft round plumes that swell up from the bottom and fade, two out of step so one is
    always rising. No straight edges (bands read as lines), moved by transform and opacity only, so phones stay smooth. */
 .heat{position:absolute;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
