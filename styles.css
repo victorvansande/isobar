@@ -386,6 +386,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 
 /* ---------- feels ---------- */
 .ftrack{position:relative;height:46px;margin:16px 4px 6px}
+.a-feels .num{margin-bottom:16px}.a-feels .ftrack{margin:auto 4px}.a-feels .ftrack ~ .foot{margin-top:0} /* the scale sits centred between the reading and the foot, however tall the card */
 /* the scale as a row of dots: faint along the way, lit between the thermometer and how it feels */
 .ftrack .fdots{position:absolute;left:-2.5px;right:-2.5px;top:20px;height:6px;display:flex;justify-content:space-between;align-items:center}
 .ftrack .fdots i{width:5px;height:5px;border-radius:50%;background:var(--ink-3);transform:scale(.62);opacity:.7}
@@ -695,8 +696,10 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 @keyframes ridgeflow{to{transform:translateX(-240px)}}
 @keyframes ridgebob{from{translate:0 0}to{translate:0 3px}}
 .vis text{font:500 9px var(--f-label);fill:var(--ink-2)}
+.spark{margin-top:auto} /* the chart and its axis sit on the foot, however tall the row makes the card */
+.spark ~ .foot{margin-top:0}
 .spark svg{width:100%;height:42px;display:block;margin-top:10px}
-.spark-ax{display:flex;justify-content:space-between;margin:5px 0 10px} /* now on the left, so the bars read as the next 24 hours */
+.spark-ax{display:flex;justify-content:space-between;margin:4px 0 0} /* now on the left, so the bars read as the next 24 hours */
 .field svg{width:100%;height:auto;display:block;margin:4px 0 6px}
 .a-clouds .field{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center}
 .a-clouds .field circle{opacity:.9;transform-box:fill-box;transform-origin:center;transition:transform var(--drift,.45s) ease,opacity var(--drift,.45s) ease}
