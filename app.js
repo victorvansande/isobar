@@ -414,7 +414,7 @@ function confidence(u) {
   });
   return out;
 }
-async function fetchAll(p, signal) {
+function fetchAll(p, signal) {
   const w = getJSON("https://api.open-meteo.com/v1/forecast?" + qs({
     latitude: p.lat, longitude: p.lon, timezone: "auto", forecast_days: 14, past_days: 1,
     current: "temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,cloud_cover,pressure_msl,wind_speed_10m,wind_direction_10m,wind_gusts_10m,visibility,uv_index,dew_point_2m",
@@ -432,7 +432,7 @@ async function fetchAll(p, signal) {
   const u = getJSON("https://api.open-meteo.com/v1/forecast?" + qs({
     latitude: p.lat, longitude: p.lon, timezone: "auto", forecast_days: 14, daily: "temperature_2m_max,precipitation_sum", models: SPREAD_MODELS.join(",")
   }), signal).catch(() => null);
-  return [await w, await a, await u];
+  return [w, a, u]; // promises: the forecast comes first and is drawn at once, air and model spread fill in after
 }
 async function geocode(q) {
   const j = await getJSON("https://geocoding-api.open-meteo.com/v1/search?" + qs({ name: q, count: 8, language: "en", format: "json" }));
@@ -1726,6 +1726,7 @@ function openLearn(t, dp, h) {
 const EAQ = [[20, "Good", "mint"], [40, "Fair", "azure"], [60, "Moderate", "amber"], [80, "Poor", "coral"], [100, "Very poor", "crimson"], [1e9, "Extremely poor", "violet"]];
 function renderAir() {
   const el = card("c-air"), a = AQ && AQ.current;
+  if (!a && airWait) { el.innerHTML = `<div class="sk"></div>`; return; } // still on its way: no "unavailable" yet
   if (!a || a.european_aqi == null) {
     paint(el, FAM.night);
     el.innerHTML = `${head("Air quality", "Unavailable")}<p class="empty">Air quality data from CAMS isn't available for this spot right now.</p>`; return;
@@ -2202,6 +2203,7 @@ const POLLEN = [["grass_pollen", "Grass", [5, 30, 100]], ["birch_pollen", "Birch
 const DUST = [20, 50, 150];
 function renderPollen() {
   const el = card("c-pollen"), a = AQ && AQ.current;
+  if (!a && airWait) { el.innerHTML = `<div class="sk"></div>`; return; }
   const lvl = (v, t) => v < 1 ? [0, "None"] : v < t[0] ? [1, "Low"] : v < t[1] ? [2, "Moderate"] : v < t[2] ? [3, "High"] : [4, "Very high"];
   const fmt = v => v < 10 ? v.toFixed(1) : Math.round(v);
   const dots = i => `<span class="dots" role="img" aria-label="${i.ln}">${[1, 2, 3, 4].map(q => `<i class="${q <= i.l ? "on" : ""}"></i>`).join("")}</span>`;
@@ -2675,6 +2677,7 @@ function showError(msg) {
   el.innerHTML = `${head("No forecast", "Something went wrong")}<div class="err"><p>${esc(msg)}</p><button class="btn" id="retry">Try again</button></div>`;
   $("#retry").onclick = () => load(place);
 }
+let airWait = false; // the air quality is still loading (the forecast came first)
 let loading = false, dataKey = "", loadCtrl = null, shownPlace = null; // shownPlace: the place whose forecast is on screen
 // A background refresh waits its turn; something you asked for (another place, a refresh) calls off whatever is loading.
 async function load(p, { quiet = false } = {}) {
@@ -2689,12 +2692,20 @@ async function load(p, { quiet = false } = {}) {
   // a place seen before opens straight from its last forecast while the fresh one loads
   if (dataKey !== key) { const hit = forecasts.get(key); if (hit) { adopt(hit, key); shownPlace = p; try { renderAll(); } catch (e) { console.error(e); } } }
   try {
-    const [w, a, u] = await fetchAll(p, my.signal);
+    const [wP, aP, uP] = fetchAll(p, my.signal);
+    const w = await wP;
     if (my.signal.aborted) return;
-    adopt({ D: w, AQ: a, U: confidence(u), at: Date.now() }, key); shownPlace = p;
-    forecasts.put(key, { D, AQ, U, at: fetchedAt });
+    // The cards appear as soon as the forecast is in: the air quality and the model spread are slower services and
+    // must not hold up the first screen. Until they arrive, the last ones for this place stay (or their cards wait).
+    const keepA = dataKey === key ? AQ : null, keepU = dataKey === key ? U : null;
+    adopt({ D: w, AQ: keepA, U: keepU, at: Date.now() }, key); shownPlace = p;
     netFail = false; loadWarnings(p);
-    renderAll();
+    airWait = !keepA; renderAll();
+    const [a, u] = await Promise.all([aP, uP]);
+    if (my.signal.aborted || dataKey !== key) return;
+    airWait = false; AQ = a || keepA; U = (u && confidence(u)) || keepU;
+    forecasts.put(key, { D, AQ, U, at: fetchedAt });
+    for (const f of [renderSummary, renderAir, renderPollen, renderHourly, ...($("#dlgDays").open ? [renderDays] : [])]) { try { f(); } catch (e) { console.error(f.name, e); } }
   } catch (e) {
     if (my.signal.aborted) return; // replaced by a newer request: that one reports
     netFail = true;

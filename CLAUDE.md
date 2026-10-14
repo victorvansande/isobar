@@ -57,4 +57,7 @@ know (decisions, preferences, open choices), and push it along.**
 - Pushing from a cloud session: commits are backed up to the non-live branch `cloud`; `main` only on Victor's word.
 - Open: cards sometimes show up empty on the web (Chrome); suspected GPU-memory pressure from every coloured card's
   large blurred, animated layer. Proposed: drop the layer's animation off-screen; not yet confirmed or built.
+- Loading: the cards draw as soon as the forecast is in; air quality (air and pollen cards keep their skeleton
+  meanwhile) and the four-model spread fill in after. Still open: a first-ever visit waits for the location prompt
+  (up to 12 s) before it fetches anything.
 - Saved for later, don't build unasked: a Vestaboard-style split-flap text effect (letters cycling until they land).
