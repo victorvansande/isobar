@@ -39,6 +39,12 @@ know (decisions, preferences, open choices), and push it along.**
   nothing jumps at "now"); elsewhere RainViewer, past 2 h. RainViewer can show night-time ghost echoes; ignoring its
   weakest echoes outside the Benelux was offered, not decided.
 - The summary line adds at most one short heads-up (slippery roads, fog, heat, strong sun, deep cold, poor air).
+- Sun and moon cards: a calm sky wash (no dark core, no glowing corners), still the two that stand out. Sun times in
+  day order on three columns, AM/PM and units small after the number, "Sunshine expected" as a small line at the
+  bottom. Moon: the percentage on the tiles' left edge; dates on one line ("Full · Mon" / "26 Oct").
+- Day bars (14 days, day look): soft wide translucent capsules, highs in plain ink.
+- Scrolling down never gets caught in a card (rule 12a): vertical wheel always scrolls the page; on touch the map
+  moves with two fingers.
 - Open, not decided: refreshing the 48-hour card (options: day/night band, temperature-coloured curve, rain bars only
   when it rains, or all three; Victor said "leave it for now"); the night arc drawn below the horizon (audit point);
   hourly wind in the 48-hour strip; morning golden hour on the sun card; METAR-based correction of "now" cloud cover;

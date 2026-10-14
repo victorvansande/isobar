@@ -74,8 +74,7 @@ const wd = key => dayOf(key).toLocaleDateString("en-GB", { weekday: "short", tim
 const dm_ = key => dayOf(key).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
 // one way to write a length of time everywhere: "10 h 57 min", "45 min", "3 min 48 s"; a number never parts from its unit (no-break spaces)
 const dur = s => { if (s == null || isNaN(s)) return "–"; const t = Math.round(s / 60), h = Math.floor(t / 60), m = t % 60; return h ? (m ? `${h}\u00a0h ${m}\u00a0min` : `${h}\u00a0h`) : `${m}\u00a0min`; };
-// the same, for a reading: the numbers in their own size and the units (h, min, AM/PM) small after them, as everywhere
-const durU = s => dur(s).replace(/ (h|min|s)\b/g, "<span class=\"u\"> $1</span>");
+// a time for a reading: the numbers in their own size and AM/PM small after them, as every unit
 const fmtTu = d => fmtT(d).replace(/[\s ]?([ap]\.?\s?m\.?)$/i, "<span class=\"u\"> $1</span>");
 const inMins = m => m < 60 ? `${Math.round(m)}\u00a0min` : `${Math.floor(m / 60)}\u00a0h ${Math.round(m % 60) ? Math.round(m % 60) + "\u00a0min" : ""}`.trim();
 const localDateLabel = d => new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: TZ }).format(d);
@@ -1895,9 +1894,9 @@ function renderSun() {
       <div><span class="mono">Golden hour</span><b>${fmtTu(st.golden)}</b></div>
       <div><span class="mono">Sunset</span><b>${fmtTu(Dy.sunset[di] ? T(Dy.sunset[di]) : null)}</b></div>
       <div><span class="mono">Last light</span><b>${fmtTu(st.dusk)}</b></div>
-      <div class="kv5-wide"><span class="mono">Sunshine expected</span><b>${durU(sunsh)}</b></div>
       <div><span class="mono">vs yesterday</span><b id="sunChange">${chTxt}</b></div>
     </div>
+    <div class="foot"><span>Sunshine expected <b>${dur(sunsh)}</b></span></div>
     </div>
     <div class="sun-year" id="c-year"></div>`; // the daylight through the year fills this (renderYear runs right after)
   updateSun(null);
