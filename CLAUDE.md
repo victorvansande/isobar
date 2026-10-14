@@ -43,6 +43,10 @@ know (decisions, preferences, open choices), and push it along.**
   day order on three columns, AM/PM and units small after the number, six times in the grid (fills one row on desktop); one line at the bottom: "Sunshine 8 h 55 min" left,
   "Day −3 min 48 s" (change in day length vs yesterday) right. Moon: the percentage on the tiles' left edge; dates on one line ("Full · Mon" / "26 Oct").
 - Day bars (14 days, day look): soft wide translucent capsules, highs in plain ink.
+- Larger screens (rule 10a): from 601 px each card scales its readings and pictures by its own width over a phone
+  card's 180 px (--k, 1 to 1.35); three columns between 761 and 1000 px. Phones must stay exactly as they are.
+- Tall cards: the rain chart sits on its foot, the feels-like scale and UV gauge sit centred between reading and foot.
+- Wall view: measures after layout and grows taller (scaling smaller) until no card's content is cut off.
 - Scrolling down never gets caught in a card (rule 12a): vertical wheel always scrolls the page; on touch the map
   moves with two fingers.
 - Open, not decided: refreshing the 48-hour card (options: day/night band, temperature-coloured curve, rain bars only
