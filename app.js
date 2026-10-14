@@ -1456,6 +1456,10 @@ function drawSpread() {
   const st = spreadStats(), n = st.length; spSel = clamp(spSel, 0, n - 1);
   $("#spSeg").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === spView)));
   $("#spRed").hidden = spView !== "t";
+  // With Best match, today and tomorrow come from a sharper local model than these runs, so its line can fall outside
+  // all of them; that is no error, and the note says so (only then)
+  const outside = i => { const h = E.hi.map(m => m[i]).filter(v => v != null); return st[i].app != null && h.length && (st[i].app < Math.min(...h) - .5 || st[i].app > Math.max(...h) + .5); };
+  $("#spLocal").hidden = !(spView === "t" && S.model === "best_match" && [0, 1].some(i => i < n && outside(i)));
   // one plain sentence first
   if (spView === "t") {
     const thr = S.temp === "f" ? 5.4 : 3, w = st.map(s => s.h90 - s.h10);
