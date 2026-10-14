@@ -509,10 +509,14 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 /* heat haze: the layers ripple, but they're oversized and clipped by the card so its edge never moves */
 .a-uv.hot .gauge svg{filter:url(#haze-uv)}
 .a-hero.hot .arc svg{filter:url(#haze-hero)}
-/* warm air rising over a hot card: soft bands moved by transform only, so phones stay smooth */
-.heat{position:absolute;left:0;right:0;top:0;height:calc(100% + 40px);z-index:-1;pointer-events:none;opacity:var(--hs);
-  background:repeating-linear-gradient(176deg,transparent 0 22px,rgba(255,236,214,.09) 30px,transparent 40px);animation:heatrise 3.2s linear infinite;will-change:transform}
-@keyframes heatrise{to{transform:translateY(-40.1px)}}
+/* warm air rising over a hot card: soft round plumes that swell up from the bottom and fade, two out of step so one is
+   always rising. No straight edges (bands read as lines), moved by transform and opacity only, so phones stay smooth. */
+.heat{position:absolute;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
+.heat::before,.heat::after{content:"";position:absolute;left:-10%;right:-10%;bottom:-30%;height:90%;opacity:0;will-change:transform,opacity;
+  background:radial-gradient(28% 40% at 25% 70%,rgba(255,232,200,.16),transparent 70%),radial-gradient(24% 36% at 68% 75%,rgba(255,224,190,.13),transparent 70%),radial-gradient(20% 30% at 48% 85%,rgba(255,240,215,.12),transparent 70%);
+  animation:heatrise 7s ease-in-out infinite}
+.heat::after{animation-delay:-3.5s;left:-25%;right:5%} /* the second plume set a little to the side */
+@keyframes heatrise{0%{opacity:0;transform:translateY(10%)}35%,60%{opacity:var(--hs)}100%{opacity:0;transform:translateY(-45%)}}
 
 /* ---------- weather-reactive layers ---------- */
 /* drizzle: finer, shorter, slower streaks. hail: hard pellets that bounce once at the bottom */
