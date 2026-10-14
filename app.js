@@ -1758,7 +1758,7 @@ function renderAir() {
       <div class="air-foot"><span class="mono">${peakT ? `Worst around ${fmtT(peakT)}` : "Steady over the next 24 h"}</span>
       <button class="air-more mono" id="airMore" aria-expanded="${open}" aria-controls="airPol">Pollutants<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9.5l6 6 6-6"/></svg></button></div></div>
     <div class="pol-wrap" id="airPol"><div><div class="pol tile">${rows.map(([n, val, lim]) => `<div class="pol-r"><span class="mono">${n}</span><div class="mbar"><div class="fill" style="width:${clamp(val / (lim * 2) * 100, 2, 100)}%"></div><span class="lim" style="left:50%"></span></div><span class="v">${val < 10 ? val.toFixed(1) : Math.round(val)}<small>µg/m³</small></span></div>`).join("")}
-      <span class="mono lim-key"><i aria-hidden="true"></i>Now · WHO daily limit</span>${a.us_aqi != null ? `<span class="mono pol-us">US AQI ${Math.round(a.us_aqi)}</span>` : ""}</div></div></div></div>`;
+      <span class="mono lim-key" title="WHO air quality guideline: the most it should be on average over 24 hours (ozone: over 8 hours)"><i aria-hidden="true"></i>WHO recommended maximum</span>${a.us_aqi != null ? `<span class="mono pol-us">US AQI ${Math.round(a.us_aqi)}</span>` : ""}</div></div></div></div>`;
   el.querySelectorAll(".air-glint").forEach(g => g.addEventListener("animationiteration", () => { [g.style.left, g.style.top] = spot(); })); // a new spot each time
   $("#airMore").onclick = () => {
     const box = el.querySelector(".air"), on = !box.classList.contains("open");
