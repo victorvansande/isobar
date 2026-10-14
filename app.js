@@ -551,8 +551,24 @@ function renderSummary() {
   else if (Math.abs(dTomorrow) >= 3) second = `${dTomorrow > 0 ? "Warmer" : "Colder"} tomorrow, up to ${R(Dy.temperature_2m_max[di + 1])}°.`;
   else if (localHour < 14 && tc(Dy.temperature_2m_max[di]) - tc(c.temperature_2m) >= 2) second = `Up to ${R(Dy.temperature_2m_max[di])}° this afternoon.`;
   else if (Dy.temperature_2m_max[di + 1] != null) second = (Dy.precipitation_probability_max[di + 1] ?? 0) >= 60 && !wetNow ? "Rain likely tomorrow." : `Similar tomorrow, around ${R(Dy.temperature_2m_max[di + 1])}°.`;
+  // At most one short heads-up, only when it matters, from the hours ahead: the first that applies, in this order of
+  // risk. Thresholds: ice when rain or drizzle falls at 1 °C or less (or freezing rain is forecast), fog under 1 km of
+  // visibility, heat when it feels 32 °C or more ("extreme caution" on the heat index), UV 6 and up ("high", WHO), feels
+  // like −10 °C or less, air quality "poor" (European AQI 60+). It replaces the gentle second sentence ("Similar
+  // tomorrow…"), never a wind, frost or temperature-change one, so the line stays a glance.
+  const today = k => H.time[k].startsWith(X.todayKey);
+  const visKm = v => v == null ? 99 : (D.current_units && D.current_units.visibility) === "ft" ? v * 0.0003048 : v / 1000;
+  let tip = "";
+  const ks = []; for (let k = hi; k < end; k++) ks.push(k);
+  if (ks.some(k => [56, 57, 66, 67].includes(H.weather_code[k]) || ((wet(k) || kindAt(k) === "snow") && tc(H.temperature_2m[k]) <= 1))) tip = "Roads may be slippery.";
+  else if (!/^Foggy/.test(first) && ks.some(k => visKm(H.visibility[k]) < 1)) tip = "Watch for fog on the roads.";
+  else if (ks.some(k => today(k) && tc(H.apparent_temperature[k]) >= 32)) tip = "Stay cool and drink water.";
+  else if (ks.some(k => today(k) && (H.uv_index[k] ?? 0) >= 6)) tip = "Wear sun protection.";
+  else if (ks.some(k => tc(H.apparent_temperature[k]) <= -10)) tip = "Dress warmly.";
+  else if ((AQ && AQ.current && AQ.current.european_aqi) >= 60) tip = "Poor air: go easy outdoors.";
+  if (tip && /^(Similar tomorrow|Up to |Rain likely tomorrow)/.test(second)) second = "";
   // written only when it changes: the line is read out by screen readers, which should not hear it again every refresh
-  const txt = `${first} ${second}`.trim(), sm = $("#summary"); if (sm.textContent !== txt) sm.textContent = txt;
+  const txt = `${first} ${second} ${tip}`.replace(/\s+/g, " ").trim(), sm = $("#summary"); if (sm.textContent !== txt) sm.textContent = txt;
 }
 
 /* ---------------- weather-reactive effects ---------------- */
