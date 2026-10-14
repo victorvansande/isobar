@@ -411,6 +411,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .hpop{display:grid;justify-items:center;gap:4px;align-self:end}
 .hpop svg{width:8px;height:30px}
 .hpop span{font:500 12px/1 var(--f-label);color:var(--rain)}
+.hpop span small{font-size:11px;opacity:.8;margin-left:1px} /* the unit of an amount, shown where no chance of rain is given */
 .hcurve{position:absolute;left:0;top:96px;pointer-events:none;overflow:visible}
 .hcurve text{font:400 15px var(--f-num);fill:var(--ink);text-anchor:middle;font-variant-numeric:tabular-nums}
 /* one card, two views: the next 48 hours or the next 14 days */
@@ -723,6 +724,9 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .rticks button::after{content:"";position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:rgba(255,255,255,.34);transition:transform .2s,background .2s}
 .rticks button.cur::after{background:var(--signal);transform:scale(1.75)}
 .rticks button.fut::after{background:rgba(143,176,255,.62)}
+/* a hairline at "now": measured frames to its left, forecast frames to its right */
+.rticks button:not(.fut) + button.fut{margin-left:4px}
+.rticks button:not(.fut) + button.fut::before{content:"";position:absolute;left:-4px;top:10px;bottom:10px;width:1.5px;border-radius:1px;background:rgba(255,255,255,.55)}
 .rtime{font:500 11px/1 var(--f-label);font-variant-numeric:tabular-nums;min-width:70px;text-align:right}
 .zoomer{position:absolute;z-index:500;right:16px;top:16px;display:grid;gap:8px}
 .ch.lens.dark h3{color:#fff}.ch.lens.dark p{color:rgba(255,255,255,.65)}

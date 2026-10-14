@@ -1352,21 +1352,23 @@ function dayStrip() {
   const P = v => ((v - lo) / ((hi - lo) || 1) * 100).toFixed(1);
   const tc = v => window.Palette.tempFam(toC(v)).mid;
   const cols = idx.map((i, n) => {
-    const key = Dy.time[i], [label, kind] = wmo(dayLook(i).code);
-    const mn = Dy.temperature_2m_min[i], mx = Dy.temperature_2m_max[i], pop = dayLook(i).pop;
+    const look = dayLook(i), key = Dy.time[i], [label, kind] = wmo(look.code);
+    const mn = Dy.temperature_2m_min[i], mx = Dy.temperature_2m_max[i], pop = look.pop;
+    // past the days that come with a chance of rain (about 11), the meter would read 0%: it gives way to the amount
+    const amt = pop == null && toMm(look.mm) >= .2 ? `${fmtP(look.mm)}<small>${PU()}</small>` : "";
     const lit = pop == null ? 0 : Math.round(pop / 20);
-    let pd = ""; for (let q = 0; q < 5; q++) pd += `<circle cx="4" cy="${26 - q * 5.5}" r="${q < lit ? 2.2 : 1.5}" fill="${q < lit ? "var(--rain)" : "currentColor"}" opacity="${q < lit ? 1 : .18}"/>`;
+    let pd = ""; for (let q = 0; q < 5 && pop != null; q++) pd += `<circle cx="4" cy="${26 - q * 5.5}" r="${q < lit ? 2.2 : 1.5}" fill="${q < lit ? "var(--rain)" : "currentColor"}" opacity="${q < lit ? 1 : .18}"/>`;
     const now = n === 0 && c.temperature_2m != null ? `<span class="nd" style="bottom:${P(clamp(c.temperature_2m, lo, hi))}%"></span>` : "";
     // an uncertain day: the bar reaches out by how much the models disagree, fading at both ends, so it reads as
     // "somewhere around here" rather than an exact range
     const uc = U && U[key], fuzz = uc && uc.conf !== "high" ? (uc.fz ?? uc.deg) * (S.temp === "f" ? 1.8 : 1) / 2 : 0;
     const top = clamp(+P(mx + fuzz), 0, 100), bot = clamp(+P(mn - fuzz), 0, 100), fz = fuzz ? clamp((top - +P(mx) + +P(mn) - bot) / 2 / Math.max(top - bot, 1) * 100 + 8, 8, 45) : 0;
-    return `<button class="dcol${uc && uc.conf === "low" ? " unsure" : ""}" data-n="${n}" aria-label="${n === 0 ? "Today" : wd(key) + " " + dm_(key)}: ${esc(label)}, ${R(mn)} to ${R(mx)} degrees${pop != null ? `, ${pop}% chance of rain` : ""}${uc && uc.conf !== "high" ? ", models disagree" : ""}. Open details.">
+    return `<button class="dcol${uc && uc.conf === "low" ? " unsure" : ""}" data-n="${n}" aria-label="${n === 0 ? "Today" : wd(key) + " " + dm_(key)}: ${esc(label)}, ${R(mn)} to ${R(mx)} degrees${pop != null ? `, ${pop}% chance of rain` : amt ? `, about ${fmtP(look.mm)} ${PU()} of rain` : ""}${uc && uc.conf !== "high" ? ", models disagree" : ""}. Open details.">
       <span class="htime${n === 0 ? " now" : ""}">${n === 0 ? "Today" : wd(key)}</span>${icon(kind, true)}
       <em class="dhi hiT" style="--tc:${tc(mx)}">${R(mx)}°</em>
       <span class="dbar"><span class="dfill${fuzz ? " fuzzy" : ""}" style="top:${(100 - top).toFixed(1)}%;bottom:${bot.toFixed(1)}%;--lo:${tc(mn)};--hi:${tc(mx)};--fz:${fz.toFixed(0)}%"></span>${now}</span>
       <em class="dlo">${R(mn)}°</em>
-      <div class="hpop"><svg viewBox="0 0 8 30" aria-hidden="true">${pd}</svg><span>${pop != null && pop >= 10 ? pop + "%" : "&nbsp;"}</span></div></button>`;
+      <div class="hpop"><svg viewBox="0 0 8 30" aria-hidden="true">${pd}</svg><span>${pop != null && pop >= 10 ? pop + "%" : amt || "&nbsp;"}</span></div></button>`;
   });
   return `<div class="dstrip" style="grid-template-columns:repeat(${cols.length},minmax(58px,1fr));min-width:${cols.length * 58}px">${cols.join("")}</div>`;
 }
@@ -1531,19 +1533,39 @@ function drawSpread() {
 })();
 
 /* ---------------- 14 days ---------------- */
-/* Today is told by the hours still to come, not the whole day: at 17:00 a morning's drizzle no longer stands for "today".
-   Other days keep the day's own summary (its most severe weather, its highest chance of rain). */
+/* What a day looks like, told the way you would tell it (the 14-day list and the hours card's day columns both read
+   this, so they always agree):
+   - a thunderstorm whenever one is forecast;
+   - rain or snow only when at least 0.2 mm is expected, and then the heaviest kind the day brings;
+   - otherwise the sky of its daytime hours (08:00–20:00), by what most of them are, so one foggy or cloudy morning hour
+     doesn't turn a sunny day into "Fog" or "Overcast" (the day's own code takes the single worst hour).
+   Today counts only the hours still to come: at 17:00 a morning's drizzle no longer stands for "today". Days past the
+   hourly forecast keep the day's own summary. The chance of rain is the day's highest; Open-Meteo stops giving it after
+   about 11 days, and then it is null (the amount still comes). */
 function dayLook(i) {
-  const { Dy, H, hi, di } = X;
-  if (i !== di) return { code: Dy.weather_code[i], pop: nz(Dy.precipitation_probability_max[i]), mm: Dy.precipitation_sum[i] ?? 0 };
-  let end = H.time.findIndex(t => t.slice(0, 10) > Dy.time[i]); if (end < 0) end = H.time.length;
-  const codes = H.weather_code.slice(hi, end).filter(v => v != null), pops = H.precipitation_probability.slice(hi, end).filter(v => v != null);
-  return { code: codes.length ? Math.max(...codes) : Dy.weather_code[i], pop: pops.length ? Math.max(...pops) : nz(Dy.precipitation_probability_max[i]), mm: H.precipitation.slice(hi, end).reduce((a, b) => a + (b ?? 0), 0), rest: true };
+  const { Dy, H, hi, di } = X, key = Dy.time[i], today = i === di, ks = [];
+  for (let k = 0; k < H.time.length; k++) if (H.time[k].startsWith(key) && (!today || k >= hi)) ks.push(k);
+  const pops = ks.map(k => H.precipitation_probability[k]).filter(v => v != null);
+  const pop = today && pops.length ? Math.max(...pops) : nz(Dy.precipitation_probability_max[i]);
+  const mm = today ? ks.reduce((a, k) => a + (H.precipitation[k] ?? 0), 0) : Dy.precipitation_sum[i] ?? 0;
+  const codes = ks.map(k => H.weather_code[k]).filter(c => c != null);
+  let code = Dy.weather_code[i];
+  if (codes.length) {
+    const wet = codes.filter(c => c >= 51);
+    if (codes.some(c => c >= 95)) code = Math.max(...codes);
+    else if (toMm(mm) >= .2) code = wet.length ? Math.max(...wet) : Math.max(code ?? 61, 51);
+    else {
+      const dayKs = ks.filter(k => { const h = +H.time[k].slice(11, 13); return h >= 8 && h < 20; }), use = dayKs.length ? dayKs : ks, n = {};
+      for (const k of use) { const c = H.weather_code[k]; if (c != null) { const s = c >= 51 ? 3 : c; n[s] = (n[s] || 0) + 1; } } // a dry day's stray drizzle hour counts as cloud
+      code = +Object.keys(n).sort((a, b) => n[b] - n[a] || b - a)[0]; // the most common; a tie goes to the cloudier
+    }
+  }
+  return { code, pop, mm, rest: today };
 }
-/* Rain (or snow) falls in a day card once rain is likely (40%+) or measurable (0.5 mm+).
-   More rain means more drops; a likelier forecast draws them brighter. */
+/* Rain (or snow) falls in a day card when the day is likely wet (40%+ and at least 0.5 mm) or, past the days that come
+   with a chance, when at least 1 mm is expected. More rain means more drops; a likelier forecast draws them brighter. */
 function weatherFx(n, kind, pop, sumMm) {
-  if (!((pop ?? 0) >= 40 || sumMm >= 0.5)) return "";
+  if (!(pop != null ? pop >= 40 && sumMm >= .5 : sumMm >= 1)) return "";
   const snow = kind === "snow";
   const count = sumMm < 1 ? 16 : sumMm < 5 ? 26 : sumMm < 15 ? 36 : 48;
   const strength = clamp(((pop ?? 60) - 20) / 60, .45, 1);
@@ -1568,11 +1590,11 @@ function renderDays() {
       <button class="day-h" aria-expanded="${n === open}" data-n="${n}">
         <span class="dn"><b>${n === 0 ? "Today" : wd(key)}</b><i>${n === 0 ? wd(key) + " " : ""}${dm_(key)}</i></span>
         ${icon(kind, true)}
-        <span class="dp">${pop != null && pop >= 10 ? pop + "%" : ""}</span>
+        <span class="dp">${pop != null ? (pop >= 10 ? pop + "%" : "") : toMm(look.mm) >= .2 ? `${fmtP(look.mm)} ${PU()}` : ""}</span>
         <span class="dr"><em>${R(mn)}°</em><span class="bar">${cl[n] ? `<span class="nrm" style="left:${P(fromC(cl[n].lo))}%;right:${(100 - P(fromC(cl[n].hi))).toFixed(1)}%"></span>` : ""}<span class="fill" style="left:${P(mn)}%;right:${(100 - P(mx)).toFixed(1)}%;--lo:${tc(mn)};--hi:${tc(mx)}"></span>${n === 0 && c.temperature_2m != null ? `<span class="nd" style="left:${P(clamp(c.temperature_2m, lo, hi))}%"></span>` : ""}</span><em class="hiT" style="--tc:${tc(mx)}">${R(mx)}°</em></span>
       </button>
       <div class="day-b"><div class="day-bi"><div class="day-grid">
-        <div class="say">${look.rest ? `Rest of today: ${esc(label.toLowerCase())}` : esc(label)}${pop != null ? `, ${pop}% chance of rain` : ""}.</div>
+        <div class="say">${look.rest ? `Rest of today: ${esc(label.toLowerCase())}` : esc(label)}${pop != null ? `, ${pop}% chance of rain` : toMm(look.mm) >= .2 ? `, about ${fmtP(look.mm)} ${PU()} of rain` : ""}.</div>
         ${tile("Feels like", `${R(Dy.apparent_temperature_min[i])}° / ${R(Dy.apparent_temperature_max[i])}°`)}
         ${tile(look.rest ? "Rain today" : "Rain", `${fmtP(Dy.precipitation_sum[i])} ${PU()}`)}
         ${tile(look.rest ? "Rain hours today" : "Rain hours", `${R(Dy.precipitation_hours[i])} h`)}
