@@ -2693,7 +2693,7 @@ const forecasts = {
 /* ---------------- official weather warnings ---------------- */
 /* MeteoAlarm's warnings (KMI, KNMI, DWD...), prepared every half hour by .github/workflows/warnings.yml and stored
    in 5° tiles on the "warnings" branch. The app fetches its own tile and keeps the warnings whose area it is in. */
-const WARN_URL = "https://raw.githubusercontent.com/victorvansande/isobar/warnings/w/";
+const WARN_URL = "https://raw.githubusercontent.com/victorvansande/kwick/warnings/w/";
 const WLEVEL = { 2: ["Yellow", "#ffd23f"], 3: ["Orange", "#ff8a1f"], 4: ["Red", "#ff3b30"] };
 let warnings = [];
 // is the point inside the warning's outline? (even-odd rule, so holes in a region count as outside)
