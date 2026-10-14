@@ -19,6 +19,20 @@ document.addEventListener("touchstart", () => {}, { passive: true }); // iOS onl
 for (const ev of ["gesturestart", "gesturechange"]) document.addEventListener(ev, e => { if (!e.target.closest || !e.target.closest(".leaflet-container")) e.preventDefault(); }, { passive: false });
 // Offline support and instant launch (see sw.js)
 if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) navigator.serviceWorker.register("sw.js").catch(() => {});
+/* A home-screen app can stay alive for days, resuming without reloading, and so keeps running the version it started
+   with (a fix that is already online never reaches it). When it comes back after five minutes or more, it asks whether
+   app.js changed (its ETag) and quietly reloads into the new version if so; never while a sheet is open. */
+{
+  let tag = null, hiddenAt = 0;
+  const tagOf = () => fetch("app.js", { method: "HEAD", cache: "no-store" }).then(r => r.ok ? r.headers.get("etag") || r.headers.get("last-modified") : null).catch(() => null);
+  tagOf().then(t => { tag = t; });
+  document.addEventListener("visibilitychange", async () => {
+    if (document.hidden) { hiddenAt = Date.now(); return; }
+    if (!tag || Date.now() - hiddenAt < 5 * 6e4) return;
+    const now = await tagOf();
+    if (now && now !== tag && !document.querySelector("dialog[open]")) location.reload();
+  });
+}
 
 /* ---------------- storage ---------------- */
 const store = {
