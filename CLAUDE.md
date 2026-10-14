@@ -40,8 +40,8 @@ know (decisions, preferences, open choices), and push it along.**
   weakest echoes outside the Benelux was offered, not decided.
 - The summary line adds at most one short heads-up (slippery roads, fog, heat, strong sun, deep cold, poor air).
 - Sun and moon cards: a calm sky wash (no dark core, no glowing corners), still the two that stand out. Sun times in
-  day order on three columns, AM/PM and units small after the number, "Sunshine expected" as a small line at the
-  bottom. Moon: the percentage on the tiles' left edge; dates on one line ("Full · Mon" / "26 Oct").
+  day order on three columns, AM/PM and units small after the number, six times in the grid (fills one row on desktop); one line at the bottom: "Sunshine 8 h 55 min" left,
+  "Day −3 min 48 s" (change in day length vs yesterday) right. Moon: the percentage on the tiles' left edge; dates on one line ("Full · Mon" / "26 Oct").
 - Day bars (14 days, day look): soft wide translucent capsules, highs in plain ink.
 - Scrolling down never gets caught in a card (rule 12a): vertical wheel always scrolls the page; on touch the map
   moves with two fingers.
@@ -51,4 +51,10 @@ know (decisions, preferences, open choices), and push it along.**
   hiding olive pollen north of the Alps.
 - Places sheet: a "Current location" row under the search field does the same as the dock's location button
   (closes the sheet, then locates).
+- Gauges: the UV numerals' bottom lines up with the gauge's bottom (keep it so); the pressure numerals sit a little
+  below the dial's centre and shrink on narrow dials.
+- Top bar: hidden fully above the screen (with visibility hidden), so nothing peeks out under iOS's status bar.
+- Pushing from a cloud session: commits are backed up to the non-live branch `cloud`; `main` only on Victor's word.
+- Open: cards sometimes show up empty on the web (Chrome); suspected GPU-memory pressure from every coloured card's
+  large blurred, animated layer. Proposed: drop the layer's animation off-screen; not yet confirmed or built.
 - Saved for later, don't build unasked: a Vestaboard-style split-flap text effect (letters cycling until they land).

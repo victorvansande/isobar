@@ -1868,8 +1868,8 @@ function renderSun() {
   const fr = d => d && !isNaN(d) ? clamp((d - mid0) / dayMs, 0, 1) : null;
   const dl = Dy.daylight_duration[di], dly = di > 0 ? Dy.daylight_duration[di - 1] : null;
   const ch = dl != null && dly != null ? dl - dly : null;
-  // the change in day length since yesterday, with its units written small
-  const chTxt = ch == null ? "–" : `${ch >= 0 ? "+" : "−"}${Math.floor(Math.abs(ch) / 60)}<span class="u"> min </span>${Math.round(Math.abs(ch) % 60)}<span class="u"> s</span>`;
+  // the change in day length since yesterday, in the line at the bottom
+  const chTxt = ch == null ? "–" : `${ch >= 0 ? "+" : "−"}${Math.floor(Math.abs(ch) / 60)}\u00a0min ${Math.round(Math.abs(ch) % 60)}\u00a0s`;
   const view = store.get("sunView", "day");
   const night = "#120a3a", tw = "#6a3fe0", gold = "#ff8a3c", day = "#ffe6b0";
   const stops = [];
@@ -1894,9 +1894,8 @@ function renderSun() {
       <div><span class="mono">Golden hour</span><b>${fmtTu(st.golden)}</b></div>
       <div><span class="mono">Sunset</span><b>${fmtTu(Dy.sunset[di] ? T(Dy.sunset[di]) : null)}</b></div>
       <div><span class="mono">Last light</span><b>${fmtTu(st.dusk)}</b></div>
-      <div><span class="mono">vs yesterday</span><b id="sunChange">${chTxt}</b></div>
     </div>
-    <div class="foot"><span>Sunshine expected <b>${dur(sunsh)}</b></span></div>
+    <div class="foot"><span>Sunshine <b>${dur(sunsh)}</b></span><span>Day <b id="sunChange">${chTxt}</b></span></div>
     </div>
     <div class="sun-year" id="c-year"></div>`; // the daylight through the year fills this (renderYear runs right after)
   updateSun(null);

@@ -777,8 +777,8 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .pdots i{width:4px;height:4px;border-radius:50%;background:currentColor;opacity:.4;transition:opacity .2s,transform .2s}
 .pdots i.on{opacity:1;transform:scale(1.25)}
 .topbar{position:fixed;left:50%;top:calc(12px + env(safe-area-inset-top,0px));z-index:1000;display:flex;align-items:center;gap:12px;padding:8px 16px 8px 10px;border-radius:999px;
-  transform:translate(-50%,-160%);transition:transform .45s cubic-bezier(.3,.8,.2,1);color:#fff;max-width:calc(100% - 32px)}
-.topbar.show{transform:translate(-50%,0)}
+  transform:translate(-50%,calc(-100% - 24px - env(safe-area-inset-top,0px)));visibility:hidden;transition:transform .45s cubic-bezier(.3,.8,.2,1),visibility 0s .45s;color:#fff;max-width:calc(100% - 32px)}
+.topbar.show{transform:translate(-50%,0);visibility:visible;transition:transform .45s cubic-bezier(.3,.8,.2,1)} /* hidden: fully above the screen, under iOS's status bar nothing of it peeks out */
 .topbar .ic{width:22px;height:22px}
 .topbar .lift .ic{transform:translateY(3.2px)}
 .topbar b{font-weight:700;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
