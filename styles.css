@@ -612,9 +612,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 @keyframes mote{0%{opacity:0;transform:translate(0,0)}15%,85%{opacity:var(--o)}100%{opacity:0;transform:translate(var(--dx),var(--dy))}}
 .gauge svg{width:100%;height:auto;display:block;overflow:visible}
 .gauge-v{position:absolute;left:0;right:0;bottom:0;text-align:center}
-.gauge-v{bottom:-6px}
-.gauge{container-type:inline-size}
-.gauge-v .dm{height:min(34px,20cqw);margin:0 auto} /* low enough to keep clear of the arc and the needle */
+.gauge-v .dm{height:40px;margin:0 auto 4px}
 
 .a-humid .num{margin-bottom:auto}
 
