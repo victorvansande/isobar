@@ -74,6 +74,9 @@ const wd = key => dayOf(key).toLocaleDateString("en-GB", { weekday: "short", tim
 const dm_ = key => dayOf(key).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
 // one way to write a length of time everywhere: "10 h 57 min", "45 min", "3 min 48 s"; a number never parts from its unit (no-break spaces)
 const dur = s => { if (s == null || isNaN(s)) return "–"; const t = Math.round(s / 60), h = Math.floor(t / 60), m = t % 60; return h ? (m ? `${h}\u00a0h ${m}\u00a0min` : `${h}\u00a0h`) : `${m}\u00a0min`; };
+// the same, for a reading: the numbers in their own size and the units (h, min, AM/PM) small after them, as everywhere
+const durU = s => dur(s).replace(/ (h|min|s)\b/g, "<span class=\"u\"> $1</span>");
+const fmtTu = d => fmtT(d).replace(/[\s ]?([ap]\.?\s?m\.?)$/i, "<span class=\"u\"> $1</span>");
 const inMins = m => m < 60 ? `${Math.round(m)}\u00a0min` : `${Math.floor(m / 60)}\u00a0h ${Math.round(m % 60) ? Math.round(m % 60) + "\u00a0min" : ""}`.trim();
 const localDateLabel = d => new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: TZ }).format(d);
 
@@ -1807,7 +1810,9 @@ function updateMoon(off) {
       prev = p;
     }
     const none = day === 0 ? "None today" : "None";
-    $("#moonKv").innerHTML = tile("Moonrise", mt.rise ? fmtT(mt.rise) : none) + tile("Moonset", mt.set ? fmtT(mt.set) : none) + tile("Next full", dlab(nextFull)) + tile("Next new", dlab(nextNew));
+    // the weekday goes with the label, so each date stays whole on one line ("26 Oct", never "Mon 26 / Oct")
+    const dm = d => d ? new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", timeZone: TZ }).format(d) : "–", wkd = d => d ? " · " + new Intl.DateTimeFormat("en-GB", { weekday: "short", timeZone: TZ }).format(d) : "";
+    $("#moonKv").innerHTML = tile("Moonrise", mt.rise ? fmtTu(mt.rise) : none) + tile("Moonset", mt.set ? fmtTu(mt.set) : none) + tile("Next full" + wkd(nextFull), dm(nextFull)) + tile("Next new" + wkd(nextNew), dm(nextNew));
   }
   const box = $("#moonStripBox");
   box.setAttribute("aria-valuenow", day);
@@ -1884,14 +1889,15 @@ function renderSun() {
     <div class="band" id="sunBand" role="slider" tabindex="0" aria-label="Time of day. Drag, scroll or use the arrow keys to see the sun at another hour." aria-valuemin="0" aria-valuemax="1440"><svg viewBox="0 0 1000 30" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="sb">${grad}</linearGradient></defs><rect width="1000" height="30" fill="url(#sb)"/></svg><span class="tri" id="sunTri"></span>
       <div class="band-axis tm"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div></div>
     <div class="kv5">
-      <div><span class="mono">First light</span><b>${fmtT(st.dawn)}</b></div>
-      <div><span class="mono">Sunrise</span><b>${fmtT(Dy.sunrise[di] ? T(Dy.sunrise[di]) : null)}</b></div>
-      <div><span class="mono">Golden hour</span><b>${fmtT(st.golden)}</b></div>
-      <div><span class="mono">Sunset</span><b>${fmtT(Dy.sunset[di] ? T(Dy.sunset[di]) : null)}</b></div>
-      <div><span class="mono">Last light</span><b>${fmtT(st.dusk)}</b></div>
+      <div><span class="mono">First light</span><b>${fmtTu(st.dawn)}</b></div>
+      <div><span class="mono">Sunrise</span><b>${fmtTu(Dy.sunrise[di] ? T(Dy.sunrise[di]) : null)}</b></div>
+      <div><span class="mono">Solar noon</span><b>${fmtTu(st.noon)}</b></div>
+      <div><span class="mono">Golden hour</span><b>${fmtTu(st.golden)}</b></div>
+      <div><span class="mono">Sunset</span><b>${fmtTu(Dy.sunset[di] ? T(Dy.sunset[di]) : null)}</b></div>
+      <div><span class="mono">Last light</span><b>${fmtTu(st.dusk)}</b></div>
+      <div class="kv5-wide"><span class="mono">Sunshine expected</span><b>${durU(sunsh)}</b></div>
       <div><span class="mono">vs yesterday</span><b id="sunChange">${chTxt}</b></div>
     </div>
-    <div class="foot"><span>Sunshine expected <b>${dur(sunsh)}</b></span><span>Solar noon <b>${fmtT(st.noon)}</b></span></div>
     </div>
     <div class="sun-year" id="c-year"></div>`; // the daylight through the year fills this (renderYear runs right after)
   updateSun(null);

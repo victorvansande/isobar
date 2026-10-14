@@ -176,7 +176,7 @@ dialog:focus-visible,.sheet:focus-visible{outline:none} /* opening a sheet focus
 .sun-year > .ch{display:none} /* its heading shows in the card's own header */
 .sun-year .hero-now{top:2px;right:0}
 .a-sun:has(#sunNow:not([hidden])) .sseg{visibility:hidden} /* "Back to now" takes the corner while scrubbing */
-.kv5 b .u{font:500 12px var(--f-label);letter-spacing:0;color:var(--ink-2)}
+.kv5 b .u,.tile b .u{font:500 12px var(--f-label);letter-spacing:0;color:var(--ink-2)} /* units small after the number: h, min, s, AM/PM */
 .yr-read{font-size:30px;font-weight:300;letter-spacing:-.02em;line-height:1.1;margin-top:2px}
 .yr-sub{margin:4px 0 12px;font-size:13px;color:var(--ink-2)}
 .yr-chart{position:relative;height:190px;border-radius:16px;overflow:hidden;cursor:grab;touch-action:pan-y;-webkit-user-select:none;user-select:none}
@@ -646,7 +646,8 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 /* ---------- moon ---------- */
 .moon{display:grid;grid-template-columns:minmax(120px,190px) minmax(0,1fr);gap:20px;align-items:center;flex:1}
 .moon canvas{width:100%;aspect-ratio:1;display:block}
-.moon-stats{display:grid;gap:12px}
+.moon-stats{display:grid;gap:12px;align-content:center}
+.moon-stats > div:first-child{justify-self:start} /* the percentage sits on the tiles' left edge, as the head of that column */
 .stars{position:absolute;inset:0;z-index:-1;pointer-events:none}
 .stars i{position:absolute;width:var(--s);height:var(--s);border-radius:50%;background:#fff;opacity:var(--o);animation:twinkle var(--t) ease-in-out var(--w) infinite alternate}
 @keyframes twinkle{to{opacity:calc(var(--o) * .2)}}
@@ -670,6 +671,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .kv5 div{display:grid;gap:2px}
 .kv5 b{font:400 18px/1.05 var(--f-num);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
 @media (max-width:800px){.kv5{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.kv5 .kv5-wide{grid-column:span 2} /* sunshine takes two columns, so "vs yesterday" sits on the third: every row on the same three edges */
 
 /* ---------- pressure / visibility / rain / clouds ---------- */
 .dial{position:relative;width:min(100%,190px);margin:0 auto;color:var(--ink)}
