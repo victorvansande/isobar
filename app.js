@@ -1810,9 +1810,9 @@ function updateMoon(off) {
       prev = p;
     }
     const none = day === 0 ? "None today" : "None";
-    // the weekday goes with the label, so each date stays whole on one line ("26 Oct", never "Mon 26 / Oct")
+    // the next full and new moon: the weekday goes with the short label ("Full · Mon"), so the date stays whole on one line
     const dm = d => d ? new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", timeZone: TZ }).format(d) : "–", wkd = d => d ? " · " + new Intl.DateTimeFormat("en-GB", { weekday: "short", timeZone: TZ }).format(d) : "";
-    $("#moonKv").innerHTML = tile("Moonrise", mt.rise ? fmtTu(mt.rise) : none) + tile("Moonset", mt.set ? fmtTu(mt.set) : none) + tile("Next full" + wkd(nextFull), dm(nextFull)) + tile("Next new" + wkd(nextNew), dm(nextNew));
+    $("#moonKv").innerHTML = tile("Moonrise", mt.rise ? fmtTu(mt.rise) : none) + tile("Moonset", mt.set ? fmtTu(mt.set) : none) + tile("Full" + wkd(nextFull), dm(nextFull)) + tile("New" + wkd(nextNew), dm(nextNew));
   }
   const box = $("#moonStripBox");
   box.setAttribute("aria-valuenow", day);
