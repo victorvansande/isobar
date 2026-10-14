@@ -1,4 +1,4 @@
-# Isobar Weather
+# Kwick Weather
 
 A weather app in a single page: gradient "pigment" cards and clear glass panels, dot-matrix numerals, and animations that react to the weather itself (frost below zero, heat haze, rain, snow, hail, lightning, fog, wind gusts, condensation, smog).
 

@@ -1,4 +1,4 @@
-/* Isobar Weather: the app. Loaded after Leaflet, palette.js and the moon map (see index.html). */
+/* Kwick Weather: the app. Loaded after Leaflet, palette.js and the moon map (see index.html). */
 (() => {
 "use strict";
 const $ = (s, r = document) => r.querySelector(s);
@@ -2486,7 +2486,7 @@ function fitName() {
 }
 document.fonts?.ready.then(() => { fitName(); fitHeads(); }); // measured again once the real font is in
 function renderPlace() {
-  $("#placeName").textContent = place ? place.name : "Isobar";
+  $("#placeName").textContent = place ? place.name : "Kwick";
   { const len = (place ? place.name : "").length, h = $("#placeName").parentElement; h.classList.toggle("long", len > 11 && len <= 17); h.classList.toggle("longer", len > 17); }
   fitName();
   $("#tbName").textContent = place ? place.name : "";
@@ -2935,7 +2935,7 @@ document.querySelectorAll("dialog").forEach(d => new MutationObserver(lockPage).
     const d = document.querySelector("dialog[open]"); if (d) { d.hist = false; d.close(); }
   });
 }
-// Chrome offers to install the app: show "Install Isobar as an app" in Settings while that offer stands
+// Chrome offers to install the app: show "Install Kwick as an app" in Settings while that offer stands
 // (iPhones never make this offer; there it's Share → Add to Home Screen).
 let installOffer = null;
 addEventListener("beforeinstallprompt", e => { e.preventDefault(); installOffer = e; $("#installBtn").hidden = false; });

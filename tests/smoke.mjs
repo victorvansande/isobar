@@ -1,4 +1,4 @@
-/* Isobar smoke test: opens the app in Chromium and in WebKit (Safari's engine) at phone and desktop size, feeds it
+/* Kwick smoke test: opens the app in Chromium and in WebKit (Safari's engine) at phone and desktop size, feeds it
    saved weather instead of the live services, and checks that it renders and works without errors: every card
    filled in, nothing sticking out sideways, the summary, the warning banner, the 14-day view and sheets, the
    settings, scrubbing the sun, zooming the radar, and the weather effects (frost, condensation, wind, fog).

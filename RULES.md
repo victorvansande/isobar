@@ -1,4 +1,4 @@
-# Isobar rules
+# Kwick rules
 
 A reference, not a law book. These notes keep the app one consistent piece of work, and they are the first thing to
 read before adding something new. They are meant to be played with: when a change is clearly better by breaking a
@@ -8,7 +8,7 @@ app (Claude included) to weigh.
 
 ## Look and feel
 
-What Isobar feels like, as a touchstone for anything new: does it look like it was always there?
+What Kwick feels like, as a touchstone for anything new: does it look like it was always there?
 
 - **Calm, natural and precise.** A quiet surface that tells the truth about the sky. Decoration only when it carries
   real data; nothing that is only there to look busy.

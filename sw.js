@@ -1,10 +1,10 @@
-/* Isobar service worker: the app opens instantly and still works offline.
+/* Kwick service worker: the app opens instantly and still works offline.
    App files are network-first, so every deploy shows up right away, but a slow or dead connection gives up after
    a few seconds and opens the last copy instead of hanging on a blank screen. Fonts and the map library never change,
    so they come straight from the cache. Weather, radar and map data always go to the network
    (the app keeps its own copy of the last forecasts). */
-const CACHE = "isobar-v8";
-const SHELL = ["./", "./index.html", "./styles.css", "./app.js", "./palette.js", "./assets/moon-map.js", "./manifest.webmanifest", "./assets/icon-192.png", "./assets/apple-touch-icon.png"];
+const CACHE = "isobar-v9"; // the key keeps its old name; a new number makes phones fetch the new icons
+const SHELL = ["./", "./index.html", "./styles.css", "./app.js", "./palette.js", "./assets/moon-map.js", "./manifest.webmanifest", "./assets/icon-192.png", "./assets/apple-touch-icon.png", "./assets/favicon.svg"];
 const LIBS = [
   "https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Urbanist:wght@200;300;400&display=swap",
   "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css",
