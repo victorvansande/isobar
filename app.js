@@ -1385,16 +1385,15 @@ $("#c-hourly").addEventListener("click", e => {
   if (e.target.closest("#hAll")) openDays(null);
   if (e.target.closest("#hSure")) openSpread(0);
 });
-/* Until someone has opened a day once, the 14-day view says the days can be tapped; after that it shows their range. */
+/* The 14-day view's subtitle: the range of the fortnight, as the 48-hour view shows its own (the Full forecast button
+   already says the days open). */
 function dayHint() {
-  if (!store.get("dayTapped", false)) return "Tap a day for its full forecast";
   const { Dy, di } = X, lo = Math.min(...Dy.temperature_2m_min.slice(di, di + 14).filter(v => v != null)), hi = Math.max(...Dy.temperature_2m_max.slice(di, di + 14).filter(v => v != null));
   return `${R(lo)}° to ${R(hi)}°`;
 }
 /* Pops the full 14-day stack out in a sheet; with a day number, that day comes up unfolded. */
 function openDays(n) {
   if (n != null) store.set("openDay", n);
-  if (n != null && !store.get("dayTapped", false)) { store.set("dayTapped", true); const s = $("#hDaysSub"); if (s) s.textContent = dayHint(); }
   renderDays();
   $("#dlgDays").showModal();
   const sheet = $("#dlgDays .sheet");
