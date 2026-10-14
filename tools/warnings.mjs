@@ -1,4 +1,4 @@
-/* Builds Isobar's weather warnings from MeteoAlarm: the official warnings of the national weather services of
+/* Builds Kwick's weather warnings from MeteoAlarm: the official warnings of the national weather services of
    38 European countries (KMI in Belgium, KNMI, DWD, Météo-France...), gathered by EUMETNET.
 
    MeteoAlarm doesn't let web pages read its feeds directly, and names the warned areas by region code rather than

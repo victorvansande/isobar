@@ -42,8 +42,8 @@ jobs:
           publish() {
             cd out
             git init -q -b warnings
-            git config user.name "isobar-warnings"
-            git config user.email "isobar-warnings@users.noreply.github.com"
+            git config user.name "kwick-warnings"
+            git config user.email "kwick-warnings@users.noreply.github.com"
             git add -A
             git commit -qm "Weather warnings $(date -u +%Y-%m-%dT%H:%MZ)"
             git push -qf "$PUSH_URL" warnings

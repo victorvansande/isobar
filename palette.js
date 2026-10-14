@@ -1,4 +1,4 @@
-/* Isobar palette — every colour in the app comes from here.
+/* Kwick palette — every colour in the app comes from here.
    Families were sampled from the reference boards (see color-study.html).
    Each family has four roles:
      core  the deep centre of a card (keeps white type readable)

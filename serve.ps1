@@ -1,4 +1,4 @@
-# Serves Isobar at http://localhost:5577/ (stop with Ctrl+C).
+# Serves Kwick at http://localhost:5577/ (stop with Ctrl+C).
 param([int]$Port = 5577)
 $root = [IO.Path]::GetFullPath($PSScriptRoot)
 $types = @{ ".html" = "text/html; charset=utf-8"; ".js" = "text/javascript; charset=utf-8"; ".css" = "text/css; charset=utf-8";
@@ -6,7 +6,7 @@ $types = @{ ".html" = "text/html; charset=utf-8"; ".js" = "text/javascript; char
 $listener = [System.Net.HttpListener]::new()
 $listener.Prefixes.Add("http://localhost:$Port/")
 $listener.Start()
-Write-Host "Isobar is running at http://localhost:$Port/"
+Write-Host "Kwick is running at http://localhost:$Port/"
 while ($listener.IsListening) {
   $ctx = $listener.GetContext()
   $rel = [Uri]::UnescapeDataString($ctx.Request.Url.AbsolutePath.TrimStart("/"))
