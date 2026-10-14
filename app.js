@@ -2596,6 +2596,7 @@ function renderAll() {
   for (const f of parts) { try { f(); } catch (e) { console.error(f.name, e); } }
   const draws = holdDraw; holdDraw = null; // every card is in place: now the canvases measure and draw
   fitHeads();
+  if (wallOn) { fitWall(); settleWall(); } // on the wall, first make room so no card is cut off
   for (const f of draws) { try { f(); } catch (e) { console.error(e); } }
   wantRadar();
   loadClimate();
@@ -3067,10 +3068,28 @@ if ("IntersectionObserver" in window) {
    the window's shape asks) in a 9 × 4 grid, then scaled as one piece to fit the window. Opened from the link at the
    bottom of About the data, with the W key or with ?wall in the address; W, Esc or the corner × close it. */
 let wallOn = false;
-function fitWall() {
-  const W = 2720, H = Math.max(1330, Math.round(W * innerHeight / innerWidth)), s = Math.min(innerWidth / W, innerHeight / H), r = document.documentElement.style;
+function fitWall(atLeast = 0) {
+  const W = 2720, H = Math.max(1330, Math.round(W * innerHeight / innerWidth), Math.round(atLeast)), s = Math.min(innerWidth / W, innerHeight / H), r = document.documentElement.style;
   r.setProperty("--wall-w", `${W}px`); r.setProperty("--wall-h", `${H}px`); r.setProperty("--wall-s", s.toFixed(4));
   r.setProperty("--wall-x", `${((innerWidth - W * s) / 2).toFixed(1)}px`); r.setProperty("--wall-y", `${((innerHeight - H * s) / 2).toFixed(1)}px`);
+}
+/* Nothing on the wall is ever cut off: once the cards are in place it measures how far any card's own content runs
+   past its bottom, and makes the wall that much taller (the four rows share the extra), then scales the whole a little
+   smaller to fit the window. A short, wide window simply gets a slightly smaller wall. */
+function settleWall() {
+  for (let pass = 0; pass < 4; pass++) {
+    const root = document.documentElement, s = parseFloat(root.style.getPropertyValue("--wall-s")) || 1;
+    let over = 0;
+    for (const c of document.querySelectorAll("#board > .card")) {
+      if (!c.getClientRects().length) continue;
+      const kids = [...c.children].filter(k => { const cs = getComputedStyle(k); return cs.position !== "absolute" && cs.position !== "fixed" && cs.display !== "none" && parseFloat(cs.marginBottom) >= 0 && k.getClientRects().length; }); // not what bleeds to the edge on purpose (the visibility landscape)
+      if (!kids.length) continue;
+      const bottom = Math.max(...kids.map(k => k.getBoundingClientRect().bottom)) + parseFloat(getComputedStyle(c).paddingBottom) * s;
+      over = Math.max(over, (bottom - c.getBoundingClientRect().bottom) / s);
+    }
+    if (over <= 1) return;
+    fitWall(parseFloat(root.style.getPropertyValue("--wall-h")) + over * 4 + 8);
+  }
 }
 function setWall(on) {
   if (on === wallOn) return; wallOn = on;
