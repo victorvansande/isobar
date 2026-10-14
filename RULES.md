@@ -65,6 +65,9 @@ What Kwick feels like, as a touchstone for anything new: does it look like it wa
 11. **One gap between cards**: 14 px (10 px on phones).
 12. **Controls line up with the text**: a switch or button in a card sits on the same inset as the title.
     The main card follows the same inset; corner controls (Back to now, the moon) line up on it.
+12a. **Scrolling down the page never gets caught in a card.** Up and down on a mouse wheel or trackpad always
+    scrolls the page; sliders and timelines move with a sideways scroll (or Shift), dragging or the arrow keys. On a
+    touch screen one finger scrolls the page past the map; two fingers move and pinch it.
 13a. **Corners**: card 30 px (`--r-card`), surfaces inside cards 16 px, pills fully round; 1–3 px only for hairline
     marks and needles.
 13b. **Gaps inside cards** follow a rhythm of 4: 2, 4, 8, 12, 16, 20 px.

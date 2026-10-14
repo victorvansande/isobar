@@ -738,6 +738,8 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .rticks button:not(.fut) + button.fut::before{content:"";position:absolute;left:-4px;top:10px;bottom:10px;width:1.5px;border-radius:1px;background:rgba(255,255,255,.55)}
 .rtime{font:500 11px/1 var(--f-label);font-variant-numeric:tabular-nums;min-width:70px;text-align:right}
 .zoomer{position:absolute;z-index:500;right:16px;top:16px;display:grid;gap:8px}
+.map-hint{position:absolute;left:50%;top:50%;z-index:600;margin:0;padding:8px 14px;border-radius:999px;font-size:13px;font-weight:600;color:#fff;background:rgba(16,14,30,.72);transform:translate(-50%,-50%);opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap} /* "use two fingers", shown briefly on a touch screen */
+.map-hint.on{opacity:1}
 .ch.lens.dark h3{color:#fff}.ch.lens.dark p{color:rgba(255,255,255,.65)}
 
 /* ---------- source ---------- */

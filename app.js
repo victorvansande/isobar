@@ -1004,13 +1004,17 @@ let heroFrostGrown = false;
 /* ---------------- dragging the sun: scrub through today's daylight ---------------- */
 /* Runs `fn` with the latest event at most once per screen refresh. Touch screens report moves faster than the screen
    redraws, so updating on every event queues work up and the indicator trails the finger. */
-/* The app's one rule for the mouse wheel: over a slider, strip or timeline, one notch moves it exactly as far as one
-   press of an arrow key (a trackpad's small steps add up to one); everywhere else the wheel scrolls the page as usual. */
+/* The app's one rule for the mouse wheel: scrolling up and down always scrolls the page, also over a slider, strip or
+   timeline, so moving down the page never gets caught in a card. A sideways scroll (a trackpad swipe, or the wheel
+   with Shift held) moves the slider instead, one step as far as one press of an arrow key (a trackpad's small steps
+   add up to one). */
 function wheelStep(el, step) {
   if (!el) return;
   let acc = 0, last = 0;
   el.addEventListener("wheel", e => {
-    const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY; if (!d) return;
+    const side = Math.abs(e.deltaX) > Math.abs(e.deltaY);
+    if (!side && !e.shiftKey) return; // up and down: the page's
+    const d = side ? e.deltaX : e.deltaY; if (!d) return;
     e.preventDefault();
     const px = d * (e.deltaMode === 1 ? 33 : e.deltaMode === 2 ? 400 : 1), now = performance.now();
     if (now - last > 300 || Math.sign(px) !== Math.sign(acc)) acc = 0;
@@ -2234,7 +2238,7 @@ function renderSrc() {
 }
 
 /* ---------------- radar ---------------- */
-let map, base, marker, cityLayer, frames = [], layers = [], fi = 0, timer = null, radarHost = "", radarLoaded = 0;
+let map, base, marker, cityLayer, frames = [], layers = [], fi = 0, timer = null, radarHost = "", radarLoaded = 0, radarBr = null; // radarBr: whether the frames loaded are Buienradar's (the place lies in its area)
 const esri = kind => `https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_${document.documentElement.dataset.mode === "day" ? "Light" : "Dark"}_Gray_${kind}/MapServer/tile/{z}/{y}/{x}`;
 /* Our own map labels instead of the provider's: only larger cities, in the app's type. [name, lat, lon, population in millions] */
 const CITIES = [
@@ -2439,7 +2443,20 @@ async function initRadar() {
   if (!RadarLayer) RadarLayer = makeRadarLayer();
   const ll = [D.latitude, D.longitude];
   if (!map) {
-    map = L.map(box, { zoomControl: false, scrollWheelZoom: false, attributionControl: false }).setView(ll, 7);
+    // On a touch screen one finger scrolls the page past the map, so a swipe down the app never gets caught in it; two
+    // fingers move and pinch the map. A sideways one-finger swipe (someone trying to pan) shows how, briefly.
+    const touch = matchMedia("(pointer: coarse)").matches;
+    map = L.map(box, { zoomControl: false, scrollWheelZoom: false, attributionControl: false, dragging: !touch }).setView(ll, 7);
+    if (touch) {
+      const hint = document.createElement("p"); hint.className = "map-hint"; hint.textContent = "Use two fingers to move the map"; box.parentElement.appendChild(hint);
+      let x0 = 0, y0 = 0, shown = 0;
+      box.addEventListener("touchstart", e => { if (e.touches.length === 1) { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; } }, { passive: true });
+      box.addEventListener("touchmove", e => {
+        if (e.touches.length !== 1 || Date.now() - shown < 4000) return;
+        const dx = Math.abs(e.touches[0].clientX - x0), dy = Math.abs(e.touches[0].clientY - y0);
+        if (dx > 30 && dx > dy * 1.5) { shown = Date.now(); hint.classList.add("on"); setTimeout(() => hint.classList.remove("on"), 1600); }
+      }, { passive: true });
+    }
     base = L.tileLayer(esri("Base"), { maxZoom: 12, maxNativeZoom: 16 }).addTo(map);
     // an HTML dot rather than a vector circle: vector shapes stretch with the map during a zoom and then snap back
     marker = L.marker(ll, { icon: L.divIcon({ className: "here-pin", iconSize: [14, 14] }), interactive: false, keyboard: false }).addTo(map);
@@ -2460,7 +2477,8 @@ async function initRadar() {
   } else { map.setView(ll, map.getZoom()); marker.setLatLng(ll); base.setUrl(esri("Base")); }
   placeCities();
   setTimeout(() => map.invalidateSize(), 50);
-  if (Date.now() - radarLoaded < 5 * 6e4 && layers.length) return;
+  // fresh frames are kept for five minutes, unless the place moved into or out of Buienradar's area (its source changes)
+  if (Date.now() - radarLoaded < 5 * 6e4 && layers.length && radarBr === inBr(ll[0], ll[1])) return;
   try {
     const j = await getJSON("https://api.rainviewer.com/public/weather-maps.json");
     radarHost = j.host; radarLoaded = Date.now();
@@ -2470,7 +2488,8 @@ async function initRadar() {
     const tileUrl = f => `${radarHost}${f.path}/256/{z}/{x}/{y}/2/1_1.png`;
     frames = [...past.map(f => ({ ...f, fut: false })), ...fut.map(f => ({ ...f, fut: true }))];
     // inside Buienradar's area its past and forecast replace RainViewer altogether: one source for the whole timeline
-    if (inBr(ll[0], ll[1])) { try { const b = await brFrames(); if (b.some(f => !f.fut) && b.some(f => f.fut)) frames = b; } catch {} }
+    radarBr = inBr(ll[0], ll[1]);
+    if (radarBr) { try { const b = await brFrames(); if (b.some(f => !f.fut) && b.some(f => f.fut)) frames = b; } catch {} }
     layers = frames.map(f => f.br ? L.imageOverlay(BLANK, BR_AREA, { opacity: 0, zIndex: 10, interactive: false })
       : new RadarLayer({ url: tileUrl(f), opacity: 0, maxZoom: 12, zIndex: 10 })); // show() puts the ones it needs on the map
     const ticks = () => { $("#rTicks").innerHTML = frames.map((f, i) => `<button class="${f.fut ? "fut" : ""}" data-i="${i}" aria-label="${f.fut ? "Forecast frame" : "Frame"} ${i + 1}"></button>`).join(""); };
@@ -2528,6 +2547,7 @@ function fitName() {
   if (n.scrollWidth > n.clientWidth) n.style.fontSize = `${Math.max(20, parseFloat(getComputedStyle(n).fontSize) * n.clientWidth / n.scrollWidth - .5).toFixed(1)}px`;
 }
 document.fonts?.ready.then(() => { fitName(); fitHeads(); }); // measured again once the real font is in
+if ("ResizeObserver" in window) new ResizeObserver(() => fitName()).observe($(".top-r")); // and whenever the clock beside it changes width (a 12-hour "12:19 pm" is wider)
 function renderPlace() {
   $("#placeName").textContent = place ? place.name : "Kwick";
   { const len = (place ? place.name : "").length, h = $("#placeName").parentElement; h.classList.toggle("long", len > 11 && len <= 17); h.classList.toggle("longer", len > 17); }
