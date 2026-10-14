@@ -105,6 +105,10 @@ What Kwick feels like, as a touchstone for anything new: does it look like it wa
 
 21. No `mask`, `filter` or `backdrop-filter` on a very wide or scrolling element; put it on a card-sized wrapper.
     Cards contain their own painting.
+21a. **Animate only what the graphics chip can move for free**: `transform` and `opacity` of a finished layer. Never
+    animate what forces a redraw every frame (gradient positions, custom properties inside gradients, blur, SVG noise)
+    on anything large; draw it once and move the layer. Continuous redraws across many cards make Chrome fall behind
+    and flash half-drawn or stale cards. Small, throttled exceptions (the heat shimmer on the arc and the number) are fine.
 22. Animations pause when their card is off screen or the tab is hidden, and respect "reduce motion".
 23. Canvases are sized to the screen's pixels and redrawn only when something changed.
 24. Heavy things (map, moon map, climate history) load only when they are about to be seen.

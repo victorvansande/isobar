@@ -658,7 +658,7 @@ function setHaze(which, scale) {
   el.classList.toggle("hot", on);
   let heat = el.querySelector(":scope > .heat");
   if (on && !heat) { heat = document.createElement("span"); heat.className = "heat"; heat.setAttribute("aria-hidden", "true"); el.prepend(heat); }
-  if (heat) { if (on) heat.style.setProperty("--hs", (scale / 14).toFixed(2)); else heat.remove(); }
+  if (heat) { if (on) heat.style.setProperty("--heat", (scale / 14 * .4).toFixed(2)); else heat.remove(); }
   if (on) document.getElementById(`hazeMap-${which}`).setAttribute("scale", scale);
   if (on && which === "hero") document.getElementById("hazeMap-text").setAttribute("scale", (scale * .4).toFixed(1)); // the number and its lines: gentler, so they stay readable
   cancelAnimationFrame(hazeRAF);
