@@ -16,13 +16,15 @@ Then visit http://localhost:5577.
 
 - Forecast: [Open-Meteo](https://open-meteo.com/), "best match" model by default (the sharpest local model, handing over to ECMWF). Other models can be picked in settings.
 - Air quality and pollen: Copernicus CAMS via Open-Meteo.
-- Radar: [RainViewer](https://www.rainviewer.com/), recoloured to the app palette, on [Esri](https://www.esri.com/) map tiles (Esri, HERE, Garmin, © OpenStreetMap).
+- Radar: in and around the Benelux [Buienradar](https://www.buienradar.nl/) (the past two hours measured and the next two forecast); elsewhere [RainViewer](https://www.rainviewer.com/) (the past two hours). Recoloured to the app palette, on [Esri](https://www.esri.com/) map tiles (Esri, HERE, Garmin, © OpenStreetMap).
 - Place search: Open-Meteo geocoding. Reverse geocoding: BigDataCloud.
 - Weather warnings: [MeteoAlarm](https://meteoalarm.org/) (EUMETNET), the official warnings of 38 European weather services. `.github/workflows/warnings.yml` runs `tools/warnings.mjs` every half hour, which gives each warning its region outline (MeteoAlarm EMMA regions via the MIT-licensed [meteoalarm](https://github.com/niklasjordan/meteoalarm) package, Eurostat NUTS regions © EuroGeographics) and publishes them in 5° tiles on the `warnings` branch.
 - Moon phase, moonrise and twilight: calculated in the browser (after SunCalc by Vladimir Agafonkin).
 - Moon surface: [NASA Scientific Visualization Studio, CGI Moon Kit](https://svs.gsfc.nasa.gov/4720) (LRO imagery, public domain), embedded in `assets/moon-map.js`.
 
 ## Files
+
+- `CLAUDE.md`: how to work on the app (for Claude sessions on any machine); `RULES.md`: the look and feel and the rules
 
 - `index.html`: the page structure
 - `styles.css`: all the styling
