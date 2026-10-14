@@ -402,13 +402,14 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .htrack{position:absolute;left:0;top:6px;height:4px;border-radius:999px}
 .hev{position:absolute;top:14px;transform:translateX(-50%);display:flex;align-items:center;gap:4px;font:500 11px/1 var(--f-label);font-variant-numeric:tabular-nums;color:var(--ink-2);white-space:nowrap}
 .hev svg{width:15px;height:12px;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
-.hcol{display:grid;grid-template-rows:22px 32px 78px 46px 10px;justify-items:center;align-items:center;padding:6px 0 4px}
+.hcol{display:grid;grid-template-rows:22px 32px 78px auto;justify-items:center;align-items:center;padding:6px 0 4px}
 .htime{font:500 11px/1 var(--f-label);font-variant-numeric:tabular-nums;color:var(--ink-2);white-space:nowrap}
 .htime.now{background:var(--signal);color:var(--signal-ink);padding:5px 8px;border-radius:999px}
 .htime.mid{color:var(--ink);font-weight:600}
 .hpop{display:grid;justify-items:center;gap:4px;align-self:end}
 .hpop svg{width:8px;height:30px}
 .hpop span{font:500 12px/1 var(--f-label);color:var(--rain)}
+.hin.dry .hpop span{display:none} /* no hour with a chance: no empty row of labels under the dots */
 .hpop span small{font-size:11px;opacity:.8;margin-left:1px} /* the unit of an amount, shown where no chance of rain is given */
 .hcurve{position:absolute;left:0;top:96px;pointer-events:none;overflow:visible}
 .hcurve text{font:400 15px var(--f-num);fill:var(--ink);text-anchor:middle;font-variant-numeric:tabular-nums}
