@@ -217,6 +217,11 @@ dialog:focus-visible,.sheet:focus-visible{outline:none} /* opening a sheet focus
     var(--mid);
   animation:inflow 34s ease-in-out var(--delay,0s) infinite alternate}
 .pig::after{content:"";position:absolute;inset:0;z-index:-1;background-image:var(--grain);opacity:.2;mix-blend-mode:soft-light}
+/* Sun and moon: the real sky colour as a calm wash from top to bottom, a touch less saturated; no dark core in the middle
+   and no glow in the corners. They still stand out as the sky cards, without effects. */
+.a-sun.pig::before,.a-moon.pig::before{inset:0;filter:none;animation:none;
+  background:linear-gradient(180deg,color-mix(in oklab,var(--mid) 72%,var(--hi)),color-mix(in oklab,var(--mid) 88%,var(--core)));
+  background:linear-gradient(180deg,oklch(from color-mix(in oklab,var(--mid) 72%,var(--hi)) l calc(c * .82) h),oklch(from color-mix(in oklab,var(--mid) 88%,var(--core)) l calc(c * .82) h))}
 /* ---------- day look: light tints, dark ink ----------
    By day the coloured cards become light tints of their own colour, with text in that colour's darkest shade; the
    slow inflowing aurora gradient stays, in pastel. The sky cards (main card, moon, sun) keep their deep colours:
