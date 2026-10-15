@@ -33,7 +33,7 @@ know (decisions, preferences, open choices), and push it along.**
   phrase; one line per title and subtitle.
 - Be honest about what was and wasn't verified, especially on a phone (the preview runs Chrome, not Safari).
 
-## State and open choices (2026-10-14)
+## State and open choices (2026-10-15)
 
 - Radar: in and around the Benelux, Buienradar for the whole timeline (2 h measured + 2 h forecast, one source so
   nothing jumps at "now"); elsewhere RainViewer, past 2 h. RainViewer can show night-time ghost echoes; ignoring its
@@ -88,3 +88,23 @@ know (decisions, preferences, open choices), and push it along.**
   what the chance means (≥0.1 mm, ensemble share, not area or time), the amount (1 mm = 1 l/m²), why both, dots/rings.
 - Moon: soft terminator (light fades over the last few degrees of sun height), not a hard clip.
 - Saved for later, don't build unasked: a Vestaboard-style split-flap text effect (letters cycling until they land).
+- Night look: ink-black (`--bg:#0e0f12`) with just a touch of each card's colour, no night-blue cast.
+- Precipitation card speaks of snow when most of what falls is snow ("Snow likely from…", "N cm of snow"), white dots,
+  slow swaying flakes, the odd twinkle.
+- Weather effects (2026-10-15), all data-driven and calm:
+  - an orange or red warning in force: a soft glow in its colour round the dock and a dot in the top bar (the one
+    glow RULES.md 19 allows: a signal, not decoration);
+  - hail (WMO 96/99): white grains bounce on the precipitation stack, subtitle "· hail";
+  - fog hours in the 48-hour strip: overlapping soft drifting puffs (not a band);
+  - storm (gusts ≥ 75 km/h): every card's slow light drifts at 16 s instead of 34 s;
+  - thunder sky: a muted plum corner (not the signal raspberry, which stays for "now" and warnings); thunder rain is a
+    downpour (more, longer, faster streaks);
+  - rain and snow lean with the wind everywhere (east-west part sets the side, speed the slant, ~2° to 28°);
+  - thunder in the precipitation grid: every 3–7 s a random zigzag bolt of white dots down the grid, sometimes forked;
+  - snow lying on the ground (current snow_depth ≥ 1 cm): a soft lumpy ridge on the main card's horizon line.
+- Tried and removed (don't redo unasked): a glow inside the main card's clouds and a flash in the cloud cover card
+  during thunder; frost needles in the 48-hour strip; a golden-hour glow on the sun card.
+- The main card's own thunder flash and glowing bolts are unchanged; making them calmer (thinner, no glow, rarer) was
+  offered, not decided. Other ideas offered, not decided: real lightning strikes on the radar (Blitzortung, terms to
+  check), fixing the empty-cards-in-Chrome bug first, a proper minus sign ("−4°") in the 48-hour strip.
+- Cloud cover card: at least six rows of dots; on a short card the dots sit closer (10–15 px), phones unchanged.
