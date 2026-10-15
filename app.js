@@ -444,7 +444,7 @@ function confidence(u) {
 function fetchAll(p, signal) {
   const w = getJSON("https://api.open-meteo.com/v1/forecast?" + qs({
     latitude: p.lat, longitude: p.lon, timezone: "auto", forecast_days: 14, past_days: 1,
-    current: "temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,cloud_cover,pressure_msl,wind_speed_10m,wind_direction_10m,wind_gusts_10m,visibility,uv_index,dew_point_2m",
+    current: "temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,cloud_cover,pressure_msl,wind_speed_10m,wind_direction_10m,wind_gusts_10m,visibility,uv_index,dew_point_2m,snow_depth",
     minutely_15: "precipitation,snowfall", forecast_minutely_15: 24, past_minutely_15: 0,
     hourly: "temperature_2m,apparent_temperature,precipitation_probability,precipitation,snowfall,weather_code,wind_speed_10m,wind_gusts_10m,wind_direction_10m,uv_index,is_day,pressure_msl,visibility,cloud_cover,relative_humidity_2m,dew_point_2m",
     daily: "weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,sunrise,sunset,daylight_duration,sunshine_duration,uv_index_max,precipitation_sum,precipitation_probability_max,precipitation_hours,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant",
@@ -934,6 +934,17 @@ function rainbowChance() {
 /* The weather behind the main card for one hour, painted back to front so combined weather stacks naturally:
    sun glow or stars, then clouds and fog, then whatever is falling, then wind on top. Dragging along the arc repaints
    it for the hour you land on, so snow at 01:00 shows as snow. */
+/* Snow lying on the ground (the model's snow depth now, from 1 cm): a soft, slightly lumpy ridge of snow along the
+   horizon line of the main card's arc, a little higher the deeper it lies (up to about 30 cm). Its lumps are fixed
+   per place, so it doesn't shift between refreshes. Still, no animation. */
+function snowRidge() {
+  const v = X.c.snow_depth, cm = v == null ? 0 : v * (S.precip === "inch" ? 30.48 : 100); // metres, or feet with inches
+  if (cm < 1) return "";
+  const k = clamp(.7 + Math.log2(cm) * .3, .7, 2.2), rnd = prng(Math.round(X.lat * 100) * 31 + Math.round(X.lon * 100));
+  let d = "M0 95.6", x = 0;
+  while (x < 300) { const w = 14 + rnd() * 22; d += ` Q${(x + w / 2).toFixed(1)} ${(95 - (.9 + rnd() * 1.6) * 1.6 * k).toFixed(1)} ${Math.min(300, x + w).toFixed(1)} ${(95 - rnd() * .5 * k).toFixed(1)}`; x += w; }
+  return `<path class="snowr" d="${d} L300 95.6Z"/><path class="snowr-edge" d="${d}"/>`;
+}
 function heroSky({ kind, code, mm, cloud, windKmh, gustKmh, dir, isDay }) {
   const fair = kind === "clear" || kind === "partly";
   const falling = ["snow", "sleet", "thunder", "drizzle", "rain"].includes(kind) || mm > 0;
@@ -1018,7 +1029,7 @@ function renderHero() {
   // the drawing is only as tall as today's arc (plus room for the dot), so a low winter arc leaves no empty sky above it
   const vy = Math.max(0, Math.floor(arcPoint(.5)[1] - 16));
   const arc = `<svg viewBox="0 ${vy} 300 ${108 - vy}" aria-hidden="true">
-    <line x1="0" y1="95" x2="300" y2="95" stroke="currentColor" stroke-opacity=".3" stroke-width="1"/>
+    <line x1="0" y1="95" x2="300" y2="95" stroke="currentColor" stroke-opacity=".3" stroke-width="1"/>${snowRidge()}
     <path id="arcDone" d="${arcPath(0, f)}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
     <path id="arcLeft" d="${arcPath(f, 1)}" fill="none" stroke="currentColor" stroke-opacity=".3" stroke-width="1.4" stroke-linecap="round"/>
     ${segs.filter(g => g.type).map(g => `<path class="awx awx-${g.type}" d="${arcPath(g.f0, g.f1)}"/>`).join("")}

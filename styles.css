@@ -405,6 +405,11 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 /* thunder: the bolt of white dots that strikes() draws down the grid now and then (opacity only) */
 .now-chart .strike{fill:rgb(255,255,255);opacity:0}
 :root[data-mode="day"] .now-chart .strike{fill:rgb(236,232,255)}
+/* snow lying on the ground: a soft white ridge on the arc's horizon line (snowRidge); on a pale sky a faint grey edge
+   keeps it visible */
+.snowr{fill:rgb(240,244,255);fill-opacity:.82}
+.snowr-edge{fill:none;stroke:rgb(255,255,255);stroke-opacity:.5;stroke-width:.5}
+.hero.light .snowr-edge{stroke:rgb(60,75,110);stroke-opacity:.3}
 /* hail: a white grain drops onto the stack and bounces once */
 .now-chart .hailg{opacity:0;animation:hailg var(--p) ease-in var(--w) infinite}
 @keyframes hailg{0%{opacity:0;transform:translateY(0)}8%{opacity:1}40%{transform:translateY(var(--fall))}50%{transform:translateY(calc(var(--fall) - 6px))}60%,85%{opacity:1;transform:translateY(var(--fall))}100%{opacity:0;transform:translateY(var(--fall))}}
