@@ -1437,13 +1437,15 @@ function dayStrip() {
     const mn = Dy.temperature_2m_min[i], mx = Dy.temperature_2m_max[i], pop = look.pop;
     // past the days that come with a chance of rain (about 11), the meter would read 0%: it gives way to the amount
     const amt = pop == null && toMm(look.mm) >= .2 ? `${fmtP(look.mm)}<small>${PU()}</small>` : "";
-    const lit = pop == null ? 0 : Math.round(pop / 20);
+    // where no chance is given, the dots show the amount instead, as rings so they never read as a chance: one ring for
+    // each of 0.5, 1, 2, 5 and 10 mm reached
+    const dmm = toMm(look.mm ?? 0), ring = pop == null, lit = ring ? [.5, 1, 2, 5, 10].filter(v => dmm >= v).length : Math.round(pop / 20);
     // a day with rain in the forecast (0.2 mm or more): drops fall through the empty dots as in the 48 hours, their
     // rhythm set by how hard it rains while it rains (the day's amount over its hours of rain)
-    const dmm = toMm(look.mm ?? 0), rains = pop != null && dmm >= .2 && lit > 0 && lit < 5;
+    const rains = dmm >= .2 && lit > 0 && lit < 5;
     const rate = dmm / Math.max(1, Dy.precipitation_hours?.[i] ?? 1);
     const per = (5.6 - Math.min(8, Math.ceil(Math.log2(1 + rate * 4) * 1.6)) * .3).toFixed(2), stepT = per * .024, t0 = 1.2 + ((n * 7919) % 97) / 97 * per;
-    let pd = ""; for (let q = 0; q < 5 && pop != null; q++) pd += `<circle${rains && q === lit - 1 ? ` class="htop" style="--p:${per}s;--w2:${(t0 + (5 - lit) * stepT).toFixed(2)}s"` : ""} cx="4" cy="${26 - q * 5.5}" r="${q < lit ? 2.2 : 1.5}" fill="${q < lit ? "var(--rain)" : "currentColor"}" opacity="${q < lit ? 1 : .18}"/>`;
+    let pd = ""; for (let q = 0; q < 5; q++) pd += `<circle${rains && q === lit - 1 ? ` class="htop" style="--p:${per}s;--w2:${(t0 + (5 - lit) * stepT).toFixed(2)}s"` : ""} cx="4" cy="${26 - q * 5.5}" ${q < lit ? (ring ? `r="1.8" fill="none" stroke="var(--rain)" stroke-width="1"` : `r="2.2" fill="var(--rain)"`) : `r="1.5" fill="currentColor" opacity=".18"`}/>`;
     if (rains) for (let j = 0; j < 5 - lit; j++) pd += `<circle class="drip" cx="4" cy="${26 - (4 - j) * 5.5}" r="2.2" fill="var(--rain)" style="--p:${per}s;--w:${(t0 + j * stepT).toFixed(2)}s"/>`;
     const now = n === 0 && c.temperature_2m != null ? `<span class="nd" style="bottom:${P(clamp(c.temperature_2m, lo, hi))}%"></span>` : "";
     // an uncertain day: the bar reaches out by how much the models disagree, fading at both ends, so it reads as
