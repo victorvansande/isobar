@@ -251,7 +251,7 @@ dialog:focus-visible,.sheet:focus-visible{outline:none} /* opening a sheet focus
 :root[data-mode="day"] .pig:not(.sky)::before{background:
     radial-gradient(var(--cs) calc(var(--cs) * .9) at 52% 52%,color-mix(in oklab,var(--mid) 34%,#fff) 0%,transparent 76%),
     radial-gradient(var(--hs) calc(var(--hs) * .9) at var(--hx) var(--hy),color-mix(in oklab,var(--hi) 42%,#fff),transparent 70%),
-    radial-gradient(calc(var(--hs) + 6%) calc(var(--hs) + 4%) at var(--ax) var(--ay),color-mix(in oklab,var(--acc) 26%,#fff),transparent 72%),
+    radial-gradient(calc(var(--hs) + 6%) calc(var(--hs) + 4%) at var(--ax) var(--ay),color-mix(in oklab,var(--acc) calc(26% * var(--acc-k,1)),#fff),transparent 72%),
     color-mix(in oklab,var(--mid) 16%,#fff)}
 :root[data-mode="day"] .pig:not(.sky)::after{opacity:.1}
 :root[data-mode="day"] .pig:not(.sky) .num{text-shadow:none}
@@ -272,7 +272,7 @@ dialog:focus-visible,.sheet:focus-visible{outline:none} /* opening a sheet focus
 :root:not([data-mode="day"]) .pig:not(.sky)::before{background:
     radial-gradient(var(--cs) calc(var(--cs) * .9) at 52% 52%,color-mix(in oklab,var(--mid) 30%,#0f1228) 0%,transparent 76%),
     radial-gradient(var(--hs) calc(var(--hs) * .9) at var(--hx) var(--hy),color-mix(in oklab,var(--hi) 22%,#0f1228),transparent 70%),
-    radial-gradient(calc(var(--hs) + 6%) calc(var(--hs) + 4%) at var(--ax) var(--ay),color-mix(in oklab,var(--acc) 22%,#0f1228),transparent 72%),
+    radial-gradient(calc(var(--hs) + 6%) calc(var(--hs) + 4%) at var(--ax) var(--ay),color-mix(in oklab,var(--acc) calc(22% * var(--acc-k,1)),#0f1228),transparent 72%),
     color-mix(in oklab,var(--mid) 18%,#0f1228)}
 :root:not([data-mode="day"]) .pig:not(.sky)::after{opacity:.1}
 :root:not([data-mode="day"]) .pig:not(.sky) .num{text-shadow:none}
