@@ -539,6 +539,9 @@ html.warned .topbar::before{content:"";width:8px;height:8px;border-radius:50%;ba
 .day:not(.open) .fx.snow i{animation-name:snowfall-short;animation-duration:calc(var(--t) * .35)}
 @keyframes snowfall-short{0%{transform:translate3d(0,0,0)}50%{transform:translate3d(5px,52px,0)}100%{transform:translate3d(-3px,104px,0)}}
 .fx.storm{animation:flash 9s linear infinite}
+/* storm rain: a downpour, longer and a little heavier streaks driven at a steeper slant */
+.fx.storm i{width:1.5px;height:calc(var(--l) * 1.6);animation-name:stormfall}
+@keyframes stormfall{from{transform:translate3d(0,0,0) rotate(20deg)}to{transform:translate3d(-190px,520px,0) rotate(20deg)}}
 @keyframes flash{0%,91%,93.5%,95.5%,100%{background:transparent}92%{background:rgba(255,255,255,.2)}94.5%{background:rgba(255,255,255,.1)}}
 .day-h{width:100%;display:grid;grid-template-columns:minmax(0,1.3fr) 28px 40px minmax(0,2.2fr);align-items:center;gap:12px;padding:14px 18px 34px;text-align:left}
 .dn{display:flex;gap:8px;align-items:baseline;min-width:0;white-space:nowrap}

@@ -73,10 +73,12 @@
     rain:    { core: ["#1c2027", .78], mid: ["#545b67", .88], hi: ["#9aa1ac", .7], acc: ["#646d7c", .7] },
     snow:    { core: ["#b9c6da", .75], mid: ["#e9eef6", .86], hi: ["#ffffff", .86], acc: ["#d6e6ff", .7] },
     sleet:   { core: ["#4a5670", .6], mid: ["#a9b4c6", .72], hi: ["#eef2f8", .7], acc: ["#b9d2ee", .6] },
-    thunder: { core: ["#0e0228", .62], mid: ["#2e2a45", .6], hi: ["#ff5fd0", .3], acc: [SIGNAL, .7] }
+    // thunder: a dark storm violet with a muted plum corner (not the signal raspberry, which is for "now" and warnings);
+    // the flash and the bolts are what say thunder
+    thunder: { core: ["#0e0228", .62], mid: ["#2e2a45", .6], hi: ["#9a86d8", .3], acc: ["#4a3570", .75] }
   };
   // how much the temperature may colour each kind of sky: fully on a clear one, barely on a grey or white one
-  const HTINT = { clear: 1, partly: .8, cloudy: .35, drizzle: .35, rain: .3, thunder: .5, sleet: .25, fog: .15, snow: .15 };
+  const HTINT = { clear: 1, partly: .8, cloudy: .35, drizzle: .35, rain: .3, thunder: .25, sleet: .25, fog: .15, snow: .15 };
   function heroPal(altDeg, kind, tC) {
     let p;
     if (altDeg <= HSTOPS[0][0]) p = { ...HSKY.night };

@@ -613,7 +613,7 @@ const fxRand = seed => () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
 /* Falling rain or snow streaks, shared by the day cards and the main card. */
 function fallDrops(seedN, kind, count, strength) {
   const rnd = fxRand(seedN * 7919 + 17);
-  const [t0, tv] = { snow: [5, 5], hail: [.5, .25], drizzle: [1.1, .6] }[kind] || [.75, .5]; // seconds to fall: snow drifts, hail drops hard
+  const [t0, tv] = { snow: [5, 5], hail: [.5, .25], drizzle: [1.1, .6], thunder: [.5, .3] }[kind] || [.75, .5]; // seconds to fall: snow drifts, hail and storm rain drop hard
   let drops = "";
   for (let k = 0; k < count; k++) {
     const t = t0 + rnd() * tv;
@@ -941,8 +941,9 @@ function heroSky({ kind, code, mm, cloud, windKmh, gustKmh, dir, isDay }) {
   if (kind === "fog") L.push(mistLayer(21, "fog"));
   if (kind === "snow") L.push(fallDrops(99, "snow", code === 75 || code === 86 ? 62 : code === 71 ? 26 : 40, .9));                // snow, heavier codes more flakes
   else if (kind === "sleet") L.push(fallDrops(99, "rain", 22, .8), fallDrops(98, "snow", 20, .9));                                   // freezing rain and drizzle
-  else if (code === 96 || code === 99) L.push(fallDrops(99, "thunder", 34, .85), fallDrops(97, "hail", code === 99 ? 34 : 22, 1), bolts(5)); // thunder with hail
-  else if (kind === "thunder") L.push(fallDrops(99, "thunder", mm < 2 ? 34 : 48, .85), bolts(5));
+  // thunder rain is a downpour: more, longer and faster streaks than ordinary rain, driven at a steeper slant
+  else if (code === 96 || code === 99) L.push(fallDrops(99, "thunder", 48, 1), fallDrops(97, "hail", code === 99 ? 34 : 22, 1), bolts(5)); // thunder with hail
+  else if (kind === "thunder") L.push(fallDrops(99, "thunder", mm < 2 ? 56 : 70, 1), bolts(5));
   else if (kind === "drizzle") L.push(fallDrops(99, "drizzle", code === 55 ? 40 : 28, .7));
   else if (kind === "rain" || mm > 0) L.push(fallDrops(99, "rain", code === 65 || code === 82 || mm >= 4 ? 52 : code === 61 || code === 80 ? 26 : 38, .85));
   L.push(gustStreaks(dir, gustKmh, 50));                                                                                              // wind storm from 50 km/h gusts
