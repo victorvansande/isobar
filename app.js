@@ -1349,7 +1349,9 @@ function renderHourly() {
     // top dot gives a small bounce as each lands, as in the precipitation card: more often the harder it rains, each
     // hour on its own rhythm. An hour with only a chance stays still.
     const mm = toMm(H.precipitation[k] ?? 0), rains = mm >= .1 && lit > 0 && lit < 5;
-    const per = (5.6 - Math.min(8, Math.ceil(Math.log2(1 + mm * 4) * 1.6)) * .3).toFixed(2), stepT = per * .024, t0 = 1.2 + ((i * 7919) % 97) / 97 * per;
+    // a drop every 3.2 s in light rain down to every 2 s in heavy rain; each dot stays lit a little longer than in the
+    // precipitation card, as these columns are small
+    const per = (3.38 - Math.min(8, Math.ceil(Math.log2(1 + mm * 4) * 1.6)) * .17).toFixed(2), stepT = per * .06, t0 = .8 + ((i * 7919) % 97) / 97 * per;
     let pd = ""; for (let q = 0; q < 5; q++) pd += `<circle${rains && q === lit - 1 ? ` class="htop" style="--p:${per}s;--w2:${(t0 + (5 - lit) * stepT).toFixed(2)}s"` : ""} cx="4" cy="${26 - q * 5.5}" r="${q < lit ? 2.2 : 1.5}" fill="${q < lit ? "var(--rain)" : "currentColor"}" opacity="${q < lit ? 1 : .18}"/>`;
     if (rains) for (let j = 0; j < 5 - lit; j++) pd += `<circle class="drip" cx="4" cy="${26 - (4 - j) * 5.5}" r="2.2" fill="var(--rain)" style="--p:${per}s;--w:${(t0 + j * stepT).toFixed(2)}s"/>`;
     cols.push(`<div class="hcol">${tl}${icon(kind, day)}<span></span>
@@ -1459,7 +1461,7 @@ function dayStrip() {
     // rhythm set by how hard it rains while it rains (the day's amount over its hours of rain)
     const rains = dmm >= .2 && lit > 0 && lit < 5;
     const rate = dmm / Math.max(1, Dy.precipitation_hours?.[i] ?? 1);
-    const per = (5.6 - Math.min(8, Math.ceil(Math.log2(1 + rate * 4) * 1.6)) * .3).toFixed(2), stepT = per * .024, t0 = 1.2 + ((n * 7919) % 97) / 97 * per;
+    const per = (3.38 - Math.min(8, Math.ceil(Math.log2(1 + rate * 4) * 1.6)) * .17).toFixed(2), stepT = per * .06, t0 = .8 + ((n * 7919) % 97) / 97 * per; // as in the 48 hours
     let pd = ""; for (let q = 0; q < 5; q++) pd += `<circle${rains && q === lit - 1 ? ` class="htop" style="--p:${per}s;--w2:${(t0 + (5 - lit) * stepT).toFixed(2)}s"` : ""} cx="4" cy="${26 - q * 5.5}" ${q < lit ? (ring ? `r="1.8" fill="none" stroke="var(--rain)" stroke-width="1"` : `r="2.2" fill="var(--rain)"`) : `r="1.5" fill="currentColor" opacity=".18"`}/>`;
     if (rains) for (let j = 0; j < 5 - lit; j++) pd += `<circle class="drip" cx="4" cy="${26 - (4 - j) * 5.5}" r="2.2" fill="var(--rain)" style="--p:${per}s;--w:${(t0 + j * stepT).toFixed(2)}s"/>`;
     const now = n === 0 && c.temperature_2m != null ? `<span class="nd" style="bottom:${P(clamp(c.temperature_2m, lo, hi))}%"></span>` : "";
