@@ -1309,11 +1309,11 @@ function renderFeels() {
   else { const humid = (c.relative_humidity_2m ?? 0) > 55 && toC(t) >= 20, sun = c.is_day && (c.cloud_cover ?? 100) < 50;
     sub = `${d}° warmer${humid ? " · humid" : sun ? " · sun" : ""}`; why = (c.relative_humidity_2m ?? 0) > 55 && toC(t) >= 20 ? `Humidity makes it feel ${d}° warmer.` : c.is_day && (c.cloud_cover ?? 100) < 50 ? `Sunshine and still air make it feel ${d}° warmer.` : `Feels ${d}° warmer than measured.`; }
   const same = !d; // the same to the degree: the needle sits right on the thermometer mark
-  // the accent glow says which way it feels: a cool blue-violet when colder, a warm amber when warmer, none when the
+  // the accent glow says which way it feels: a cool blue-violet when colder, a deep warm red when warmer, none when the
   // same. It shows clearly from 1° (this card lets its accent count for more than the others do) and grows to 4°.
   // Warmer leans further, as the card's own coral is warm already.
   const base = FAM.coral, cold = rf < rt, k = clamp(d / 4, 0, 1);
-  const tint = same ? base.mid : window.Palette.mix(base.mid, cold ? "#5b5cf0" : "#ffb21a", cold ? .6 + .4 * k : .75 + .25 * k);
+  const tint = same ? base.mid : window.Palette.mix(base.mid, cold ? "#5b5cf0" : "#e3122f", cold ? .6 + .4 * k : .75 + .25 * k);
   paint(el, { ...base, acc: tint });
   el.style.setProperty("--acc-k", same ? 1 : ((cold ? 1.5 : 1.9) + .4 * k).toFixed(2));
   // one line nothing else says: how cold and how warm today feels at its extremes (from the hourly feels-like)
