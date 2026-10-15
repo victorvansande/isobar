@@ -74,6 +74,7 @@ know (decisions, preferences, open choices), and push it along.**
   clear from 1° and growing to 4° (this card's accent counts for more via `--acc-k`; warmer leans further since the
   card is coral). The other cards' accents are still decorative.
 - 48-hour strip: in hours with ≥0.1 mm forecast, drops fall through the empty chance-dots onto the stack (same
-  animation and rhythm rule as the precipitation card); hours with only a chance stay still.
+  animation and rhythm rule as the precipitation card); hours with only a chance stay still. The 14-day strip does the same for days with ≥0.2 mm (rhythm from the
+  day's amount over its hours of rain). Open: days without a chance (only mm) — mockups B/C shown 2026-10-15.
 - Moon: soft terminator (light fades over the last few degrees of sun height), not a hard clip.
 - Saved for later, don't build unasked: a Vestaboard-style split-flap text effect (letters cycling until they land).
