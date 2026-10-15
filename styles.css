@@ -608,6 +608,11 @@ html.warned .topbar::before{content:"";width:8px;height:8px;border-radius:50%;ba
 @keyframes mistdrift{from{transform:translateX(-12%)}to{transform:translateX(14%)}}
 /* puffy clouds drifting across the main card; how many follows the actual cloud cover */
 .clouds{position:absolute;inset:0;z-index:-1;pointer-events:none;overflow:hidden;container-type:size}
+/* in-cloud lightning (cloudGlow): soft patches that light up from within now and then, a quick double pulse */
+.cglow{position:absolute;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
+.cglow i{position:absolute;aspect-ratio:1.7;opacity:0;
+  background:radial-gradient(closest-side,rgba(236,232,255,.8),rgba(210,200,255,.38) 45%,rgba(190,180,255,.1) 75%,transparent);animation:cglow var(--t) linear var(--d) infinite}
+@keyframes cglow{0%,86%,100%{opacity:0}87.5%{opacity:.9}89%{opacity:.3}90.5%{opacity:.75}94%{opacity:0}}
 .cloud{position:absolute;left:0;top:var(--y);width:var(--w);aspect-ratio:2.4;opacity:var(--o);filter:blur(var(--b));animation:cloudflow var(--t) linear var(--d) infinite}
 .cloud i{position:absolute;border-radius:50%;background:var(--cc)}
 @keyframes cloudflow{from{transform:translateX(-105%)}to{transform:translateX(calc(100cqw + 5%))}}

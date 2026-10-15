@@ -690,6 +690,18 @@ function cloudLayer(seed, cover, { night = false, wet = false, windKmh = 10 } = 
   return `<span class="clouds" aria-hidden="true">${out}</span>`;
 }
 
+/* Distant lightning inside the clouds: three soft patches of light, each somewhere in the upper sky, that now and
+   then light up from within with a quick double pulse, each on its own slow rhythm (11–17 s) apart from the card's
+   flash, so it reads as far-off in-cloud lightning. Plain radial gradients; only their opacity moves. */
+function cloudGlow(seed) {
+  const rnd = fxRand(seed); let out = "";
+  for (let i = 0; i < 3; i++) {
+    const t = 11 + rnd() * 6;
+    out += `<i style="left:${(-6 + rnd() * 62).toFixed(0)}%;top:${(-10 + rnd() * 40).toFixed(0)}%;width:${(42 + rnd() * 26).toFixed(0)}%;--t:${t.toFixed(1)}s;--d:${(-rnd() * t).toFixed(1)}s"></i>`;
+  }
+  return `<span class="cglow" aria-hidden="true">${out}</span>`;
+}
+
 /* Three jagged lightning bolts that take turns lighting up with the storm flash. */
 function bolts(seed) {
   const rnd = fxRand(seed); let out = "";
@@ -958,8 +970,8 @@ function heroSky({ kind, code, mm, cloud, windKmh, gustKmh, dir, isDay }) {
   if (kind === "snow") L.push(fallDrops(99, "snow", code === 75 || code === 86 ? 62 : code === 71 ? 26 : 40, .9, lean));          // snow, heavier codes more flakes
   else if (kind === "sleet") L.push(fallDrops(99, "rain", 22, .8, lean), fallDrops(98, "snow", 20, .9, lean));                       // freezing rain and drizzle
   // thunder rain is a downpour: more, longer and faster streaks than ordinary rain, driven at a steeper slant
-  else if (code === 96 || code === 99) L.push(fallDrops(99, "thunder", 48, 1, lean), fallDrops(97, "hail", code === 99 ? 34 : 22, 1, lean), bolts(5)); // thunder with hail
-  else if (kind === "thunder") L.push(fallDrops(99, "thunder", mm < 2 ? 56 : 70, 1, lean), bolts(5));
+  else if (code === 96 || code === 99) L.push(cloudGlow(13), fallDrops(99, "thunder", 48, 1, lean), fallDrops(97, "hail", code === 99 ? 34 : 22, 1, lean), bolts(5)); // thunder with hail
+  else if (kind === "thunder") L.push(cloudGlow(13), fallDrops(99, "thunder", mm < 2 ? 56 : 70, 1, lean), bolts(5));
   else if (kind === "drizzle") L.push(fallDrops(99, "drizzle", code === 55 ? 40 : 28, .7, lean));
   else if (kind === "rain" || mm > 0) L.push(fallDrops(99, "rain", code === 65 || code === 82 || mm >= 4 ? 52 : code === 61 || code === 80 ? 26 : 38, .85, lean));
   L.push(gustStreaks(dir, gustKmh, 50));                                                                                              // wind storm from 50 km/h gusts
