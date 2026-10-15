@@ -530,18 +530,20 @@ html.warned .topbar::before{content:"";width:8px;height:8px;border-radius:50%;ba
 .fx{position:absolute;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
 .fx i{position:absolute;top:-24px;left:var(--x);width:1.2px;height:var(--l);border-radius:1px;opacity:var(--o);
   background:linear-gradient(to bottom,rgba(255,255,255,0),#fff);animation:rainfall var(--t) linear var(--w) infinite}
-@keyframes rainfall{from{transform:translate3d(0,0,0) rotate(14deg)}to{transform:translate3d(-130px,520px,0) rotate(14deg)}}
+/* the drift and tilt come from the wind (fallLean in app.js: --dx over the fall, --rot for the streak) */
+.fx{--dx:-130px;--rot:14deg}
+@keyframes rainfall{from{transform:translate3d(0,0,0) rotate(var(--rot))}to{transform:translate3d(var(--dx),520px,0) rotate(var(--rot))}}
 .fx.snow i{width:3px;height:3px;border-radius:50%;background:#fff;animation-name:snowfall}
-@keyframes snowfall{0%{transform:translate3d(0,0,0)}50%{transform:translate3d(10px,260px,0)}100%{transform:translate3d(-6px,520px,0)}}
+@keyframes snowfall{0%{transform:translate3d(0,0,0)}50%{transform:translate3d(calc(var(--dx) * .5 + 10px),260px,0)}100%{transform:translate3d(calc(var(--dx) - 6px),520px,0)}}
 /* closed card: a short fall that loops through the visible strip, so the rain stays readable */
 .day:not(.open) .fx i{width:1.6px;opacity:min(1,calc(var(--o) * 2.2));animation-name:rainfall-short;animation-duration:calc(var(--t) * .42)}
-@keyframes rainfall-short{from{transform:translate3d(0,0,0) rotate(14deg)}to{transform:translate3d(-26px,104px,0) rotate(14deg)}}
+@keyframes rainfall-short{from{transform:translate3d(0,0,0) rotate(var(--rot))}to{transform:translate3d(calc(var(--dx) * .2),104px,0) rotate(var(--rot))}}
 .day:not(.open) .fx.snow i{animation-name:snowfall-short;animation-duration:calc(var(--t) * .35)}
-@keyframes snowfall-short{0%{transform:translate3d(0,0,0)}50%{transform:translate3d(5px,52px,0)}100%{transform:translate3d(-3px,104px,0)}}
+@keyframes snowfall-short{0%{transform:translate3d(0,0,0)}50%{transform:translate3d(calc(var(--dx) * .1 + 5px),52px,0)}100%{transform:translate3d(calc(var(--dx) * .2 - 3px),104px,0)}}
 .fx.storm{animation:flash 9s linear infinite}
-/* storm rain: a downpour, longer and a little heavier streaks driven at a steeper slant */
+/* storm rain: a downpour, longer and a little heavier streaks driven at a steeper slant (the wind's lean, 1.4×) */
 .fx.storm i{width:1.5px;height:calc(var(--l) * 1.6);animation-name:stormfall}
-@keyframes stormfall{from{transform:translate3d(0,0,0) rotate(20deg)}to{transform:translate3d(-190px,520px,0) rotate(20deg)}}
+@keyframes stormfall{from{transform:translate3d(0,0,0) rotate(calc(var(--rot) * 1.4))}to{transform:translate3d(calc(var(--dx) * 1.45),520px,0) rotate(calc(var(--rot) * 1.4))}}
 @keyframes flash{0%,91%,93.5%,95.5%,100%{background:transparent}92%{background:rgba(255,255,255,.2)}94.5%{background:rgba(255,255,255,.1)}}
 .day-h{width:100%;display:grid;grid-template-columns:minmax(0,1.3fr) 28px 40px minmax(0,2.2fr);align-items:center;gap:12px;padding:14px 18px 34px;text-align:left}
 .dn{display:flex;gap:8px;align-items:baseline;min-width:0;white-space:nowrap}
@@ -586,7 +588,7 @@ html.warned .topbar::before{content:"";width:8px;height:8px;border-radius:50%;ba
 /* drizzle: finer, shorter, slower streaks. hail: hard pellets that bounce once at the bottom */
 .fx.drizzle i{width:1px;height:calc(var(--l) * .55)}
 .fx.hail i{width:3px;height:3px;border-radius:50%;background:#fff;animation-name:hailfall}
-@keyframes hailfall{0%{transform:translate3d(0,0,0)}86%{transform:translate3d(-14px,500px,0)}93%{transform:translate3d(-17px,474px,0)}100%{transform:translate3d(-19px,505px,0)}}
+@keyframes hailfall{0%{transform:translate3d(0,0,0)}86%{transform:translate3d(calc(var(--dx) * .11),500px,0)}93%{transform:translate3d(calc(var(--dx) * .13),474px,0)}100%{transform:translate3d(calc(var(--dx) * .15),505px,0)}}
 /* lightning: three bolts take turns, each lighting up with the storm flash (9 s cycle) */
 .bolt{position:absolute;top:0;width:64px;height:60%;z-index:-1;pointer-events:none;opacity:0;overflow:visible;
   filter:drop-shadow(0 0 5px rgba(255,255,255,.9)) drop-shadow(0 0 16px rgba(196,176,255,.75));animation:bolt 27s linear var(--d) infinite}
@@ -933,7 +935,7 @@ body.net-off .toast{bottom:calc(122px + var(--dock-b))}
 .offscreen,.offscreen *,.offscreen::before,.offscreen::after,.offscreen *::before,.offscreen *::after{animation-play-state:paused!important}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none!important;transition:none!important}
-  .fx i{top:var(--y);transform:rotate(14deg)}
+  .fx i{top:var(--y);transform:rotate(var(--rot))}
 }
 
 /* ---------- how sure: the ensemble sheet ---------- */

@@ -611,7 +611,11 @@ const calmMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const fxRand = seed => () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
 
 /* Falling rain or snow streaks, shared by the day cards and the main card. */
-function fallDrops(seedN, kind, count, strength) {
+/* How far falling rain and snow lean with the wind, in degrees from straight down: positive drifts to the right (a
+   wind blowing east), negative to the left. Only the wind's east-west part leans it (as the wind lines show), by its
+   speed: about 3° in a breeze up to 28° in a gale. Without wind data, the old fixed lean to the left. */
+const fallLean = (dir, kmh) => dir == null || kmh == null ? -14 : -sin(dir * rad) * clamp(3 + kmh * .45, 3, 28);
+function fallDrops(seedN, kind, count, strength, lean = -14) {
   const rnd = fxRand(seedN * 7919 + 17);
   const [t0, tv] = { snow: [5, 5], hail: [.5, .25], drizzle: [1.1, .6], thunder: [.5, .3] }[kind] || [.75, .5]; // seconds to fall: snow drifts, hail and storm rain drop hard
   let drops = "";
@@ -619,7 +623,8 @@ function fallDrops(seedN, kind, count, strength) {
     const t = t0 + rnd() * tv;
     drops += `<i style="--x:${(rnd() * 110).toFixed(1)}%;--y:${Math.round(rnd() * 90)}%;--l:${Math.round(10 + rnd() * 12)}px;--t:${t.toFixed(2)}s;--w:${(-rnd() * t).toFixed(2)}s;--o:${((.3 + rnd() * .5) * strength).toFixed(2)}"></i>`;
   }
-  return `<span class="fx${{ snow: " snow", hail: " hail", drizzle: " drizzle", thunder: " storm" }[kind] || ""}" aria-hidden="true">${drops}</span>`;
+  // the lean as the drift over the 520 px fall (--dx) and the matching tilt of each streak (--rot)
+  return `<span class="fx${{ snow: " snow", hail: " hail", drizzle: " drizzle", thunder: " storm" }[kind] || ""}" aria-hidden="true" style="--dx:${(520 * Math.tan(lean * rad)).toFixed(0)}px;--rot:${(-lean).toFixed(1)}deg">${drops}</span>`;
 }
 
 /* Wind lines: a few long, soft lines that ripple across the card and lift at the end in a small open flick, a quiet nod
@@ -933,19 +938,19 @@ function heroSky({ kind, code, mm, cloud, windKmh, gustKmh, dir, isDay }) {
   const fair = kind === "clear" || kind === "partly";
   const falling = ["snow", "sleet", "thunder", "drizzle", "rain"].includes(kind) || mm > 0;
   const cover = cloud ?? (kind === "cloudy" ? 95 : kind === "partly" ? 50 : falling ? 90 : 5);
-  const L = [];
+  const L = [], lean = fallLean(dir, Math.max(windKmh ?? 0, (gustKmh ?? 0) * .7)); // rain and snow lean with the wind (gusts count)
   if (fair && isDay) L.push(`<span class="sunglow" aria-hidden="true"><i></i></span>`);
   // stars every night: a full sky when it's clear, a few peeking through cloud or fog, none while rain or snow falls
   if (!isDay && !falling) L.push(starField(907, fair ? 26 : 9, (x, y) => x > 16 && x < 84 && y > 20 && y < 66));
   L.push(cloudLayer(33, kind === "fog" ? Math.min(cover, 40) : cover, { night: !isDay, wet: falling, windKmh }));
   if (kind === "fog") L.push(mistLayer(21, "fog"));
-  if (kind === "snow") L.push(fallDrops(99, "snow", code === 75 || code === 86 ? 62 : code === 71 ? 26 : 40, .9));                // snow, heavier codes more flakes
-  else if (kind === "sleet") L.push(fallDrops(99, "rain", 22, .8), fallDrops(98, "snow", 20, .9));                                   // freezing rain and drizzle
+  if (kind === "snow") L.push(fallDrops(99, "snow", code === 75 || code === 86 ? 62 : code === 71 ? 26 : 40, .9, lean));          // snow, heavier codes more flakes
+  else if (kind === "sleet") L.push(fallDrops(99, "rain", 22, .8, lean), fallDrops(98, "snow", 20, .9, lean));                       // freezing rain and drizzle
   // thunder rain is a downpour: more, longer and faster streaks than ordinary rain, driven at a steeper slant
-  else if (code === 96 || code === 99) L.push(fallDrops(99, "thunder", 48, 1), fallDrops(97, "hail", code === 99 ? 34 : 22, 1), bolts(5)); // thunder with hail
-  else if (kind === "thunder") L.push(fallDrops(99, "thunder", mm < 2 ? 56 : 70, 1), bolts(5));
-  else if (kind === "drizzle") L.push(fallDrops(99, "drizzle", code === 55 ? 40 : 28, .7));
-  else if (kind === "rain" || mm > 0) L.push(fallDrops(99, "rain", code === 65 || code === 82 || mm >= 4 ? 52 : code === 61 || code === 80 ? 26 : 38, .85));
+  else if (code === 96 || code === 99) L.push(fallDrops(99, "thunder", 48, 1, lean), fallDrops(97, "hail", code === 99 ? 34 : 22, 1, lean), bolts(5)); // thunder with hail
+  else if (kind === "thunder") L.push(fallDrops(99, "thunder", mm < 2 ? 56 : 70, 1, lean), bolts(5));
+  else if (kind === "drizzle") L.push(fallDrops(99, "drizzle", code === 55 ? 40 : 28, .7, lean));
+  else if (kind === "rain" || mm > 0) L.push(fallDrops(99, "rain", code === 65 || code === 82 || mm >= 4 ? 52 : code === 61 || code === 80 ? 26 : 38, .85, lean));
   L.push(gustStreaks(dir, gustKmh, 50));                                                                                              // wind storm from 50 km/h gusts
   return L.join("");
 }
@@ -1716,12 +1721,12 @@ function dayLook(i) {
 }
 /* Rain (or snow) falls in a day card when the day is likely wet (40%+ and at least 0.5 mm) or, past the days that come
    with a chance, when at least 1 mm is expected. More rain means more drops; a likelier forecast draws them brighter. */
-function weatherFx(n, kind, pop, sumMm) {
+function weatherFx(n, kind, pop, sumMm, lean) {
   if (!(pop != null ? pop >= 40 && sumMm >= .5 : sumMm >= 1)) return "";
   const snow = kind === "snow";
   const count = sumMm < 1 ? 16 : sumMm < 5 ? 26 : sumMm < 15 ? 36 : 48;
   const strength = clamp(((pop ?? 60) - 20) / 60, .45, 1);
-  return fallDrops(n, snow ? "snow" : kind, count, strength);
+  return fallDrops(n, snow ? "snow" : kind, count, strength, lean);
 }
 function renderDays() {
   const { Dy, di, c } = X, el = card("c-days");
@@ -1738,7 +1743,7 @@ function renderDays() {
     const rise = Dy.sunrise[i] ? T(Dy.sunrise[i]) : null, set = Dy.sunset[i] ? T(Dy.sunset[i]) : null;
     const wdir = Dy.wind_direction_10m_dominant[i];
     return `<article class="day${n === open ? " open" : ""}" style="z-index:${n + 1}">
-      ${weatherFx(n, kind, pop, toMm(look.mm))}
+      ${weatherFx(n, kind, pop, toMm(look.mm), fallLean(wdir, Dy.wind_speed_10m_max[i] == null ? null : toMs(Dy.wind_speed_10m_max[i]) * 3.6 * .7))}
       <button class="day-h" aria-expanded="${n === open}" data-n="${n}">
         <span class="dn"><b>${n === 0 ? "Today" : wd(key)}</b><i>${n === 0 ? wd(key) + " " : ""}${dm_(key)}</i></span>
         ${icon(kind, true)}
