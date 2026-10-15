@@ -70,4 +70,7 @@ know (decisions, preferences, open choices), and push it along.**
 - "Looks AI-made" (a colleague, 2026-10-14): proposed one calm card colour (colour only on main/sun/moon), dot-matrix
   numerals only on the main card and top bar, raspberry only for "now"/warnings, fewer dot motifs, a warmer font
   last. Mockups shown; Victor: not now. Don't redo unasked.
+- Feels-like card: its corner accent shows which way it feels (blue-violet colder, gold warmer, none when the same),
+  stronger with the difference (full from 4°). The other cards' accents are still decorative.
+- Moon: soft terminator (light fades over the last few degrees of sun height), not a hard clip.
 - Saved for later, don't build unasked: a Vestaboard-style split-flap text effect (letters cycling until they land).
