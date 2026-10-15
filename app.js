@@ -1345,7 +1345,13 @@ function renderHourly() {
     const isMid = H.time[k].endsWith("T00:00");
     const tl = i === 0 ? `<span class="htime now">Now</span>` : isMid ? `<span class="htime mid">${wd(H.time[k].slice(0, 10))}</span>` : `<span class="htime">${fmtH(t)}</span>`;
     const lit = pop == null ? 0 : Math.round(pop / 20);
-    let pd = ""; for (let q = 0; q < 5; q++) pd += `<circle cx="4" cy="${26 - q * 5.5}" r="${q < lit ? 2.2 : 1.5}" fill="${q < lit ? "var(--rain)" : "currentColor"}" opacity="${q < lit ? 1 : .18}"/>`;
+    // in an hour with rain in the forecast (0.1 mm or more), drops fall through the empty dots onto the stack and its
+    // top dot gives a small bounce as each lands, as in the precipitation card: more often the harder it rains, each
+    // hour on its own rhythm. An hour with only a chance stays still.
+    const mm = toMm(H.precipitation[k] ?? 0), rains = mm >= .1 && lit > 0 && lit < 5;
+    const per = (5.6 - Math.min(8, Math.ceil(Math.log2(1 + mm * 4) * 1.6)) * .3).toFixed(2), stepT = per * .024, t0 = 1.2 + ((i * 7919) % 97) / 97 * per;
+    let pd = ""; for (let q = 0; q < 5; q++) pd += `<circle${rains && q === lit - 1 ? ` class="htop" style="--p:${per}s;--w2:${(t0 + (5 - lit) * stepT).toFixed(2)}s"` : ""} cx="4" cy="${26 - q * 5.5}" r="${q < lit ? 2.2 : 1.5}" fill="${q < lit ? "var(--rain)" : "currentColor"}" opacity="${q < lit ? 1 : .18}"/>`;
+    if (rains) for (let j = 0; j < 5 - lit; j++) pd += `<circle class="drip" cx="4" cy="${26 - (4 - j) * 5.5}" r="2.2" fill="var(--rain)" style="--p:${per}s;--w:${(t0 + j * stepT).toFixed(2)}s"/>`;
     cols.push(`<div class="hcol">${tl}${icon(kind, day)}<span></span>
       <div class="hpop"><svg viewBox="0 0 8 30" aria-hidden="true">${pd}</svg><span>${pop != null && pop >= 10 ? pop + "%" : "&nbsp;"}</span></div></div>`);
   }

@@ -431,7 +431,9 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .htime.now{background:var(--signal);color:var(--signal-ink);padding:5px 8px;border-radius:999px}
 .htime.mid{color:var(--ink);font-weight:600}
 .hpop{display:grid;justify-items:center;gap:4px;align-self:end}
-.hpop svg{width:8px;height:30px}
+.hpop svg{width:8px;height:30px;overflow:visible}
+.hpop .drip{opacity:0;animation:drip var(--p) linear var(--w) infinite} /* the same drops as the precipitation card */
+.hpop .htop{transform-box:fill-box;transform-origin:center;animation:land var(--p) ease-out var(--w2) infinite}
 .hpop span{font:500 12px/1 var(--f-label);color:var(--rain)}
 .hin.dry .hpop span{display:none} /* no hour with a chance: no empty row of labels under the dots */
 .hpop span small{font-size:11px;opacity:.8;margin-left:1px} /* the unit of an amount, shown where no chance of rain is given */

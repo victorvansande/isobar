@@ -73,5 +73,7 @@ know (decisions, preferences, open choices), and push it along.**
 - Feels-like card: its corner accent shows which way it feels (blue-violet colder, deep red warmer, none when the same),
   clear from 1° and growing to 4° (this card's accent counts for more via `--acc-k`; warmer leans further since the
   card is coral). The other cards' accents are still decorative.
+- 48-hour strip: in hours with ≥0.1 mm forecast, drops fall through the empty chance-dots onto the stack (same
+  animation and rhythm rule as the precipitation card); hours with only a chance stay still.
 - Moon: soft terminator (light fades over the last few degrees of sun height), not a hard clip.
 - Saved for later, don't build unasked: a Vestaboard-style split-flap text effect (letters cycling until they land).
