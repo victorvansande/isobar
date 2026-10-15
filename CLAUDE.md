@@ -75,7 +75,8 @@ know (decisions, preferences, open choices), and push it along.**
   card is coral). The other cards' accents are still decorative.
 - 48-hour strip: in hours with ≥0.1 mm forecast, drops fall through the empty chance-dots onto the stack (same
   rule as the precipitation card, but a drop every 2–3.2 s and lit a little longer, `hdrip`); hours with only a
-  chance stay still. The 14-day strip does the same for days with ≥0.2 mm (rhythm from the
+  chance stay still. Drops need the amount, not a lit dot: with a chance under 10% they fall to the bottom. An hour's
+  rain/snow icon needs ≥0.1 mm too (a drizzle code with less shows as cloud), so icon, drops and amount agree. The 14-day strip does the same for days with ≥0.2 mm (rhythm from the
   day's amount over its hours of rain). Days without a chance
   (only mm): rings show the amount (one per 0.5, 1, 2, 5, 10 mm), never read as a chance; chosen option C.
 - Hours/days card: an (i) at the end of the scroll dots opens "Chance and amount" (the shared learn sheet, retitled):

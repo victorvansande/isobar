@@ -1340,7 +1340,10 @@ function renderHourly() {
   for (let i = 0; i < n; i++) {
     const k = hi + i, t = T(H.time[k]), pop = nz(H.precipitation_probability[k]);
     // "Now" shows the conditions right now, exactly as the main card and the top bar do; later columns the hourly forecast
-    const day = i ? !!H.is_day[k] : X.isDay, [, kind] = wmo(i ? H.weather_code[k] : X.c.weather_code);
+    // an hour's rain or snow icon needs an amount to back it (0.1 mm or more): a drizzle code with less is shown as cloud,
+    // so the icon, the drops and the amount always agree ("Now" shows the conditions right now, as the main card does)
+    const hmm = toMm(H.precipitation[k] ?? 0), wc = i ? (H.weather_code[k] >= 51 && H.weather_code[k] < 95 && hmm < .1 ? 3 : H.weather_code[k]) : X.c.weather_code;
+    const day = i ? !!H.is_day[k] : X.isDay, [, kind] = wmo(wc);
     temps.push(i ? H.temperature_2m[k] : X.c.temperature_2m);
     const isMid = H.time[k].endsWith("T00:00");
     const tl = i === 0 ? `<span class="htime now">Now</span>` : isMid ? `<span class="htime mid">${wd(H.time[k].slice(0, 10))}</span>` : `<span class="htime">${fmtH(t)}</span>`;
@@ -1348,7 +1351,7 @@ function renderHourly() {
     // in an hour with rain in the forecast (0.1 mm or more), drops fall through the empty dots onto the stack and its
     // top dot gives a small bounce as each lands, as in the precipitation card: more often the harder it rains, each
     // hour on its own rhythm. An hour with only a chance stays still.
-    const mm = toMm(H.precipitation[k] ?? 0), rains = mm >= .1 && lit > 0 && lit < 5;
+    const mm = hmm, rains = mm >= .1 && lit < 5; // with no dot lit (a chance under 10%), the drops fall to the bottom
     // a drop every 3.2 s in light rain down to every 2 s in heavy rain; each dot stays lit a little longer than in the
     // precipitation card, as these columns are small
     const per = (3.38 - Math.min(8, Math.ceil(Math.log2(1 + mm * 4) * 1.6)) * .17).toFixed(2), stepT = per * .06, t0 = .8 + ((i * 7919) % 97) / 97 * per;
@@ -1459,7 +1462,7 @@ function dayStrip() {
     const dmm = toMm(look.mm ?? 0), ring = pop == null, lit = ring ? [.5, 1, 2, 5, 10].filter(v => dmm >= v).length : Math.round(pop / 20);
     // a day with rain in the forecast (0.2 mm or more): drops fall through the empty dots as in the 48 hours, their
     // rhythm set by how hard it rains while it rains (the day's amount over its hours of rain)
-    const rains = dmm >= .2 && lit > 0 && lit < 5;
+    const rains = dmm >= .2 && lit < 5;
     const rate = dmm / Math.max(1, Dy.precipitation_hours?.[i] ?? 1);
     const per = (3.38 - Math.min(8, Math.ceil(Math.log2(1 + rate * 4) * 1.6)) * .17).toFixed(2), stepT = per * .06, t0 = .8 + ((n * 7919) % 97) / 97 * per; // as in the 48 hours
     let pd = ""; for (let q = 0; q < 5; q++) pd += `<circle${rains && q === lit - 1 ? ` class="htop" style="--p:${per}s;--w2:${(t0 + (5 - lit) * stepT).toFixed(2)}s"` : ""} cx="4" cy="${26 - q * 5.5}" ${q < lit ? (ring ? `r="1.8" fill="none" stroke="var(--rain)" stroke-width="1"` : `r="2.2" fill="var(--rain)"`) : `r="1.5" fill="currentColor" opacity=".18"`}/>`;
