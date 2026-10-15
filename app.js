@@ -445,8 +445,8 @@ function fetchAll(p, signal) {
   const w = getJSON("https://api.open-meteo.com/v1/forecast?" + qs({
     latitude: p.lat, longitude: p.lon, timezone: "auto", forecast_days: 14, past_days: 1,
     current: "temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,cloud_cover,pressure_msl,wind_speed_10m,wind_direction_10m,wind_gusts_10m,visibility,uv_index,dew_point_2m",
-    minutely_15: "precipitation", forecast_minutely_15: 24, past_minutely_15: 0,
-    hourly: "temperature_2m,apparent_temperature,precipitation_probability,precipitation,weather_code,wind_speed_10m,wind_gusts_10m,wind_direction_10m,uv_index,is_day,pressure_msl,visibility,cloud_cover,relative_humidity_2m,dew_point_2m",
+    minutely_15: "precipitation,snowfall", forecast_minutely_15: 24, past_minutely_15: 0,
+    hourly: "temperature_2m,apparent_temperature,precipitation_probability,precipitation,snowfall,weather_code,wind_speed_10m,wind_gusts_10m,wind_direction_10m,uv_index,is_day,pressure_msl,visibility,cloud_cover,relative_humidity_2m,dew_point_2m",
     daily: "weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,sunrise,sunset,daylight_duration,sunshine_duration,uv_index_max,precipitation_sum,precipitation_probability_max,precipitation_hours,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant",
     temperature_unit: S.temp === "f" ? "fahrenheit" : "celsius", wind_speed_unit: S.wind, precipitation_unit: S.precip, models: S.model
   }), signal);
@@ -1200,31 +1200,37 @@ function bindSunScrub() {
    all read, so they never disagree about when it rains. From the quarter-hour forecast, with the hourly filling in. */
 function nowcast() {
   const M = D.minutely_15;
-  let times = [], vals = [];
+  let times = [], vals = [], snow = []; // snow: fresh snow per quarter-hour (cm, or inches), from the same forecast
+  const hs = k => (X.H.snowfall ? X.H.snowfall[k] ?? 0 : 0) / 4;
   // skip quarter-hours that already passed (a kept forecast can be hours old); with too few left the hourly takes over
-  if (M && M.precipitation && M.precipitation.some(v => v != null)) M.time.forEach((s, i) => { const t = T(s); if (t >= Date.now() - 9e5) { times.push(t); vals.push(M.precipitation[i] ?? 0); } });
-  if (times.length < 8) { times = []; vals = []; for (let i = 0; i < 6; i++) { const t = X.H.time[X.hi + i]; if (!t) break; for (let q = 0; q < 4; q++) { times.push(new Date(T(t).valueOf() + q * 9e5)); vals.push((X.H.precipitation[X.hi + i] ?? 0) / 4); } } }
+  if (M && M.precipitation && M.precipitation.some(v => v != null)) M.time.forEach((s, i) => { const t = T(s); if (t >= Date.now() - 9e5) { times.push(t); vals.push(M.precipitation[i] ?? 0); snow.push(M.snowfall ? M.snowfall[i] ?? 0 : 0); } });
+  if (times.length < 8) { times = []; vals = []; snow = []; for (let i = 0; i < 6; i++) { const t = X.H.time[X.hi + i]; if (!t) break; for (let q = 0; q < 4; q++) { times.push(new Date(T(t).valueOf() + q * 9e5)); vals.push((X.H.precipitation[X.hi + i] ?? 0) / 4); snow.push(hs(X.hi + i)); } } }
   // always six hours (24 quarter-hours): when the quarter-hour forecast runs out early (an older kept copy), the hourly
   // forecast fills the rest, so the grid keeps the same number of columns and the same dot size
   while (times.length && times.length < 24) {
     const t = new Date(times.at(-1).valueOf() + 9e5), k = X.H.time.findIndex(s => T(s) > t) - 1;
-    if (k < 0) break; times.push(t); vals.push((X.H.precipitation[k] ?? 0) / 4);
+    if (k < 0) break; times.push(t); vals.push((X.H.precipitation[k] ?? 0) / 4); snow.push(hs(k));
   }
-  times = times.slice(0, 24); vals = vals.slice(0, 24);
-  return { times, vals, rate: vals.map(v => toMm(v) * 4), thr: .1, end: times.length ? times.at(-1).valueOf() + 9e5 : 0 };
+  times = times.slice(0, 24); vals = vals.slice(0, 24); snow = snow.slice(0, 24);
+  return { times, vals, snow, rate: vals.map(v => toMm(v) * 4), thr: .1, end: times.length ? times.at(-1).valueOf() + 9e5 : 0 };
 }
 function renderNow() {
-  const el = card("c-now"), { times, vals, rate } = nowcast();
+  const el = card("c-now"), { times, vals, snow, rate } = nowcast();
   const thr = 0.1, first = rate.findIndex(v => v >= thr), peak = Math.max(0, ...rate);
   const inten = r => r < 2.5 ? "Light" : r < 7.6 ? "Moderate" : r < 50 ? "Heavy" : "Violent";
+  // snow: a quarter-hour whose forecast has fresh snow. When most of what falls is snow the card speaks of snow, counts
+  // it in centimetres (inches) of snow, and draws it white, with slow swaying flakes and the odd twinkle
+  const sn = rate.map((r, i) => r >= thr && (snow[i] ?? 0) > 0), wetN = rate.filter(r => r >= thr).length;
+  const isSnow = wetN > 0 && sn.filter(Boolean).length * 2 >= wetN, P = isSnow ? "Snow" : "Rain", low = isSnow ? " snow" : "";
   let say, sub;
   if (first < 0) { say = `No rain expected in the next ${Math.round(rate.length / 4)} hours`; sub = "Dry"; }
   else if (first === 0) {
     const stop = rate.findIndex(v => v < thr);
-    say = stop < 0 ? `Rain continues for the next ${Math.round(rate.length / 4)} hours` : `Rain easing off around ${fmtT(times[stop])}`;
-    sub = `${inten(peak)} now`;
-  } else { say = `Rain likely from about ${fmtT(times[first])}`; sub = `${inten(peak)} · in ${inMins((times[first] - Date.now()) / 6e4)}`; }
-  const total = vals.reduce((a, b) => a + b, 0);
+    say = stop < 0 ? `${P} continues for the next ${Math.round(rate.length / 4)} hours` : `${P} easing off around ${fmtT(times[stop])}`;
+    sub = `${inten(peak)}${low} now`;
+  } else { say = `${P} likely from about ${fmtT(times[first])}`; sub = `${inten(peak)}${low} · in ${inMins((times[first] - Date.now()) / 6e4)}`; }
+  const total = vals.reduce((a, b) => a + b, 0), snowTotal = snow.reduce((a, b) => a + b, 0);
+  const totalTxt = isSnow ? `${snowTotal < 10 ? (Math.round(snowTotal * 10) / 10) : Math.round(snowTotal)} <span class="u">${S.precip === "inch" ? "in" : "cm"}</span> of snow` : `${fmtP(total)} <span class="u">${PU()}</span> total`;
   const n = rate.length, rows = 8, sp = 10;
   // LED rain gauge. Wet columns fill cell by cell from the bottom; afterwards a drip steps down the empty
   // cells of the grid one at a time with a fading trail, and the top of the stack pulses as it lands.
@@ -1252,10 +1258,12 @@ function renderNow() {
       if (k >= lit) { if (k < (chance[i] || 0)) grid += `<circle cx="${cx}" cy="${cyOf(k)}" r="2.3" fill="var(--rain)" opacity=".38"/>`; else if (dry.has(`${i},${k}`)) glow += `<circle cx="${cx}" cy="${cyOf(k)}" r="2.5" fill="${X.isDay ? "#ffd88a" : "#e6e4ff"}"/>`; else grid += `<circle cx="${cx}" cy="${cyOf(k)}" r="2.1" fill="currentColor" opacity=".07"/>`; continue; }
       const tone = (.95 - (k / Math.max(lit - 1, 1)) * .4 * (lit / rows)).toFixed(2);
       const fill = `--d:${(.25 + i * .035 + k * .09).toFixed(2)}s`;
-      const top = k === lit - 1 && lit < rows;
-      wet += `<circle class="wet${top ? " top" : ""}" cx="${cx}" cy="${cyOf(k)}" r="2.5" fill="var(--rain)" fill-opacity="${tone}" style="${fill}${top ? `;--p:${period}s;--w2:${(start + (rows - lit) * stepT).toFixed(2)}s` : ""}"/>`;
+      const top = k === lit - 1 && lit < rows, tw = sn[i] && (i * 7 + k * 3) % 11 === 0; // now and then a snow dot catches the light
+      wet += `<circle class="wet${top ? " top" : ""}${tw ? " tw" : ""}" cx="${cx}" cy="${cyOf(k)}" r="2.5" fill="${sn[i] ? "var(--snow)" : "var(--rain)"}" fill-opacity="${tone}" style="${fill}${top ? `;--p:${period}s;--w2:${(start + (rows - lit) * stepT).toFixed(2)}s` : ""}${tw ? `;--tw:${(-((i + k) % 5) * .55).toFixed(2)}s` : ""}"/>`;
     }
-    for (let j = 0, n = rows - lit; lit && j < n; j++)
+    if (sn[i] && lit < rows) // snow: one slow flake sways down the empty cells instead of the quick drips
+      wet += `<circle class="flake" cx="${cx}" cy="${cyOf(rows - 1)}" r="1.8" fill="var(--snow)" style="--p:${(period * 1.7).toFixed(2)}s;--w:${start.toFixed(2)}s;--fall:${(rows - lit - 1) * sp}px"/>`;
+    else for (let j = 0, n = rows - lit; lit && j < n; j++)
       wet += `<circle class="drip" cx="${cx}" cy="${cyOf(rows - 1 - j)}" r="2.5" fill="var(--rain)" style="--p:${period}s;--w:${(start + j * stepT).toFixed(2)}s"/>`;
   });
   const dots = `${grid}<g filter="url(#bloom)">${wet}</g>${glow ? `<g class="dry-glow">${glow}</g>` : ""}`;
@@ -1268,7 +1276,7 @@ function renderNow() {
     const [hm, ap = ""] = fmtT(t).toLowerCase().split(/\s+/), lab = ap === lastAp ? hm : hm + ap;
     lastAp = ap; return `<span class="tm">${lab}</span>`;
   }).join("");
-  el.innerHTML = `<div class="ch-row">${head("Precipitation", sub)}${total > 0 ? `<span class="mono">${fmtP(total)} <span class="u">${PU()}</span> total</span>` : ""}</div>
+  el.innerHTML = `<div class="ch-row">${head("Precipitation", sub)}${total > 0 ? `<span class="mono">${totalTxt}</span>` : ""}</div>
     <div class="now-say">${esc(say)}</div>
     <div class="now-chart"><svg viewBox="0 0 ${n * sp} ${rows * sp}" role="img" aria-label="Precipitation per 15 minutes"><defs><filter id="bloom" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.3" result="b"/><feComponentTransfer in="b" result="s"><feFuncA type="linear" slope=".55"/></feComponentTransfer><feMerge><feMergeNode in="s"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>${dots}</svg></div>
     <div class="now-axis">${axis}</div>`;

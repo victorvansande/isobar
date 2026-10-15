@@ -394,6 +394,14 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 @keyframes land{0%,100%{transform:none}1.2%{transform:scale(1.35)}7%{transform:none}}
 .now-chart .drip{opacity:0;animation:drip var(--p) linear var(--w) infinite}
 @keyframes drip{0%{opacity:0}.5%{opacity:.95}2.4%{opacity:.45}4.8%{opacity:.15}7.2%,100%{opacity:0}}
+/* snow: white dots (a cool grey-blue on the light day card), one slow flake swaying down per column, and the odd dot
+   that twinkles as snow catches the light */
+.a-now{--snow:rgb(238,242,255)}
+:root[data-mode="day"] .a-now{--snow:rgb(140,156,198)}
+.now-chart .flake{opacity:0;animation:flake var(--p) ease-in-out var(--w) infinite}
+@keyframes flake{0%{opacity:0;transform:translate(0,0)}12%{opacity:.9}35%{transform:translate(3px,calc(var(--fall) * .35))}70%{transform:translate(-2px,calc(var(--fall) * .7))}88%{opacity:.75}100%{opacity:0;transform:translate(1px,var(--fall))}}
+.now-chart .wet.tw{animation:fillin .6s cubic-bezier(.2,.7,.2,1) var(--d) both,twinkle-snow 2.8s ease-in-out var(--tw) infinite}
+@keyframes twinkle-snow{0%,100%{opacity:1}50%{opacity:.4}}
 .now-axis{display:grid;grid-template-columns:repeat(6,1fr);margin-top:8px}
 
 /* ---------- wind ---------- */
