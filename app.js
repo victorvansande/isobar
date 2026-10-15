@@ -1395,11 +1395,26 @@ function renderHourly() {
       <p class="hv-d" id="hDaysSub">${dayHint()}</p></header>
       <div class="hseg" role="tablist" aria-label="Forecast range"><button role="tab" data-v="h" aria-selected="${view === "h"}">48 h</button><button role="tab" data-v="d" aria-selected="${view === "d"}">14 days</button></div></div>
     <div class="hfade hv-h"><div class="hscroll hv-h" tabindex="0" aria-label="Hourly forecast, scroll sideways"><div class="hin${cols.some(c => c.includes("%</span>")) ? "" : " dry"}" style="grid-template-columns:repeat(${n},${colW}px);width:${W}px">${track}${cols.join("")}${svg}</div></div></div>
-    <div class="dscroll hv-h" aria-hidden="true"></div>
     <div class="hfade hv-d"><div class="hscroll hv-d" id="hDays" tabindex="0" aria-label="Daily forecast, scroll sideways">${view === "d" ? dayStrip() : ""}</div></div>
-    <div class="dscroll hv-d" aria-hidden="true"></div>
+    <div class="hdots"><div class="dscroll hv-h" aria-hidden="true"></div><div class="dscroll hv-d" aria-hidden="true"></div><button class="info-i" id="rainInfo" aria-label="What the chance of rain and the amount mean"><svg viewBox="0 0 12 12"><path d="M6 5.4v3.6"/><path d="M6 3h.01"/></svg></button></div>
     <div class="hv-d hfoot"><button class="hall-main" id="hAll">Full forecast<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6h7M6.5 3l3 3-3 3"/></svg></button><button class="hall" id="hSure">How sure?<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4.5 2.5L8 6l-3.5 3.5"/></svg></button></div>`; // the hidden view is built when it is first opened
   for (const v of ["h", "d"]) dotScroll(el.querySelector(`.hscroll.hv-${v}`), el.querySelector(`.dscroll.hv-${v}`));
+  $("#rainInfo").onclick = openRainLearn;
+}
+/* A plain-language explainer of the chance of rain and the amount, starting from today's numbers. */
+function openRainLearn() {
+  const look = dayLook(X.di), inch = S.precip === "inch", mm = v => inch ? `${(v / 25.4).toFixed(v < 2.5 ? 2 : 1)} in` : `${v} mm`;
+  const wet = toMm(look.mm) >= .1, now = look.pop != null && look.pop >= 5
+    ? `Today: a ${look.pop}% chance of rain${wet ? `, about ${fmtP(look.mm)} ${PU()} if it comes` : ", and hardly any if it does"}.`
+    : wet ? `Today: about ${fmtP(look.mm)} ${PU()} of rain expected.` : "Today: no rain in the forecast.";
+  $("#learnTitle").textContent = "Chance and amount";
+  $("#learnBody").innerHTML = `${now ? `<p class="now">${esc(now)}</p>` : ""}
+    <h3>Chance of rain</h3><p>How likely it is that it rains here at all: at least ${mm(.1)} in that hour. It comes from running the forecast dozens of times, each with slightly different starting conditions. A 70% chance means about 7 in 10 of those runs bring rain to this spot. For a whole day, the highest hour counts.</p>
+    <h3>What it doesn't mean</h3><p>A 30% chance doesn't mean rain over 30% of the area, or for 30% of the time. It's the chance that you get wet here, however briefly.</p>
+    <h3>Amount</h3><p>How much water falls if it rains, in ${inch ? "inches" : "millimetres"}. ${inch ? "A tenth of an inch" : "1 mm"} is ${inch ? "about 2.5 litres" : "1 litre"} on every square metre. A day with less than ${mm(.5)} is barely wet; ${mm(10)} or more is a properly rainy day.</p>
+    <h3>Why you need both</h3><p>They answer different questions. A 70% chance with ${mm(.3)} is almost surely a little drizzle. A 20% chance with ${mm(8)} is probably dry, but if that shower does hit you, it pours.</p>
+    <h3>Dots, rings and drops</h3><p>Filled dots show the chance, one for every 20%. Further ahead the forecast gives no chance, only an amount, so rings show that instead: one each for ${mm(.5)}, ${mm(1)}, ${mm(2)}, ${mm(5)} and ${mm(10)}. Drops fall through the dots when rain is in the forecast, more often the harder it rains.</p>`;
+  $("#dlgLearn").setAttribute("aria-label", "Chance of rain and amount"); $("#dlgLearn").showModal();
 }
 /* A sideways strip shows a row of dots under it instead of a scrollbar: a few lit dots travel along as it scrolls, like a
    dot-matrix display, and dragging along the dots scrolls the strip. */
@@ -1762,6 +1777,7 @@ function openLearn(t, dp, h) {
   const now = gap == null ? "" : gap <= 1
     ? `Right now the air is ${R(t)}° and the dew point ${R(dp)}°. They're almost the same, so the air is close to full: dew, mist or fog are likely.`
     : `Right now the air is ${R(t)}° and the dew point ${R(dp)}°. A surface has to cool ${gap}° below the air before dew forms on it${R(dp) <= frz ? ", and since that's below freezing it would be frost" : ""}.`;
+  $("#learnTitle").textContent = "Humidity, dew and fog"; $("#dlgLearn").setAttribute("aria-label", "Humidity, dew and fog");
   $("#learnBody").innerHTML = `${now ? `<p class="now">${esc(now)}</p>` : ""}
     <h3>Humidity</h3><p>Air always carries some water as invisible vapour. Warm air can hold much more than cold air. Humidity (${R(h)}% now) says how full the air is compared with the most it can hold at its current temperature.</p>
     <h3>Dew point</h3><p>The temperature the air would have to cool to before it's completely full (100%). It tells you how much water is really in the air: the higher it is, the muggier it feels. Below ${dry}° it feels fresh, from ${dry}° a little muggy, from ${sticky}° muggy and from ${heavy}° oppressive.</p>

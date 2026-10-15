@@ -923,6 +923,7 @@ body.net-off .toast{bottom:calc(122px + var(--dock-b))}
 /* sideways strips: no system scrollbar, a row of dots instead in which a few lit dots travel along (see dotScroll) */
 .hscroll::-webkit-scrollbar{display:none}
 .dscroll{display:flex;justify-content:space-between;align-items:center;height:14px;margin:2px 24px 0;cursor:pointer;touch-action:none}
+.hdots{display:flex;align-items:center;gap:12px;margin:2px 18px 0 24px}.hdots .dscroll{flex:1;margin:0} /* the scroll dots, and the rain explainer's i at their end */
 .a-hourly[data-view="d"] .dscroll.hv-d{display:flex}
 .dscroll i{width:4px;height:4px;border-radius:50%;background:var(--ink-3);transform:scale(.7);transition:background .2s,transform .2s}
 .dscroll i.on{background:var(--ink-2);transform:none}
