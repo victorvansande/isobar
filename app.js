@@ -1356,14 +1356,19 @@ function renderFeels() {
 }
 
 /* ---------------- hourly (glass) ---------------- */
-/* Fog in the hours strip: a soft haze drifts over each run of foggy hours, so you see when it settles and when it
-   lifts. Plain gradients moved by transform only (a wide strip may not carry a filter, rule 21). */
+/* Fog in the hours strip: over each run of foggy hours, a bank of overlapping soft puffs (oval radial gradients of
+   varying size and height) that each drift slowly at their own pace, so it reads as fog rather than a band and you
+   see when it settles and when it lifts. Transform only (a wide strip may not carry a filter, rule 21). */
 function fogBands(foggy, colW) {
   let out = "";
   for (let i = 0; i < foggy.length; i++) {
     if (!foggy[i]) continue;
     let j = i; while (j < foggy.length && foggy[j]) j++;
-    out += `<span class="hfog" aria-hidden="true" style="left:${i * colW}px;width:${(j - i) * colW}px;--w:${(-(i * 1.7) % 9).toFixed(1)}s"></span>`;
+    const x0 = i * colW - 14, x1 = j * colW + 14;
+    for (let x = x0, n = 0; x < x1 - 30; x += 26, n++) {
+      const h = (i * 31 + n * 17) % 23, w = 74 + h * 2, ht = 52 + (h * 7) % 40, top = 64 + (h * 5) % 34 - ht / 4;
+      out += `<span class="hfog" aria-hidden="true" style="left:${x - w / 2 + 13}px;top:${top}px;width:${w}px;height:${ht}px;--w:${(-h * .9).toFixed(1)}s;--d:${(9 + h % 7).toFixed(0)}s"></span>`;
+    }
     i = j;
   }
   return out;
