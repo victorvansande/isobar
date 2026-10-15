@@ -86,6 +86,7 @@ know (decisions, preferences, open choices), and push it along.**
 - Hours/days card: an (i) (in the 48 hours at the end of the scroll dots; in the 14 days beside "Full forecast", so a
   strip that fits without scrolling leaves no empty row) opens "Chance and amount" (the shared learn sheet, retitled):
   what the chance means (≥0.1 mm, ensemble share, not area or time), the amount (1 mm = 1 l/m²), why both, dots/rings.
+- Main card arc: the arc and its weather bands are clipped at the horizon line (round ends never dip below it).
 - Moon: soft terminator (light fades over the last few degrees of sun height), not a hard clip.
 - Saved for later, don't build unasked: a Vestaboard-style split-flap text effect (letters cycling until they land).
 - Night look: ink-black (`--bg:#0e0f12`) with just a touch of each card's colour, no night-blue cast.

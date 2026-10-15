@@ -1030,9 +1030,11 @@ function renderHero() {
   const vy = Math.max(0, Math.floor(arcPoint(.5)[1] - 16));
   const arc = `<svg viewBox="0 ${vy} 300 ${108 - vy}" aria-hidden="true">
     <line x1="0" y1="95" x2="300" y2="95" stroke="currentColor" stroke-opacity=".3" stroke-width="1"/>${snowRidge()}
+    <clipPath id="arcSky"><rect x="-20" y="${vy - 20}" width="340" height="${115 - vy}"/></clipPath>
+    <g clip-path="url(#arcSky)"><!-- the arc and its weather end at the horizon line: their round ends never dip below it -->
     <path id="arcDone" d="${arcPath(0, f)}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
     <path id="arcLeft" d="${arcPath(f, 1)}" fill="none" stroke="currentColor" stroke-opacity=".3" stroke-width="1.4" stroke-linecap="round"/>
-    ${segs.filter(g => g.type).map(g => `<path class="awx awx-${g.type}" d="${arcPath(g.f0, g.f1)}"/>`).join("")}
+    ${segs.filter(g => g.type).map(g => `<path class="awx awx-${g.type}" d="${arcPath(g.f0, g.f1)}"/>`).join("")}</g>
     ${dot}
   </svg>`;
   const [label] = wmo(c.weather_code);
