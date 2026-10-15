@@ -1319,9 +1319,10 @@ function renderFeels() {
   // one line nothing else says: how cold and how warm today feels at its extremes (from the hourly feels-like)
   const ft = X.H.time.map((s, k) => s.startsWith(X.todayKey) ? X.H.apparent_temperature[k] : null).filter(v => v != null);
   const range = ft.length ? `<div class="foot"><span>Today feels <b>${R(Math.min(...ft))}°</b> to <b>${R(Math.max(...ft))}°</b></span></div>` : "";
-  // the scale as a row of dots, one dot per degree, centred on the pair; the thermometer mark and the needle each sit
-  // on their own degree's dot, and the dots between them light up
-  const N = 25, lo = Math.round((rt + rf) / 2) - 12, at = v => clamp(v - lo, 0, N - 1), pos = k => (k / (N - 1) * 100).toFixed(2);
+  // the scale as a row of dots with the thermometer always in the middle and only the needle moving: one dot per
+  // degree, or per 2 or 3 degrees when the gap is wider than half the scale, so the needle never runs off the end; the
+  // dots between the mark and the needle light up
+  const N = 25, step = Math.max(1, Math.ceil(d / 11)), at = v => clamp(12 + Math.round((v - rt) / step), 0, N - 1), pos = k => (k / (N - 1) * 100).toFixed(2);
   const ti = at(rt), fi = at(rf), k0 = Math.min(ti, fi), k1 = Math.max(ti, fi);
   let fdots = ""; for (let k = 0; k < N; k++) fdots += `<i${!same && k >= k0 && k <= k1 ? ' class="on"' : ""}></i>`;
   el.innerHTML = `${head("Feels like", sub)}
