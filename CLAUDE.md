@@ -47,6 +47,10 @@ know (decisions, preferences, open choices), and push it along.**
   card's 180 px (--k, 1 to 1.35); three columns between 761 and 1000 px. Phones must stay exactly as they are.
 - Tall cards: the rain chart sits on its foot, the feels-like scale and UV gauge sit centred between reading and foot.
 - Wall view: measures after layout and grows taller (scaling smaller) until no card's content is cut off.
+- Feels like: the thermometer mark ("Actual: 19°") always in the middle of the scale, only the red needle moves, with
+  the feels-like value above it; one dot per degree, 2–3° per dot when the gap is over 11°.
+- Temperatures centred on a point are centred on their digits, the degree sign hanging after (rule 14b, degMid).
+- Air quality: in a tall card the scale and foot sit at the bottom.
 - Scrolling down never gets caught in a card (rule 12a): vertical wheel always scrolls the page; on touch the map
   moves with two fingers.
 - Open, not decided: refreshing the 48-hour card (options: day/night band, temperature-coloured curve, rain bars only
