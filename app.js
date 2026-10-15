@@ -1220,6 +1220,19 @@ function nowcast() {
   times = times.slice(0, 24); vals = vals.slice(0, 24); snow = snow.slice(0, 24);
   return { times, vals, snow, rate: vals.map(v => toMm(v) * 4), thr: .1, end: times.length ? times.at(-1).valueOf() + 9e5 : 0 };
 }
+/* Thunder in the precipitation grid: every 3 to 7 s one thundery column, picked at random, flickers white for a
+   moment (a quick double flicker, opacity only). One loop for the app; it idles while the page is hidden, the card
+   has no thunder, or motion is reduced. */
+let strikeT = 0;
+function strikes() {
+  clearTimeout(strikeT);
+  const next = () => { strikeT = setTimeout(strikes, 3000 + Math.random() * 4000); };
+  const gs = document.querySelectorAll("#c-now .strike");
+  if (!gs.length || calmMotion.matches) return;
+  if (!document.hidden && !offscreen("c-now"))
+    gs[Math.floor(Math.random() * gs.length)].animate([{ opacity: 0 }, { opacity: 1, offset: .1 }, { opacity: .15, offset: .3 }, { opacity: .9, offset: .45 }, { opacity: 0 }], { duration: 800, easing: "linear" });
+  next();
+}
 function renderNow() {
   const el = card("c-now"), { times, vals, snow, rate } = nowcast();
   const thr = 0.1, first = rate.findIndex(v => v >= thr), peak = Math.max(0, ...rate);
@@ -1230,6 +1243,8 @@ function renderNow() {
   // hail: Open-Meteo only reports it as a thunderstorm with hail (WMO 96, 99); those quarter-hours get bouncing grains
   const codeAt = t => { const k = X.H.time.findIndex(s => T(s) > t) - 1; return k >= 0 ? X.H.weather_code[k] : null; };
   const hail = rate.map((r, i) => r >= thr && [96, 99].includes(codeAt(times[i])));
+  // thunder (WMO 95–99): now and then one of those quarter-hours' columns flickers white, like a strike (strikes())
+  const thun = rate.map((r, i) => r >= thr && codeAt(times[i]) >= 95), tIdx = thun.flatMap((t, i) => t ? [i] : []);
   const isSnow = wetN > 0 && sn.filter(Boolean).length * 2 >= wetN, P = isSnow ? "Snow" : "Rain", low = isSnow ? " snow" : "";
   let say, sub;
   if (first < 0) { say = `No rain expected in the next ${Math.round(rate.length / 4)} hours`; sub = "Dry"; }
@@ -1239,6 +1254,7 @@ function renderNow() {
     sub = `${inten(peak)}${low} now`;
   } else { say = `${P} likely from about ${fmtT(times[first])}`; sub = `${inten(peak)}${low} · in ${inMins((times[first] - Date.now()) / 6e4)}`; }
   if (sub !== "Dry" && hail.some(Boolean)) sub += " · hail";
+  else if (sub !== "Dry" && tIdx.length) sub += " · thunder";
   const total = vals.reduce((a, b) => a + b, 0), snowTotal = snow.reduce((a, b) => a + b, 0);
   const totalTxt = isSnow ? `${snowTotal < 10 ? (Math.round(snowTotal * 10) / 10) : Math.round(snowTotal)} <span class="u">${S.precip === "inch" ? "in" : "cm"}</span> of snow` : `${fmtP(total)} <span class="u">${PU()}</span> total`;
   const n = rate.length, rows = 8, sp = 10;
@@ -1271,6 +1287,8 @@ function renderNow() {
       const top = k === lit - 1 && lit < rows, tw = sn[i] && (i * 7 + k * 3) % 11 === 0; // now and then a snow dot catches the light
       wet += `<circle class="wet${top ? " top" : ""}${tw ? " tw" : ""}" cx="${cx}" cy="${cyOf(k)}" r="2.5" fill="${sn[i] ? "var(--snow)" : "var(--rain)"}" fill-opacity="${tone}" style="${fill}${top ? `;--p:${period}s;--w2:${(start + (rows - lit) * stepT).toFixed(2)}s` : ""}${tw ? `;--tw:${(-((i + k) % 5) * .55).toFixed(2)}s` : ""}"/>`;
     }
+    if (thun[i] && lit) // the strike: the column's lit dots, white, hidden until a strike
+      wet += `<g class="strike">${Array.from({ length: lit }, (_, k) => `<circle cx="${cx}" cy="${cyOf(k)}" r="2.6"/>`).join("")}</g>`;
     if (hail[i] && lit < rows) // hail: a white grain drops onto the stack and bounces once
       wet += `<circle class="hailg" cx="${cx}" cy="${cyOf(rows - 1)}" r="2" fill="var(--snow)" style="--p:${(period * .8).toFixed(2)}s;--w:${start.toFixed(2)}s;--fall:${(rows - lit - 1) * sp}px"/>`;
     else if (sn[i] && lit < rows) // snow: one slow flake sways down the empty cells instead of the quick drips
@@ -1292,6 +1310,7 @@ function renderNow() {
     <div class="now-say">${esc(say)}</div>
     <div class="now-chart"><svg viewBox="0 0 ${n * sp} ${rows * sp}" role="img" aria-label="Precipitation per 15 minutes"><defs><filter id="bloom" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.3" result="b"/><feComponentTransfer in="b" result="s"><feFuncA type="linear" slope=".55"/></feComponentTransfer><feMerge><feMergeNode in="s"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>${dots}</svg></div>
     <div class="now-axis">${axis}</div>`;
+  clearTimeout(strikeT); if (tIdx.length) strikeT = setTimeout(strikes, 2500); // the first strike once the grid has filled in
 }
 
 /* ---------------- wind ---------------- */

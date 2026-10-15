@@ -402,6 +402,9 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 @keyframes flake{0%{opacity:0;transform:translate(0,0)}12%{opacity:.9}35%{transform:translate(3px,calc(var(--fall) * .35))}70%{transform:translate(-2px,calc(var(--fall) * .7))}88%{opacity:.75}100%{opacity:0;transform:translate(1px,var(--fall))}}
 .now-chart .wet.tw{animation:fillin .6s cubic-bezier(.2,.7,.2,1) var(--d) both,twinkle-snow 2.8s ease-in-out var(--tw) infinite}
 @keyframes twinkle-snow{0%,100%{opacity:1}50%{opacity:.4}}
+/* thunder: a column's lit dots, white and hidden; strikes() flickers one now and then (opacity only) */
+.now-chart .strike{fill:rgb(255,255,255);opacity:0}
+:root[data-mode="day"] .now-chart .strike{fill:rgb(236,232,255)}
 /* hail: a white grain drops onto the stack and bounces once */
 .now-chart .hailg{opacity:0;animation:hailg var(--p) ease-in var(--w) infinite}
 @keyframes hailg{0%{opacity:0;transform:translateY(0)}8%{opacity:1}40%{transform:translateY(var(--fall))}50%{transform:translateY(calc(var(--fall) - 6px))}60%,85%{opacity:1;transform:translateY(var(--fall))}100%{opacity:0;transform:translateY(var(--fall))}}
