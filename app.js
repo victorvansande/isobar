@@ -1221,6 +1221,9 @@ function renderNow() {
   // snow: a quarter-hour whose forecast has fresh snow. When most of what falls is snow the card speaks of snow, counts
   // it in centimetres (inches) of snow, and draws it white, with slow swaying flakes and the odd twinkle
   const sn = rate.map((r, i) => r >= thr && (snow[i] ?? 0) > 0), wetN = rate.filter(r => r >= thr).length;
+  // hail: Open-Meteo only reports it as a thunderstorm with hail (WMO 96, 99); those quarter-hours get bouncing grains
+  const codeAt = t => { const k = X.H.time.findIndex(s => T(s) > t) - 1; return k >= 0 ? X.H.weather_code[k] : null; };
+  const hail = rate.map((r, i) => r >= thr && [96, 99].includes(codeAt(times[i])));
   const isSnow = wetN > 0 && sn.filter(Boolean).length * 2 >= wetN, P = isSnow ? "Snow" : "Rain", low = isSnow ? " snow" : "";
   let say, sub;
   if (first < 0) { say = `No rain expected in the next ${Math.round(rate.length / 4)} hours`; sub = "Dry"; }
@@ -1229,6 +1232,7 @@ function renderNow() {
     say = stop < 0 ? `${P} continues for the next ${Math.round(rate.length / 4)} hours` : `${P} easing off around ${fmtT(times[stop])}`;
     sub = `${inten(peak)}${low} now`;
   } else { say = `${P} likely from about ${fmtT(times[first])}`; sub = `${inten(peak)}${low} · in ${inMins((times[first] - Date.now()) / 6e4)}`; }
+  if (sub !== "Dry" && hail.some(Boolean)) sub += " · hail";
   const total = vals.reduce((a, b) => a + b, 0), snowTotal = snow.reduce((a, b) => a + b, 0);
   const totalTxt = isSnow ? `${snowTotal < 10 ? (Math.round(snowTotal * 10) / 10) : Math.round(snowTotal)} <span class="u">${S.precip === "inch" ? "in" : "cm"}</span> of snow` : `${fmtP(total)} <span class="u">${PU()}</span> total`;
   const n = rate.length, rows = 8, sp = 10;
@@ -1261,7 +1265,9 @@ function renderNow() {
       const top = k === lit - 1 && lit < rows, tw = sn[i] && (i * 7 + k * 3) % 11 === 0; // now and then a snow dot catches the light
       wet += `<circle class="wet${top ? " top" : ""}${tw ? " tw" : ""}" cx="${cx}" cy="${cyOf(k)}" r="2.5" fill="${sn[i] ? "var(--snow)" : "var(--rain)"}" fill-opacity="${tone}" style="${fill}${top ? `;--p:${period}s;--w2:${(start + (rows - lit) * stepT).toFixed(2)}s` : ""}${tw ? `;--tw:${(-((i + k) % 5) * .55).toFixed(2)}s` : ""}"/>`;
     }
-    if (sn[i] && lit < rows) // snow: one slow flake sways down the empty cells instead of the quick drips
+    if (hail[i] && lit < rows) // hail: a white grain drops onto the stack and bounces once
+      wet += `<circle class="hailg" cx="${cx}" cy="${cyOf(rows - 1)}" r="2" fill="var(--snow)" style="--p:${(period * .8).toFixed(2)}s;--w:${start.toFixed(2)}s;--fall:${(rows - lit - 1) * sp}px"/>`;
+    else if (sn[i] && lit < rows) // snow: one slow flake sways down the empty cells instead of the quick drips
       wet += `<circle class="flake" cx="${cx}" cy="${cyOf(rows - 1)}" r="1.8" fill="var(--snow)" style="--p:${(period * 1.7).toFixed(2)}s;--w:${start.toFixed(2)}s;--fall:${(rows - lit - 1) * sp}px"/>`;
     else for (let j = 0, n = rows - lit; lit && j < n; j++)
       wet += `<circle class="drip" cx="${cx}" cy="${cyOf(rows - 1 - j)}" r="2.5" fill="var(--rain)" style="--p:${period}s;--w:${(start + j * stepT).toFixed(2)}s"/>`;
@@ -1286,6 +1292,8 @@ function renderNow() {
 function renderWind() {
   const { c } = X, el = card("c-wind");
   const sp = c.wind_speed_10m, dir = c.wind_direction_10m ?? 0, gust = c.wind_gusts_10m;
+  // a storm (gusts of 75 km/h and more, Beaufort 9): every card's slow light drifts faster and more restlessly
+  document.documentElement.classList.toggle("storm", toMs(gust ?? 0) * 3.6 >= 75);
   const [b, bname] = beaufort(toMs(sp ?? 0));
   // a quiet ring with eight marks: the four points of the compass and the four between them
   let ticks = `<circle cx="100" cy="100" r="92" fill="none" stroke="currentColor" stroke-opacity=".16" stroke-width="1"/>`;
@@ -1348,9 +1356,21 @@ function renderFeels() {
 }
 
 /* ---------------- hourly (glass) ---------------- */
+/* Fog in the hours strip: a soft haze drifts over each run of foggy hours, so you see when it settles and when it
+   lifts. Plain gradients moved by transform only (a wide strip may not carry a filter, rule 21). */
+function fogBands(foggy, colW) {
+  let out = "";
+  for (let i = 0; i < foggy.length; i++) {
+    if (!foggy[i]) continue;
+    let j = i; while (j < foggy.length && foggy[j]) j++;
+    out += `<span class="hfog" aria-hidden="true" style="left:${i * colW}px;width:${(j - i) * colW}px;--w:${(-(i * 1.7) % 9).toFixed(1)}s"></span>`;
+    i = j;
+  }
+  return out;
+}
 function renderHourly() {
   const { H, hi } = X, el = card("c-hourly");
-  const n = Math.min(48, H.time.length - hi), colW = 58, temps = [], cols = [];
+  const n = Math.min(48, H.time.length - hi), colW = 58, temps = [], cols = [], foggy = [];
   for (let i = 0; i < n; i++) {
     const k = hi + i, t = T(H.time[k]), pop = nz(H.precipitation_probability[k]);
     // "Now" shows the conditions right now, exactly as the main card and the top bar do; later columns the hourly forecast
@@ -1358,7 +1378,7 @@ function renderHourly() {
     // so the icon, the drops and the amount always agree ("Now" shows the conditions right now, as the main card does)
     const hmm = toMm(H.precipitation[k] ?? 0), wc = i ? (H.weather_code[k] >= 51 && H.weather_code[k] < 95 && hmm < .1 ? 3 : H.weather_code[k]) : X.c.weather_code;
     const day = i ? !!H.is_day[k] : X.isDay, [, kind] = wmo(wc);
-    temps.push(i ? H.temperature_2m[k] : X.c.temperature_2m);
+    temps.push(i ? H.temperature_2m[k] : X.c.temperature_2m); foggy.push(kind === "fog");
     const isMid = H.time[k].endsWith("T00:00");
     const tl = i === 0 ? `<span class="htime now">Now</span>` : isMid ? `<span class="htime mid">${wd(H.time[k].slice(0, 10))}</span>` : `<span class="htime">${fmtH(t)}</span>`;
     const lit = pop == null ? 0 : Math.round(pop / 20);
@@ -1413,7 +1433,7 @@ function renderHourly() {
       <p class="hv-h">${R(mn)}° to ${R(mx)}°</p>
       <p class="hv-d" id="hDaysSub">${dayHint()}</p></header>
       <div class="hseg" role="tablist" aria-label="Forecast range"><button role="tab" data-v="h" aria-selected="${view === "h"}">48 h</button><button role="tab" data-v="d" aria-selected="${view === "d"}">14 days</button></div></div>
-    <div class="hfade hv-h"><div class="hscroll hv-h" tabindex="0" aria-label="Hourly forecast, scroll sideways"><div class="hin${cols.some(c => c.includes("%</span>")) ? "" : " dry"}" style="grid-template-columns:repeat(${n},${colW}px);width:${W}px">${track}${cols.join("")}${svg}</div></div></div>
+    <div class="hfade hv-h"><div class="hscroll hv-h" tabindex="0" aria-label="Hourly forecast, scroll sideways"><div class="hin${cols.some(c => c.includes("%</span>")) ? "" : " dry"}" style="grid-template-columns:repeat(${n},${colW}px);width:${W}px">${track}${fogBands(foggy, colW)}${cols.join("")}${svg}</div></div></div>
     <div class="hfade hv-d"><div class="hscroll hv-d" id="hDays" tabindex="0" aria-label="Daily forecast, scroll sideways">${view === "d" ? dayStrip() : ""}</div></div>
     <div class="hdots"><div class="dscroll hv-h" aria-hidden="true"></div><div class="dscroll hv-d" aria-hidden="true"></div><button class="info-i hv-h rain-i" aria-label="What the chance of rain and the amount mean"><svg viewBox="0 0 12 12"><path d="M6 5.4v3.6"/><path d="M6 3h.01"/></svg></button></div>
     <div class="hv-d hfoot"><span class="hfoot-l"><button class="hall-main" id="hAll">Full forecast<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6h7M6.5 3l3 3-3 3"/></svg></button><button class="info-i rain-i" aria-label="What the chance of rain and the amount mean"><svg viewBox="0 0 12 12"><path d="M6 5.4v3.6"/><path d="M6 3h.01"/></svg></button></span><button class="hall" id="hSure">How sure?<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4.5 2.5L8 6l-3.5 3.5"/></svg></button></div>`; // the hidden view is built when it is first opened
@@ -2874,6 +2894,7 @@ function whenAt(d) {
 const warnHideKey = () => warnStale || `none ${new Date().toDateString()}`;
 function renderWarnings() {
   const b = $("#warn"), x = $("#warnX"); b.classList.remove("stale"); x.hidden = true;
+  document.documentElement.classList.remove("warned");
   if (!warnings.length && warnStale !== null) { // the feed is down: say so rather than show nothing
     if (store.get("warnHide", null) === warnHideKey()) { b.hidden = true; return; }
     b.hidden = false; x.hidden = false; b.classList.add("stale"); b.style.setProperty("--wc", "#9aa0aa");
@@ -2883,6 +2904,10 @@ function renderWarnings() {
     return;
   }
   b.hidden = !warnings.length; if (!warnings.length) return;
+  // an orange or red warning in force right now also shows in the app's frame: a thin edge in its colour round the
+  // dock and a dot in the top bar, so it stays noticed while scrolling (set here, cleared at the top)
+  const strong = warnings.find(v => v.level >= 3 && Date.now() >= Date.parse(v.onset) && Date.now() < Date.parse(v.expires));
+  if (strong) { document.documentElement.classList.add("warned"); document.documentElement.style.setProperty("--warn-c", WLEVEL[strong.level][1]); }
   const w = warnings[0], [name, col] = WLEVEL[w.level] || WLEVEL[2], now = Date.now() >= Date.parse(w.onset);
   b.style.setProperty("--wc", col);
   $("#warnT").textContent = `${name} warning · ${w.type}`;
