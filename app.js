@@ -1401,10 +1401,10 @@ function renderHourly() {
       <div class="hseg" role="tablist" aria-label="Forecast range"><button role="tab" data-v="h" aria-selected="${view === "h"}">48 h</button><button role="tab" data-v="d" aria-selected="${view === "d"}">14 days</button></div></div>
     <div class="hfade hv-h"><div class="hscroll hv-h" tabindex="0" aria-label="Hourly forecast, scroll sideways"><div class="hin${cols.some(c => c.includes("%</span>")) ? "" : " dry"}" style="grid-template-columns:repeat(${n},${colW}px);width:${W}px">${track}${cols.join("")}${svg}</div></div></div>
     <div class="hfade hv-d"><div class="hscroll hv-d" id="hDays" tabindex="0" aria-label="Daily forecast, scroll sideways">${view === "d" ? dayStrip() : ""}</div></div>
-    <div class="hdots"><div class="dscroll hv-h" aria-hidden="true"></div><div class="dscroll hv-d" aria-hidden="true"></div><button class="info-i" id="rainInfo" aria-label="What the chance of rain and the amount mean"><svg viewBox="0 0 12 12"><path d="M6 5.4v3.6"/><path d="M6 3h.01"/></svg></button></div>
-    <div class="hv-d hfoot"><button class="hall-main" id="hAll">Full forecast<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6h7M6.5 3l3 3-3 3"/></svg></button><button class="hall" id="hSure">How sure?<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4.5 2.5L8 6l-3.5 3.5"/></svg></button></div>`; // the hidden view is built when it is first opened
+    <div class="hdots"><div class="dscroll hv-h" aria-hidden="true"></div><div class="dscroll hv-d" aria-hidden="true"></div><button class="info-i hv-h rain-i" aria-label="What the chance of rain and the amount mean"><svg viewBox="0 0 12 12"><path d="M6 5.4v3.6"/><path d="M6 3h.01"/></svg></button></div>
+    <div class="hv-d hfoot"><span class="hfoot-l"><button class="hall-main" id="hAll">Full forecast<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6h7M6.5 3l3 3-3 3"/></svg></button><button class="info-i rain-i" aria-label="What the chance of rain and the amount mean"><svg viewBox="0 0 12 12"><path d="M6 5.4v3.6"/><path d="M6 3h.01"/></svg></button></span><button class="hall" id="hSure">How sure?<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4.5 2.5L8 6l-3.5 3.5"/></svg></button></div>`; // the hidden view is built when it is first opened
   for (const v of ["h", "d"]) dotScroll(el.querySelector(`.hscroll.hv-${v}`), el.querySelector(`.dscroll.hv-${v}`));
-  $("#rainInfo").onclick = openRainLearn;
+  el.querySelectorAll(".rain-i").forEach(b => b.onclick = openRainLearn); // in the 48 hours at the end of the scroll dots, in the 14 days beside "Full forecast"
 }
 /* A plain-language explainer of the chance of rain and the amount, starting from today's numbers. */
 function openRainLearn() {

@@ -79,7 +79,8 @@ know (decisions, preferences, open choices), and push it along.**
   rain/snow icon needs ≥0.1 mm too (a drizzle code with less shows as cloud), so icon, drops and amount agree. The 14-day strip does the same for days with ≥0.2 mm (rhythm from the
   day's amount over its hours of rain). Days without a chance
   (only mm): rings show the amount (one per 0.5, 1, 2, 5, 10 mm), never read as a chance; chosen option C.
-- Hours/days card: an (i) at the end of the scroll dots opens "Chance and amount" (the shared learn sheet, retitled):
+- Hours/days card: an (i) (in the 48 hours at the end of the scroll dots; in the 14 days beside "Full forecast", so a
+  strip that fits without scrolling leaves no empty row) opens "Chance and amount" (the shared learn sheet, retitled):
   what the chance means (≥0.1 mm, ensemble share, not area or time), the amount (1 mm = 1 l/m²), why both, dots/rings.
 - Moon: soft terminator (light fades over the last few degrees of sun height), not a hard clip.
 - Saved for later, don't build unasked: a Vestaboard-style split-flap text effect (letters cycling until they land).

@@ -459,6 +459,9 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 :root[data-mode="day"] .a-hourly .hall-main{--seg-on:#fff}
 .a-hourly .hall-main svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .a-hourly .hfoot .hall{margin:0;font-weight:500}
+.hfoot-l{display:inline-flex;align-items:center;gap:12px;min-width:0}
+.a-hourly .hfoot .hall-main,.a-hourly .hfoot .hall{white-space:nowrap;flex:none} /* each button on one line, always */
+@media (max-width:374px){.a-hourly[data-view="d"] .hfoot{gap:8px}.hfoot-l{gap:8px}.a-hourly .hfoot .hall-main{padding:0 13px;gap:6px;font-size:14px}.a-hourly .hfoot .hall{font-size:14px}}
 .dstrip{display:grid;padding-top:4px}
 .dcol{display:grid;grid-template-rows:22px 32px 26px 96px 26px 46px;justify-items:center;align-items:center;padding:6px 0 4px;border-radius:16px;cursor:pointer}
 .dcol:hover{background:rgba(255,255,255,.06)}
