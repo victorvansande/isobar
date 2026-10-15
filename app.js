@@ -2619,7 +2619,7 @@ function stopLoop() { clearInterval(timer); timer = null; $("#rPlayIc").innerHTM
 function applyMode() {
   const m = S.mode === "auto" ? (D && !D.current.is_day ? "night" : D ? "day" : "night") : S.mode;
   document.documentElement.dataset.mode = m;
-  $('meta[name="theme-color"]').content = m === "day" ? "#e8e7ef" : "#0b1120";
+  $('meta[name="theme-color"]').content = m === "day" ? "#e8e7ef" : "#0e0f12";
   if (base) base.setUrl(esri("Base"));
 }
 // runs every second: the formatter is made once per clock style and time zone, and nothing is touched unless the minute changed

@@ -6,19 +6,19 @@
 @font-face{font-family:"Isobar Digits";src:url(https://fonts.gstatic.com/s/urbanist/v18/L0x-DF02iFML4hGCyMqlbS0.woff2) format("woff2");font-weight:100 900;font-display:swap;unicode-range:U+0030-0039,U+0025,U+002B,U+002E,U+00B0,U+2212}
 :root{
   --dock-b:max(12px,calc(env(safe-area-inset-bottom,0px) - 8px)); /* the dock sits partly in the home-indicator strip, as iOS's own floating bars do */
-  --bg:#0b1120;
+  --bg:#0e0f12; /* night: ink-black, neutral; the cards bring the colour */
   --ink:#f4f4f7;
   --ink-2:rgba(244,244,247,.6);
   --ink-3:rgba(244,244,247,.3);
   --shade:rgba(0,0,0,.24);
-  --g-a:rgba(170,182,255,.13);  /* night glass: deep night-blue rather than grey-black */
-  --g-b:rgba(110,122,230,.04);
-  --g-c:rgba(140,152,250,.08);
-  --g-base:rgba(24,28,66,.5);
+  --g-a:rgba(255,255,255,.06);  /* night glass: neutral ink, no blue cast */
+  --g-b:rgba(255,255,255,.02);
+  --g-c:rgba(255,255,255,.04);
+  --g-base:rgba(24,25,29,.6);
   --g-rim:rgba(255,255,255,.2);
   --g-line:rgba(255,255,255,.08);
   --g-drop:rgba(0,0,0,.6);
-  --aurora:.3;
+  --aurora:.14;
   --rain:#8fb0ff;
   --day-track:#ffc24a;
   --twilight-track:#8a6bff;
@@ -262,18 +262,18 @@ dialog:focus-visible,.sheet:focus-visible{outline:none} /* opening a sheet focus
 :root[data-mode="day"] .pig:not(.sky) .wlines path{stroke:var(--ink)}
 :root[data-mode="day"] .glass{background:rgba(255,255,255,.84);box-shadow:inset 0 0 0 1px rgba(20,10,60,.06),0 1px 2px rgba(30,20,60,.06),0 10px 28px -14px rgba(30,20,60,.18)}
 /* ---------- night look: the mirror of the day ----------
-   At night the coloured cards become deep, muted tints of their own colour on the night blue, with text in that
+   At night the coloured cards are ink-black with just a touch of their own colour (no blue cast), with text in that
    colour's lightest tint: the day's calm, inverted. The slow inflow stays, just as dim; no glow on numbers, no shine.
    Glass cards turn to a near-solid matte night layer. The sky cards keep their real sky colours. */
 :root:not([data-mode="day"]) .pig:not(.sky){
   --ink:color-mix(in oklab,var(--hi) 30%,#fff);--ink-2:color-mix(in oklab,var(--ink) 66%,transparent);--ink-3:color-mix(in oklab,var(--ink) 30%,transparent);
-  color:var(--ink);background:color-mix(in oklab,var(--mid) 20%,#0f1228);
+  color:var(--ink);background:color-mix(in oklab,var(--mid) 12%,#16171b);
   box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--mid) 22%,transparent),0 10px 28px -14px rgba(0,0,0,.5)}
 :root:not([data-mode="day"]) .pig:not(.sky)::before{background:
-    radial-gradient(var(--cs) calc(var(--cs) * .9) at 52% 52%,color-mix(in oklab,var(--mid) 30%,#0f1228) 0%,transparent 76%),
-    radial-gradient(var(--hs) calc(var(--hs) * .9) at var(--hx) var(--hy),color-mix(in oklab,var(--hi) 22%,#0f1228),transparent 70%),
-    radial-gradient(calc(var(--hs) + 6%) calc(var(--hs) + 4%) at var(--ax) var(--ay),color-mix(in oklab,var(--acc) calc(22% * var(--acc-k,1)),#0f1228),transparent 72%),
-    color-mix(in oklab,var(--mid) 18%,#0f1228)}
+    radial-gradient(var(--cs) calc(var(--cs) * .9) at 52% 52%,color-mix(in oklab,var(--mid) 18%,#16171b) 0%,transparent 76%),
+    radial-gradient(var(--hs) calc(var(--hs) * .9) at var(--hx) var(--hy),color-mix(in oklab,var(--hi) 14%,#16171b),transparent 70%),
+    radial-gradient(calc(var(--hs) + 6%) calc(var(--hs) + 4%) at var(--ax) var(--ay),color-mix(in oklab,var(--acc) calc(14% * var(--acc-k,1)),#16171b),transparent 72%),
+    color-mix(in oklab,var(--mid) 11%,#16171b)}
 :root:not([data-mode="day"]) .pig:not(.sky)::after{opacity:.1}
 :root:not([data-mode="day"]) .pig:not(.sky) .num{text-shadow:none}
 :root:not([data-mode="day"]) .pig:not(.sky) .dm{filter:none}
@@ -281,7 +281,7 @@ dialog:focus-visible,.sheet:focus-visible{outline:none} /* opening a sheet focus
 :root:not([data-mode="day"]) .pig:not(.sky) .dots i{background:var(--ink-3)}
 :root:not([data-mode="day"]) .pig:not(.sky) .dots i.on{background:var(--ink)}
 :root:not([data-mode="day"]) .pig:not(.sky) .wlines path{stroke:var(--ink)}
-:root:not([data-mode="day"]) .glass{background:rgba(22,26,54,.9);box-shadow:inset 0 0 0 1px rgba(255,255,255,.06),0 10px 28px -14px rgba(0,0,0,.5)}
+:root:not([data-mode="day"]) .glass{background:rgba(24,25,29,.92);box-shadow:inset 0 0 0 1px rgba(255,255,255,.06),0 10px 28px -14px rgba(0,0,0,.5)}
 /* Inflow: the card's light drifts slowly toward its core and eases back out. The light is drawn (and blurred) once and
    only the finished layer moves, which costs the graphics chip next to nothing; moving the gradients themselves meant
    redrawing and re-blurring every coloured card 60 times a second, and Chrome then sometimes fell behind and showed
@@ -823,7 +823,7 @@ dialog{border:0;padding:0;background:transparent;color:#fff;max-width:none;max-h
 dialog::backdrop{background:rgba(6,4,20,.4);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
 .sheet{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(460px,calc(100% - 24px));max-height:min(680px,calc(100% - 40px));overflow:auto;border-radius:30px;padding:22px;
   --ink:#fff;--ink-2:rgba(255,255,255,.6);--ink-3:rgba(255,255,255,.3);--wash:rgba(255,255,255,.08);--wash-2:rgba(255,255,255,.14);--on-ink:#100f18;color:var(--ink);
-  background:rgba(22,26,54,.94);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)} /* the board's night glass; no blur on a sheet that scrolls (rule 21), the backdrop already softens the page */
+  background:rgba(24,25,29,.96);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)} /* the board's night glass; no blur on a sheet that scrolls (rule 21), the backdrop already softens the page */
 @media (max-width:560px){.sheet{top:auto;bottom:10px;transform:translateX(-50%);max-height:82%}}
 /* the full 14-day stack, popped out of the hourly card */
 .sheet.days-sheet{width:min(560px,calc(100% - 24px));max-height:calc(100% - 40px);padding:18px 14px 14px}
