@@ -340,8 +340,30 @@ function drawBigMoon(cv, phase, south) {
   if (south) { ctx.translate(cx, cy); ctx.rotate(PI); ctx.translate(-cx, -cy); } // the 180° turn also flips the lit side
   ctx.beginPath(); ctx.arc(cx, cy, r, 0, PI * 2); ctx.fillStyle = "rgba(190,195,255,.08)"; ctx.fill();
   ctx.globalAlpha = .07; ctx.drawImage(tex, cx - r, cy - r, r * 2, r * 2); ctx.globalAlpha = 1;
-  ctx.save(); moonLitPath(ctx, cx, cy, r, phase); ctx.clip(); ctx.drawImage(tex, cx - r, cy - r, r * 2, r * 2); ctx.restore();
+  ctx.drawImage(moonLit(tex, phase), cx - r, cy - r, r * 2, r * 2);
   ctx.restore();
+}
+/* The sunlit surface with a soft terminator, as the real moon shows it: the light fades out over the last few degrees of
+   sun height (μ0, the cosine towards the sun, from .12 down to just past 0; the sun is a disc and the surface is rough),
+   with a light touch of the Lommel-Seeliger shading of the regolith (2·μ0 / (μ0 + μ), 1 at full moon) towards the line. */
+let moonLitCache = null;
+function moonLit(tex, phase) {
+  const key = `${tex.width}|${phase.toFixed(4)}`;
+  if (moonLitCache && moonLitCache.key === key) return moonLitCache.cv;
+  const n = tex.width, cv = moonLitCache && moonLitCache.cv.width === n ? moonLitCache.cv : document.createElement("canvas");
+  cv.width = cv.height = n;
+  const c = cv.getContext("2d"); c.clearRect(0, 0, n, n); c.drawImage(tex, 0, 0);
+  const img = c.getImageData(0, 0, n, n), p = img.data, a = 2 * PI * phase, sx = sin(a), sz = -cos(a), h = n / 2;
+  for (let y = 0, i = 3; y < n; y++) for (let x = 0; x < n; x++, i += 4) {
+    const u = (x + .5 - h) / h, v = (y + .5 - h) / h, z2 = 1 - u * u - v * v; if (z2 <= 0) continue;
+    const z = Math.sqrt(z2), m0 = u * sx + z * sz;
+    if (m0 <= -.02) { p[i] = 0; continue; }
+    const edge = smoothstep(-.02, .12, m0), ls = m0 > 0 ? Math.min(1, 2 * m0 / (m0 + z)) : 0;
+    p[i] *= edge * (.82 + .18 * ls);
+  }
+  c.putImageData(img, 0, 0);
+  moonLitCache = { key, cv };
+  return cv;
 }
 /* A ruler of daily moons that scrolls under a fixed centre marker. `off` is the selected day relative to today (can be fractional). */
 const stripStep = w => clamp(w / 23, 16, 26);
