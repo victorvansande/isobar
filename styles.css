@@ -644,7 +644,7 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .a-humid .num{margin-bottom:auto}
 
 /* ---------- air ---------- */
-.air{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:0 20px;flex:1}
+.air{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);grid-template-rows:1fr;gap:0 20px;flex:1} /* the reading takes all the height a tall card gets, so its scale and foot sit at the bottom; the folded pollutants row below stays its own size */
 .air-l{display:flex;flex-direction:column}
 .air-l .dm{height:58px;margin:8px 0 6px;align-self:flex-start}
 .air-v{display:block;align-self:flex-start}
