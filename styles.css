@@ -412,6 +412,8 @@ html.lq .dock,html.lq .topbar{-webkit-backdrop-filter:url(#lq-lens);backdrop-fil
 .ftrack .tick{position:absolute;top:15px;width:2px;height:16px;margin-left:-1px;background:#fff;border-radius:2px;opacity:.8} /* centred on the dot row (y 23) */
 .ftrack .tri{top:12px;height:22px;width:5px;margin-left:-2.5px;border-radius:3px} /* the needle crosses the dot row, centred on its dot */
 .ftrack .lab{position:absolute;top:36px;transform:translateX(-50%);font:500 12px/1 var(--f-label);white-space:nowrap;color:var(--ink-2)}
+.ftrack .lab.up{top:-4px;color:var(--ink);font-weight:600}
+.deg0{visibility:hidden} /* an invisible degree sign that centres a temperature on its digits (degMid) */ /* the feels-like value above its needle, the thermometer's below its mark */
 
 /* ---------- hourly (glass) ---------- */
 .a-hourly{min-height:0;padding:18px 0 14px}

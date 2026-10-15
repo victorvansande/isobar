@@ -5,6 +5,11 @@ const $ = (s, r = document) => r.querySelector(s);
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const R = v => (v == null || isNaN(v)) ? "–" : Math.round(v);
+/* A temperature centred on something (a needle, a column, a point on a curve) is centred on its digits; the degree sign
+   hangs after them, as on the main card. An invisible degree sign in front balances the visible one. In HTML and in
+   SVG text. */
+const degMid = v => `<span class="deg0">°</span>${v}°`;
+const degMidSvg = v => `<tspan fill-opacity="0">°</tspan>${v}°`;
 const nz = v => v == null || isNaN(v) ? null : v;
 const { FAM, heroPal, lum, paint } = window.Palette;
 
@@ -1329,7 +1334,7 @@ function renderFeels() {
     <div class="num big">${R(f)}°</div>
     <div class="ftrack" aria-hidden="true"><div class="fdots">${fdots}</div>
       ${ti === fi ? "" : `<div class="tick" style="left:${pos(ti)}%"></div>`}<div class="tri" style="left:${pos(fi)}%"></div>
-      <span class="lab" style="left:${pos(ti)}%">Actual ${R(t)}°</span></div>
+      <span class="lab" style="left:${pos(ti)}%">Actual: ${R(t)}°</span>${same ? "" : `<span class="lab up" style="left:${pos(fi)}%">${degMid(R(f))}</span>`}</div>
     ${range}`;
   el.querySelector(".num").setAttribute("aria-label", `${R(f)} degrees. ${why}`); // the longer explanation stays for screen readers
 }
@@ -1371,7 +1376,7 @@ function renderHourly() {
   const W = n * colW;
   const svg = `<svg class="hcurve" width="${W}" height="78" viewBox="0 0 ${W} 78" aria-hidden="true">
     <path d="${d}" fill="none" stroke="var(--ink)" stroke-opacity=".55" stroke-width="1.4"/>
-    ${pts.map(([x, y], i) => `<circle cx="${x}" cy="${y}" r="${i === 0 ? 4.5 : 2.6}" fill="${i === 0 ? "var(--signal)" : "var(--ink)"}"/><text x="${x}" y="${y - 10}">${R(temps[i])}°</text>`).join("")}
+    ${pts.map(([x, y], i) => `<circle cx="${x}" cy="${y}" r="${i === 0 ? 4.5 : 2.6}" fill="${i === 0 ? "var(--signal)" : "var(--ink)"}"/><text x="${x}" y="${y - 10}">${degMidSvg(R(temps[i]))}</text>`).join("")}
   </svg>`;
   // Sun and moon track above the hours: sunlight, a violet twilight around each sunset and sunrise, then night.
   // Each turn is marked with a small horizon glyph (arrow down for sunset, up for sunrise) and the time.
@@ -1475,9 +1480,9 @@ function dayStrip() {
     const top = clamp(+P(mx + fuzz), 0, 100), bot = clamp(+P(mn - fuzz), 0, 100), fz = fuzz ? clamp((top - +P(mx) + +P(mn) - bot) / 2 / Math.max(top - bot, 1) * 100 + 8, 8, 45) : 0;
     return `<button class="dcol${uc && uc.conf === "low" ? " unsure" : ""}" data-n="${n}" aria-label="${n === 0 ? "Today" : wd(key) + " " + dm_(key)}: ${esc(label)}, ${R(mn)} to ${R(mx)} degrees${pop != null ? `, ${pop}% chance of rain` : amt ? `, about ${fmtP(look.mm)} ${PU()} of rain` : ""}${uc && uc.conf !== "high" ? ", models disagree" : ""}. Open details.">
       <span class="htime${n === 0 ? " now" : ""}">${n === 0 ? "Today" : wd(key)}</span>${icon(kind, true)}
-      <em class="dhi hiT" style="--tc:${tc(mx)}">${R(mx)}°</em>
+      <em class="dhi hiT" style="--tc:${tc(mx)}">${degMid(R(mx))}</em>
       <span class="dbar"><span class="dfill${fuzz ? " fuzzy" : ""}" style="top:${(100 - top).toFixed(1)}%;bottom:${bot.toFixed(1)}%;--lo:${tc(mn)};--hi:${tc(mx)};--fz:${fz.toFixed(0)}%"></span>${now}</span>
-      <em class="dlo">${R(mn)}°</em>
+      <em class="dlo">${degMid(R(mn))}</em>
       <div class="hpop"><svg viewBox="0 0 8 30" aria-hidden="true">${pd}</svg><span>${pop != null && pop >= 10 ? pop + "%" : amt || "&nbsp;"}</span></div></button>`;
   });
   return `<div class="dstrip" style="grid-template-columns:repeat(${cols.length},minmax(58px,1fr));min-width:${cols.length * 58}px">${cols.join("")}</div>`;

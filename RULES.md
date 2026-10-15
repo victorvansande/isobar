@@ -92,6 +92,9 @@ What Kwick feels like, as a touchstone for anything new: does it look like it wa
     - `--f-num` (Urbanist, light): the big readings.
 14a. **Type sizes**: 11, 12, 13, 15, 17, 20, 30 px. The big readings in `--f-num` keep their own sizes; text fields
     stay 16 px (iOS zooms in below that); text inside an SVG drawing scales with it.
+14b. **A temperature centred on something is centred on its digits.** Above a needle, over a column or a point on a
+    curve, the number sits centred and the degree sign hangs after it, as on the main card: use `degMid` (HTML) or
+    `degMidSvg` (SVG text), which balance the visible degree sign with an invisible one in front.
 15. **Weights**: Geist 400, 500, 600, 700; Urbanist 200–400. Nothing in between (Geist only comes in those steps).
 16. Dot-matrix numerals only on the main card, the top bar and the instruments (wind, UV, pressure, air quality),
     and each has a spoken label (`aria-label`).
